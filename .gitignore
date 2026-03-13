@@ -1,0 +1,4 @@
+.env
+credentials.txt
+alias_credentials.json
+node_modules/
