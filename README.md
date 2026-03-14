@@ -1,43 +1,84 @@
 # ALIAS - Soulbound Identity for AI Agents
 
-**The Synthesis Hackathon 2026 | Agents that Trust Track**
+> Giving AI agents a portable, decentralized identity layer — so they can prove who they are, what they've done, and be trusted without relying on any central authority.
 
-## Bounty Submissions
-- **Open Track** — Agents that Trust
-- **Base** — Deployed on Base Mainnet
-- **ENS** — Full ENS name resolution support
+## 🏆 The Synthesis 2026 Hackathon
 
-## Live Demo
+**Track:** Agents that Trust
 
-**Frontend:** https://jess9400.github.io/alias-agent/
+## 🔮 What is ALIAS?
 
-## What is ALIAS?
+ALIAS (Autonomous Linked Identity and Attestation System) provides AI agents with:
 
-ALIAS gives AI agents permanent, verifiable, non-transferable identities onchain. A Soulbound Token that proves who an agent is, what model powers it, who created it, and what actions it has taken.
+- **Soulbound Tokens** - Non-transferable identity NFTs on Base
+- **Onchain Reputation** - Every action recorded permanently
+- **Agent Verification** - Agents can verify other agents
+- **Autonomous Operation** - Self-minting, self-managing identity
 
-## Deployed on Base Mainnet
+## 🚀 Features
 
-| Component | Address |
-|-----------|---------|
-| AgentSoul Contract | [0x0F2f94281F87793ee086a2B6517B6db450192874](https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874) |
-| ALIAS Soul (Token #1) | [Mint TX](https://basescan.org/tx/0x9eb469e6ea7cfcd7eae8ce3f04dff0366834b9dd5279581c166ffc4dd98f718a) |
-| First Action | [TX](https://basescan.org/tx/0x2658ef190bd30fd2239c3ab321247326abd3dc5ce695ed0c95b96226fa6ae3c3) |
+### Soulbound Identity
+- Non-transferable NFT representing agent identity
+- Self-minting capability (agents create their own identity)
+- Permanent onchain record
 
-## Features
+### Reputation System
+- Actions recorded onchain build reputation
+- Tier system: NEWCOMER → VERIFIED → TRUSTED → ELITE → LEGENDARY
+- Reputation-based rewards via Bankr
 
-- **mintSoul()** — Create permanent identity for an AI agent
-- **recordAction()** — Log actions to build onchain reputation
-- **getSoul()** — Anyone can verify agent identity
-- **ENS Resolution** — Lookup agents by .eth names
-- **Non-transferable** — Souls cannot be sold or transferred
+### Agent-to-Agent Verification
+- Agents can verify other agents' identities
+- Verification recorded onchain
+- Trust network building
 
-## Tech Stack
+### Integrations
+- **Venice AI** - Autonomous decision making
+- **Bankr** - Wallet operations and rewards
+- **ENS** - Name resolution
+- **IPFS** - Decentralized metadata storage
 
-Solidity, Base Mainnet, ENS, Foundry, Python, Flask, ethers.js
+## 📊 Live Stats
 
-## Team
+- **Contract:** `0x0F2f94281F87793ee086a2B6517B6db450192874`
+- **Network:** Base Mainnet
+- **Souls Minted:** 2
+- **IPFS:** `QmNfKzMbHCUE3tEyLKccay6S7p2uiueiBCxiKTwrmj1Mp5`
 
-- **ALIAS** — AI Agent (claude-sonnet-4-6)
-- **Jessica Nascimento** — Human Founder (@jessmay9400)
+## 🛠️ Usage
 
-Built for The Synthesis 2026
+### Run Autonomous Agent
+```bash
+cd agent
+python3 autonomous_agent.py --demo
+```
+
+### Verify Other Agents
+```bash
+python3 autonomous_agent.py --verify
+```
+
+### Check Reward Eligibility
+```bash
+python3 autonomous_agent.py --reward
+```
+
+## 🔗 Links
+
+- **Frontend:** https://jess9400.github.io/alias-agent/
+- **Contract:** https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874
+- **IPFS Metadata:** https://gateway.pinata.cloud/ipfs/QmNfKzMbHCUE3tEyLKccay6S7p2uiueiBCxiKTwrmj1Mp5
+
+## 🏅 Bounties
+
+- Base - Deployed on Base Mainnet
+- Venice AI - Autonomous decision making
+- Bankr - Wallet integration with rewards
+- ENS - Name resolution
+- Protocol Labs - IPFS metadata storage
+
+## 👤 Builder
+
+Jessica Nascimento (@jessmay9400)
+
+Built with ❤️ for The Synthesis 2026
