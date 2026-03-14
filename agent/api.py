@@ -20,3 +20,7 @@ def stats():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+
+@app.route("/ens/<name>")
+def lookup_ens(name):
+    return jsonify(agent.lookup_by_ens(name))

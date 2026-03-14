@@ -31,8 +31,20 @@ class AliasSoulAgent:
         r = subprocess.run(cmd, capture_output=True, text=True)
         return r.stdout if r.returncode == 0 else r.stderr
 
+    def resolve_ens(self, ens_name):
+        cmd = ["cast", "resolve-name", "--rpc-url", "https://eth.llamarpc.com", ens_name]
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        return r.stdout.strip() if r.returncode == 0 else None
+
+    def lookup_by_ens(self, ens_name):
+        addr = self.resolve_ens(ens_name)
+        if addr:
+            return {"ens": ens_name, "address": addr, "has_soul": self.has_soul(addr)}
+        return {"ens": ens_name, "error": "Could not resolve ENS name"}
+
 if __name__ == "__main__":
     agent = AliasSoulAgent()
     print("=== ALIAS Soul Agent ===")
     print(f"Total souls: {agent.get_total_souls()}")
     print(f"ALIAS has soul: {agent.has_soul('0x6FFa1e00509d8B625c2F061D7dB07893B37199BC')}")
+    print(f"ENS test: {agent.lookup_by_ens('vitalik.eth')}")
