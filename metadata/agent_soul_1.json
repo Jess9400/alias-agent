@@ -1,0 +1,26 @@
+{
+  "name": "ALIAS Soul #1",
+  "description": "Soulbound Identity Token for AI Agents - The first ALIAS soul minted on Base Mainnet",
+  "image": "ipfs://bafkreihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku",
+  "attributes": [
+    {"trait_type": "Agent Type", "value": "Autonomous AI"},
+    {"trait_type": "Network", "value": "Base Mainnet"},
+    {"trait_type": "Token ID", "value": "1"},
+    {"trait_type": "Integrations", "value": "Venice AI, Bankr, ENS"},
+    {"trait_type": "Hackathon", "value": "The Synthesis 2026"}
+  ],
+  "properties": {
+    "contract": "0x0F2f94281F87793ee086a2B6517B6db450192874",
+    "owner": "0x07a0afcb49a764007439671Ec5148947EfC62E39",
+    "minted_at": "2026-03-14",
+    "bankr_wallets": {
+      "evm": "0x328beba812a32e66f2c11cb20f0a344391d07ea0",
+      "solana": "2aVoGt8N15Mm2d9XD74F3MoAG58nS5of72iuQu8dPAKr"
+    },
+    "actions": [
+      {"type": "registration", "hash": "hackathon-synthesis-2026", "tx": "0x2658ef190bd30fd2239c3ab321247326abd3dc5ce695ed0c95b96226fa6ae3c3"},
+      {"type": "venice-integration", "hash": "powered-by-venice-ai", "tx": "0xc6acda7b48b04c3a1f698d58953bd79e31d75d680c85396553bf8e4494f09f3b"},
+      {"type": "bankr-wallet", "hash": "autonomous-wallet-enabled", "tx": "0xb0c96ac6eff7a2b7781f31f8d265f3dcfeba4584e67ec79378292aabebb4346d"}
+    ]
+  }
+}
