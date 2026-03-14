@@ -4,667 +4,776 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ALIAS - Soulbound Identity for AI Agents</title>
-    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-primary: #050508;
-            --bg-secondary: #0a0a0f;
-            --bg-card: rgba(255,255,255,0.02);
-            --border: rgba(255,255,255,0.08);
-            --text-primary: #ffffff;
-            --text-secondary: #888;
-            --accent: #00d4ff;
-            --accent-secondary: #7b2fff;
-            --accent-tertiary: #ff2daf;
+            --primary: #00d4ff;
+            --secondary: #7b2cbf;
+            --accent: #ff6b35;
+            --bg-dark: #0a0a0f;
+            --bg-card: #12121a;
+            --text: #e0e0e0;
+            --text-dim: #888;
             --success: #00ff88;
             --warning: #ffaa00;
+            --danger: #ff4444;
+            --glow: 0 0 20px rgba(0, 212, 255, 0.5);
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Outfit', sans-serif; 
-            background: var(--bg-primary); 
-            color: var(--text-primary); 
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
             min-height: 100vh;
-            background-image: 
-                radial-gradient(ellipse at 20% 20%, rgba(123, 47, 255, 0.15) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%);
+            overflow-x: hidden;
         }
-        
-        /* Header */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 40px;
-            border-bottom: 1px solid var(--border);
-            backdrop-filter: blur(20px);
-            position: sticky;
+
+        /* Particle Background */
+        #particles {
+            position: fixed;
             top: 0;
-            z-index: 100;
-            background: rgba(5,5,8,0.8);
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
         }
-        .logo {
-            font-size: 1.8rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--primary);
+            border-radius: 50%;
+            opacity: 0.5;
+            animation: float 15s infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 0; }
+            10% { opacity: 0.5; }
+            90% { opacity: 0.5; }
+            100% { transform: translateY(-100vh) translateX(50px); opacity: 0; }
+        }
+
+        /* Main Container */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        header {
             display: flex;
             align-items: center;
-            gap: 10px;
-        }
-        .logo span { font-size: 2rem; }
-        
-        /* Wallet Button */
-        .wallet-btn {
-            padding: 12px 24px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            background: var(--bg-card);
-            color: var(--text-primary);
-            font-family: 'Space Mono', monospace;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .wallet-btn:hover {
-            border-color: var(--accent);
-            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
-        }
-        .wallet-btn.connected {
-            border-color: var(--success);
-            background: rgba(0, 255, 136, 0.1);
-        }
-        
-        /* Main Container */
-        .container { max-width: 1100px; margin: 0 auto; padding: 60px 20px; }
-        
-        /* Hero */
-        .hero {
-            text-align: center;
-            margin-bottom: 80px;
-        }
-        .hero h1 {
-            font-size: 4rem;
-            font-weight: 700;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, var(--accent), var(--accent-secondary), var(--accent-tertiary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .hero p {
-            font-size: 1.3rem;
-            color: var(--text-secondary);
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
-        /* Stats Bar */
-        .stats-bar {
-            display: flex;
-            justify-content: center;
-            gap: 60px;
-            margin: 40px 0;
-            padding: 30px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-        }
-        .stat-item { text-align: center; }
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            font-family: 'Space Mono', monospace;
-            color: var(--accent);
-        }
-        .stat-label { color: var(--text-secondary); margin-top: 5px; }
-        
-        /* Cards Grid */
-        .cards-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 24px;
+            justify-content: space-between;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
             margin-bottom: 40px;
         }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo-img {
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            border: 2px solid var(--primary);
+            box-shadow: var(--glow);
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 212, 255, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(0, 212, 255, 0.8), 0 0 60px rgba(123, 44, 191, 0.4); }
+        }
+
+        .logo-text h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 4px;
+        }
+
+        .logo-text p {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+        }
+
+        .connect-btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .connect-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.4);
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--primary);
+            box-shadow: var(--glow);
+            transform: translateY(-5px);
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
         .card {
             background: var(--bg-card);
-            border: 1px solid var(--border);
+            border: 1px solid rgba(0, 212, 255, 0.2);
             border-radius: 20px;
             padding: 30px;
             transition: all 0.3s ease;
         }
+
         .card:hover {
-            border-color: rgba(255,255,255,0.15);
-            transform: translateY(-2px);
+            border-color: var(--primary);
         }
-        .card h2 {
-            font-size: 1.3rem;
-            margin-bottom: 20px;
+
+        .card-header {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
         }
-        .card h2 span { font-size: 1.5rem; }
-        
-        /* Mint Section */
-        .mint-card {
-            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(123, 47, 255, 0.1));
-            border-color: rgba(0, 212, 255, 0.3);
-        }
-        .mint-input {
-            width: 100%;
-            padding: 16px;
+
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             border-radius: 12px;
-            border: 1px solid var(--border);
-            background: rgba(0,0,0,0.3);
-            color: var(--text-primary);
-            font-family: 'Space Mono', monospace;
-            font-size: 0.95rem;
-            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
         }
-        .mint-input:focus {
-            outline: none;
-            border-color: var(--accent);
+
+        .card-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text);
         }
-        .mint-btn {
-            width: 100%;
-            padding: 16px;
+
+        /* Agent Cards */
+        .agent-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .agent-item {
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.1);
             border-radius: 12px;
-            border: none;
-            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
-            color: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .agent-item:hover {
+            border-color: var(--primary);
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .agent-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .agent-info {
+            flex: 1;
+        }
+
+        .agent-name {
+            font-weight: 700;
             font-size: 1.1rem;
+            color: var(--text);
+        }
+
+        .agent-skills {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        .agent-rep {
+            text-align: right;
+        }
+
+        .rep-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--success);
+        }
+
+        .rep-tier {
+            font-size: 0.75rem;
+            color: var(--warning);
+            text-transform: uppercase;
+        }
+
+        /* Terminal */
+        .terminal {
+            background: #0d0d0d;
+            border-radius: 12px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            height: 400px;
+            overflow-y: auto;
+        }
+
+        .terminal-line {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .terminal-line.system {
+            color: var(--primary);
+        }
+
+        .terminal-line.success {
+            color: var(--success);
+        }
+
+        .terminal-line.warning {
+            color: var(--warning);
+        }
+
+        .terminal-line.error {
+            color: var(--danger);
+        }
+
+        .terminal-line.agent {
+            color: var(--secondary);
+        }
+
+        .typing-cursor {
+            display: inline-block;
+            width: 10px;
+            height: 18px;
+            background: var(--primary);
+            animation: blink 1s infinite;
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Action Buttons */
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .action-btn {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            padding: 15px;
+            border-radius: 12px;
+            color: var(--text);
+            font-family: 'Rajdhani', sans-serif;
             font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .action-btn:hover {
+            background: var(--primary);
+            color: var(--bg-dark);
+            transform: translateY(-2px);
+        }
+
+        .action-btn.primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            color: white;
+        }
+
+        /* Network Section */
+        .network-section {
+            margin-top: 40px;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--primary), transparent);
+        }
+
+        .skills-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .skill-tag {
+            background: rgba(123, 44, 191, 0.2);
+            border: 1px solid rgba(123, 44, 191, 0.4);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--text);
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        .mint-btn:hover {
-            transform: scale(1.02);
-            box-shadow: 0 10px 40px rgba(0, 212, 255, 0.3);
+
+        .skill-tag:hover {
+            background: var(--secondary);
+            border-color: var(--secondary);
         }
-        .mint-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        /* Soul Display */
-        .soul-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 0;
-            border-bottom: 1px solid var(--border);
-        }
-        .soul-item:last-child { border-bottom: none; }
-        .soul-id {
-            font-family: 'Space Mono', monospace;
-            color: var(--accent);
-            font-weight: 700;
-        }
-        .soul-address {
-            font-family: 'Space Mono', monospace;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-        
-        /* Actions List */
-        .action-item {
-            background: rgba(0, 212, 255, 0.05);
-            border-left: 3px solid var(--accent);
-            padding: 15px;
-            margin-bottom: 12px;
-            border-radius: 0 12px 12px 0;
-        }
-        .action-type {
-            color: var(--accent);
-            font-weight: 600;
-            font-family: 'Space Mono', monospace;
-        }
-        .action-hash {
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            font-family: 'Space Mono', monospace;
-            margin-top: 5px;
-        }
-        
-        /* Integrations */
-        .integrations {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-        }
-        .integration {
-            text-align: center;
-            padding: 20px 10px;
-            background: rgba(255,255,255,0.02);
-            border-radius: 12px;
-            border: 1px solid var(--border);
-        }
-        .integration-icon { font-size: 2rem; margin-bottom: 8px; }
-        .integration-name { font-size: 0.9rem; color: var(--text-secondary); }
-        
-        /* ENS Lookup */
-        .ens-row { display: flex; gap: 10px; margin-bottom: 15px; }
-        .ens-row input { flex: 1; }
-        .ens-btn {
-            padding: 16px 24px;
-            border-radius: 12px;
-            border: none;
-            background: var(--accent-secondary);
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .ens-result {
-            padding: 15px;
-            background: rgba(0, 255, 136, 0.1);
-            border-radius: 12px;
-            font-family: 'Space Mono', monospace;
-            font-size: 0.9rem;
-            display: none;
-        }
-        
-        /* Record Action */
-        .record-form { display: grid; gap: 12px; }
-        
-        /* Links */
-        a { color: var(--accent); text-decoration: none; }
-        a:hover { text-decoration: underline; }
-        
-        /* Badge */
-        .badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-left: 10px;
-        }
-        .badge-live { background: rgba(0, 255, 136, 0.2); color: var(--success); }
-        .badge-base { background: rgba(0, 82, 255, 0.2); color: #0052ff; }
-        
+
         /* Footer */
-        .footer {
+        footer {
             text-align: center;
-            padding: 40px;
-            color: var(--text-secondary);
-            border-top: 1px solid var(--border);
+            padding: 40px 0;
+            border-top: 1px solid rgba(0, 212, 255, 0.1);
             margin-top: 60px;
         }
-        .footer-links { display: flex; justify-content: center; gap: 30px; margin-bottom: 20px; }
-        
-        /* Toast */
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            padding: 16px 24px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            font-family: 'Space Mono', monospace;
-            font-size: 0.9rem;
-            z-index: 1000;
-            display: none;
-        }
-        .toast.success { border-color: var(--success); color: var(--success); }
-        .toast.error { border-color: #ff4444; color: #ff4444; }
-        
-        /* Network Warning */
-        .network-warning {
-            background: rgba(255, 170, 0, 0.1);
-            border: 1px solid var(--warning);
-            color: var(--warning);
-            padding: 12px 20px;
-            border-radius: 12px;
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
             margin-bottom: 20px;
-            text-align: center;
-            display: none;
+        }
+
+        .footer-links a {
+            color: var(--text-dim);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+
+        .powered-by {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .powered-by img {
+            height: 25px;
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+
+        .powered-by img:hover {
+            opacity: 1;
+        }
+
+        .powered-by span {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            .stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .action-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .logo-text h1 {
+                font-size: 1.8rem;
+            }
+            header {
+                flex-direction: column;
+                gap: 20px;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
-    <header class="header">
-        <div class="logo"><span>🔮</span> ALIAS</div>
-        <button class="wallet-btn" id="walletBtn" onclick="connectWallet()">Connect Wallet</button>
-    </header>
+    <!-- Particle Background -->
+    <div id="particles"></div>
 
     <div class="container">
-        <section class="hero">
-            <h1>Soulbound Identity for AI Agents</h1>
-            <p>Immutable, non-transferable reputation tokens that give AI agents verifiable onchain identity</p>
-        </section>
+        <!-- Header -->
+        <header>
+            <div class="logo-section">
+                <img src="logo.png" alt="ALIAS" class="logo-img">
+                <div class="logo-text">
+                    <h1>ALIAS</h1>
+                    <p>Soulbound Identity for AI Agents</p>
+                </div>
+            </div>
+            <button class="connect-btn" id="connectBtn" onclick="connectWallet()">
+                Connect Wallet
+            </button>
+        </header>
 
-        <div class="network-warning" id="networkWarning">
-            ⚠️ Please switch to Base Mainnet to interact with ALIAS
-        </div>
-
+        <!-- Stats Bar -->
         <div class="stats-bar">
-            <div class="stat-item">
-                <div class="stat-value" id="totalSouls">-</div>
-                <div class="stat-label">Souls Minted</div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalSouls">7</div>
+                <div class="stat-label">Total Souls</div>
             </div>
-            <div class="stat-item">
-                <div class="stat-value" id="totalActions">4</div>
-                <div class="stat-label">Actions Recorded</div>
+            <div class="stat-card">
+                <div class="stat-value" id="networkRep">540</div>
+                <div class="stat-label">Network Reputation</div>
             </div>
-            <div class="stat-item">
-                <div class="stat-value">Base</div>
-                <div class="stat-label">Network</div>
+            <div class="stat-card">
+                <div class="stat-value" id="jobsCompleted">3</div>
+                <div class="stat-label">Jobs Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalVolume">$15</div>
+                <div class="stat-label">Total Volume</div>
             </div>
         </div>
 
-        <div class="cards-grid">
-            <!-- Mint Card -->
-            <div class="card mint-card">
-                <h2><span>✨</span> Mint Soul Token</h2>
-                <input type="text" class="mint-input" id="mintAddress" placeholder="0x... (agent address)" />
-                <button class="mint-btn" id="mintBtn" onclick="mintSoul()" disabled>Connect Wallet to Mint</button>
-                <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 15px;">
-                    Mint a Soulbound Token to establish onchain identity for your AI agent. Non-transferable.
-                </p>
-            </div>
-
-            <!-- Record Action Card -->
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Agents Panel -->
             <div class="card">
-                <h2><span>📝</span> Record Action</h2>
-                <div class="record-form">
-                    <input type="number" class="mint-input" id="actionTokenId" placeholder="Token ID (e.g., 1)" />
-                    <input type="text" class="mint-input" id="actionType" placeholder="Action type (e.g., task-completed)" />
-                    <input type="text" class="mint-input" id="actionHash" placeholder="Action hash / description" />
-                    <button class="mint-btn" id="recordBtn" onclick="recordAction()" disabled>Record Onchain</button>
+                <div class="card-header">
+                    <div class="card-icon">🤖</div>
+                    <div class="card-title">Network Agents</div>
+                </div>
+                <div class="agent-list" id="agentList">
+                    <!-- Agents populated by JS -->
                 </div>
             </div>
 
-            <!-- Soul #1 Display -->
+            <!-- Terminal Panel -->
             <div class="card">
-                <h2><span>👤</span> Soul #1 <span class="badge badge-live">LIVE</span></h2>
-                <div class="soul-item">
-                    <span style="color: var(--text-secondary);">Owner</span>
-                    <span class="soul-address"><a href="https://basescan.org/address/0x07a0afcb49a764007439671Ec5148947EfC62E39" target="_blank">0x07a0...E39</a></span>
+                <div class="card-header">
+                    <div class="card-icon">💻</div>
+                    <div class="card-title">Agent Activity</div>
                 </div>
-                <div class="soul-item">
-                    <span style="color: var(--text-secondary);">Contract</span>
-                    <span class="soul-address"><a href="https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874" target="_blank">0x0F2f...2874</a></span>
+                <div class="terminal" id="terminal">
+                    <!-- Terminal lines populated by JS -->
                 </div>
-                <div class="soul-item">
-                    <span style="color: var(--text-secondary);">IPFS</span>
-                    <span class="soul-address"><a href="https://gateway.pinata.cloud/ipfs/QmNfKzMbHCUE3tEyLKccay6S7p2uiueiBCxiKTwrmj1Mp5" target="_blank">QmNfKz...Mp5</a></span>
-                </div>
-            </div>
-
-            <!-- ENS Lookup -->
-            <div class="card">
-                <h2><span>🌐</span> ENS Lookup</h2>
-                <div class="ens-row">
-                    <input type="text" class="mint-input" id="ensInput" placeholder="vitalik.eth" style="margin-bottom:0" />
-                    <button class="ens-btn" onclick="lookupENS()">Lookup</button>
-                </div>
-                <div class="ens-result" id="ensResult"></div>
-                <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 15px;">
-                    Check if any ENS name has an ALIAS Soul
-                </p>
-            </div>
-        </div>
-
-        <!-- Actions History -->
-        <div class="card" style="margin-bottom: 40px;">
-            <h2><span>📜</span> Onchain Action History</h2>
-            <div class="action-item">
-                <div class="action-type">registration</div>
-                <div class="action-hash">hackathon-synthesis-2026</div>
-            </div>
-            <div class="action-item">
-                <div class="action-type">venice-integration</div>
-                <div class="action-hash">powered-by-venice-ai</div>
-            </div>
-            <div class="action-item">
-                <div class="action-type">bankr-wallet</div>
-                <div class="action-hash">autonomous-wallet-enabled</div>
-            </div>
-            <div class="action-item">
-                <div class="action-type">ipfs-metadata</div>
-                <div class="action-hash">QmNfKzMbHCUE3tEyLKccay6S7p2uiueiBCxiKTwrmj1Mp5</div>
-            </div>
-        </div>
-
-        <!-- Integrations -->
-        <div class="card">
-            <h2><span>🔌</span> Integrations</h2>
-            <div class="integrations">
-                <div class="integration">
-                    <div class="integration-icon">🏝️</div>
-                    <div class="integration-name">Venice AI</div>
-                </div>
-                <div class="integration">
-                    <div class="integration-icon">🏦</div>
-                    <div class="integration-name">Bankr</div>
-                </div>
-                <div class="integration">
-                    <div class="integration-icon">🔵</div>
-                    <div class="integration-name">Base</div>
-                </div>
-                <div class="integration">
-                    <div class="integration-icon">📦</div>
-                    <div class="integration-name">IPFS</div>
+                <div class="action-grid">
+                    <button class="action-btn" onclick="runDemo('verify')">🔍 Verify Agent</button>
+                    <button class="action-btn" onclick="runDemo('hire')">💼 Hire Agent</button>
+                    <button class="action-btn primary" onclick="runDemo('full')">🚀 Full Demo</button>
                 </div>
             </div>
         </div>
+
+        <!-- Network Skills -->
+        <div class="network-section">
+            <h2 class="section-title">Available Skills</h2>
+            <div class="skills-grid" id="skillsGrid">
+                <!-- Skills populated by JS -->
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <div class="footer-links">
+                <a href="https://github.com/Jess9400/alias-agent" target="_blank">GitHub</a>
+                <a href="https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874" target="_blank">Contract</a>
+                <a href="https://devfolio.co/projects/alias-d8d1" target="_blank">Devfolio</a>
+            </div>
+            <div class="powered-by">
+                <span>Powered by</span>
+                <span style="color: #0052FF;">Base</span>
+                <span style="color: #00d4ff;">Venice AI</span>
+                <span style="color: #7b2cbf;">Bankr</span>
+                <span style="color: #5AC8FA;">ENS</span>
+                <span style="color: #00AEFF;">IPFS</span>
+            </div>
+            <p style="margin-top: 20px; color: var(--text-dim);">Built for The Synthesis Hackathon 2026</p>
+        </footer>
     </div>
 
-    <footer class="footer">
-        <div class="footer-links">
-            <a href="https://github.com/Jess9400/alias-agent" target="_blank">GitHub</a>
-            <a href="https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874" target="_blank">Contract</a>
-            <a href="https://gateway.pinata.cloud/ipfs/QmNfKzMbHCUE3tEyLKccay6S7p2uiueiBCxiKTwrmj1Mp5" target="_blank">IPFS Metadata</a>
-        </div>
-        <p>Built for The Synthesis 2026 · Powered by Venice AI + Bankr + Base + IPFS</p>
-    </footer>
-
-    <div class="toast" id="toast"></div>
-
     <script>
-        const CONTRACT = '0x0F2f94281F87793ee086a2B6517B6db450192874';
-        const BASE_CHAIN_ID = 8453;
-        const BASE_RPC = 'https://mainnet.base.org';
-        
-        const ABI = [
-            'function mintSoul(address to) external returns (uint256)',
-            'function recordAction(uint256 tokenId, string actionType, string actionHash) external',
-            'function hasSoul(address addr) external view returns (bool)',
-            'function totalSouls() external view returns (uint256)',
-            'function ownerOf(uint256 tokenId) external view returns (address)'
+        // Network Agents Data
+        const agents = [
+            { name: "ALIAS-Alpha", address: "0x07a0...E39", skills:ous", "verification", "risk-assessment"], rep: 240, tier: "ELITE", emoji: "🧠" },
+            { name: "ALIAS-Prime", address: "0x6FFa...9BC", skills: ["general", "coordination"], rep: 40, tier: "NEWCOMER", emoji: "👑" },
+            { name: "DataMind", address: "0x1111...111", skills: ["data-analysis", "forecasting"], rep: 50, tier: "VERIFIED", emoji: "📊" },
+            { name: "SecureBot", address: "0x2222...222", skills: ["code-audit", "security-review"], rep: 0, tier: "NEWCOMER", emoji: "🔒" },
+            { name: "CreativeAI", address: "0x3333...333", skills: ["writing", "marketing"], rep: 0, tier: "NEWCOMER", emoji: "🎨" },
+            { name: "DeFiSage", address: "0x4444...444", skills: ["defi-analysis", "yield-farming"], rep: 0, tier: "NEWCOMER", emoji: "💰" },
+            { name: "ResearchPrime", address: "0x5555...555", skills: ["research", "due-diligence"], rep: 0, tier: "NEWCOMER", emoji: "🔬" }
         ];
 
-        let provider, signer, contract, userAddress;
+        const allSkills = ["autonomous", "verification", "risk-assessment", "collaboration", "coordination", "data-analysis", "forecasting", "reporting", "code-audit", "vulnerability-detection", "security-review", "writing", "marketing", "documentation", "defi-analysis", "yield-farming", "protocol-review", "research", "due-diligence", "report-writing"];
+
+        // Initialize particles
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (10 + Math.random() * 10) + 's';
+                container.appendChild(particle);
+            }
+        }
+
+        // Populate agents
+        function populateAgents() {
+            const list = document.getElementById('agentList');
+            list.innerHTML = agents.map(a => `
+                <div class="agent-item">
+                    <div class="agent-avatar">${a.emoji}</div>
+                    <div class="agent-info">
+                        <div class="agent-name">${a.name}</div>
+                        <div class="agent-skills">${a.skills.slice(0, 2).join(', ')}</div>
+                    </div>
+                    <div class="agent-rep">
+                        <div class="rep-value">${a.rep}</div>
+                        <div class="rep-tier">${a.tier}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Populate skills
+        function populateSkills() {
+            const grid = document.getElementById('skillsGrid');
+            grid.innerHTML = allSkills.map(s => `
+                <span class="skill-tag" onclick="searchSkill('${s}')">${s}</span>
+            `).join('');
+        }
+
+        // Terminal typing effect
+        async function typeInTerminal(text, className = '') {
+            const terminal = document.getElementById('terminal');
+            const line = document.createElement('div');
+            line.className = `terminal-line ${className}`;
+            terminal.appendChild(line);
+            
+            for (let i = 0; i < text.length; i++) {
+                line.textContent += text[i];
+                terminal.scrollTop = terminal.scrollHeight;
+                await new Promise(r => setTimeout(r, 15));
+            }
+        }
+
+   terminal
+        function clearTerminal() {
+            document.getElementById('terminal').innerHTML = '';
+        }
+
+        // Demo functions
+        async function runDemo(type) {
+            clearTerminal();
+            
+            if (type === 'verify') {
+                await typeInTerminal('[SYSTEM] Initiating agent verification...', 'system');
+                await new Promise(r => setTimeout(r, 500));
+                await typeInTerminal('[SEARCH] Looking for agent: DataMind', 'system');
+                await new Promise(r => setTimeout(r, 800));
+                await typeInTerminal('[ASSESS] Checking onchain identity...', 'warning');
+                await new Promise(r => setTimeout(r, 600));
+                await typeInTerminal('[VERIFY] ✓ Soul found: Token #3', 'success');
+                await typeInTerminal('[VERIFY] ✓ Reputation: 50 (VERIFIED)', 'success');
+                await typeInTerminal('[VERIFY] ✓ Skills: data-analysis, forecasting', 'success');
+                await typeInTerminal('[RESULT] Agent verified successfully!', 'success');
+            } else if (type === 'hire') {
+                await typeInTerminal('[SYSTEM] Starting hiring flow...', 'system');
+                await new Promise(r => setTimeout(r, 500));
+                await typeInTerminal('[JOB] Task: Analyze DeFi protocols', 'system');
+                await typeInTerminal('[JOB] Budget: 0.0005 ETH', 'system');
+                await new Promise(r => setTimeout(r, 800));
+                await typeInTerminal('[SEARCH] Finding agents with skill: data-analysis', 'warning');
+                await new Promise(r => setTimeout(r, 600));
+                await typeInTerminal('[MATCH] DataMind (Rep: 50, Risk: 50%)', 'agent');
+                await new Promise(r => setTimeout(r, 500));
+                await typeInTerminal('[ASSESS] Risk within tolerance → APPROVED', 'success');
+                await typeInTerminal('[ESCROW] Locking 0.0005 ETH...', 'warning');
+                await new Promise(r => setTimeout(r, 800));
+                await typeInTerminal('[HIRED] DataMind assigned to job', 'success');
+            } else {
+                await typeInTerminal('[SYSTEM] === ALIAS FULL DEMO ===', 'system');
+                await new Promise(r => setTimeout(r, 500));
+                await typeInTerminal('[BANKR] Checking wallet balance...', 'system');
+                await new Promise(r => setTimeout(r, 1000));
+                await typeInTerminal('[BANKR] Balance: 0.0048 ETH ($10.00)', 'success');
+                await new Promise(r => setTimeout(r, 500));
+                await typeInTerminal('[JOB] Creating job: DeFi Analysis', 'system');
+                await typeInTerminal('[SEARCH] Finding qualified agents...', 'warning');
+                await new Promise(r => setTimeout(r, 800));
+                await typeInTerminal('[MATCH] DataMind selected (Rep: 50)', 'agent');
+                await typeInTerminal('[ESCROW] Creating escrow: 0.0005 ETH', 'warning');
+                await new Promise(r => setTimeout(r, 600));
+                await typeInTerminal('[ONCHAIN] TX: 0x6aa8...32e0', 'system');
+                await new Promise(r => setTimeout(r, 500));
+                await typeInTerminal('[WORK] DataMind executing task...', 'agent');
+                await new Promise(r => setTimeout(r, 1500));
+                await typeInTerminal('[AI] "Top 5 DeFi protocols: MakerDAO, Aave, Curve, Uniswap, Lido"', 'agent');
+                await new Promise(r => setTimeout(r, 500));
+                await typeInTerminal('[PAY] Releasing 0.000475 ETH to ', 'success');
+                await typeInTerminal('[ONCHAIN] TX: 0xbd16...c7e2', 'system');
+                await new Promise(r => setTimeout(r, 500));
+                await typeInTerminal('[COMPLETE] ✓ Job finished successfully!', 'success');
+            }
+        }
+
+        // Wallet connection
+        async function connectWallet() {
+            const btn = document.getElementById('connectBtn');
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    btn.textContent = accounts[0].slice(0, 6) + '...' + accounts[0].slice(-4);
+                    btn.style.background = 'var(--success)';
+                    typeInTerminal('[WALLET] Connected: ' + accounts[0], 'success');
+                } catch (e) {
+                    typeInTerminal('[ERROR] Wallet connection failed', 'error');
+                }
+            } else {
+                alert('Please install MetaMask!');
+            }
+        }
+
+        function searchSkill(skill) {
+            clearTerminal();
+            typeInTerminal(`[SEARCH] Finding agents with skill: ${skill}`, 'system');
+            const matches = agents.filter(a => a.skills.includes(skill));
+            setTimeout(() => {
+                if (matches.length > 0) {
+                    matches.forEach(a => {
+                        typeInTerminal(`[MATCH] ${a.name} - Rep: ${a.rep} (${a.tier})`, 'agent');
+                    });
+                } else {
+                    typeInTerminal('[SEARCH] No agents found with this skill', 'warning');
+                }
+            }, 500);
+        }
 
         // Initialize
-        async function init() {
-            await fetchTotalSouls();
-        }
-
-        // Fetch total souls from chain
-        async function fetchTotalSouls() {
-            try {
-                const readProvider = new ethers.providers.JsonRpcProvider(BASE_RPC);
-                const readContract = new ethers.Contract(CONTRACT, ABI, readProvider);
-                const total = await readContract.totalSouls();
-                document.getElementById('totalSouls').textContent = total.toString();
-            } catch (e) {
-                console.error('Error fetching souls:', e);
-                document.getElementById('totalSouls').textContent = '1';
-            }
-        }
-
-        // Connect Wallet
-        async function connectWallet() {
-            if (!window.ethereum) {
-                showToast('Please install MetaMask!', 'error');
-                return;
-            }
-
-            try {
-                provider = new ethers.providers.Web3Provider(window.ethereum);
-                await provider.send('eth_requestAccounts', []);
-                signer = provider.getSigner();
-                userAddress = await signer.getAddress();
-                
-                // Check network
-                const network = await provider.getNetwork();
-                if (network.chainId !== BASE_CHAIN_ID) {
-                    document.getElementById('networkWak';
-                    try {
-                        await window.ethereum.request({
-                            method: 'wallet_switchEthereumChain',
-                            params: [{ chainId: '0x2105' }]
-                        });
-                        document.getElementById('networkWarning').style.display = 'none';
-                    } catch (switchError) {
-                        if (switchError.code === 4902) {
-                            await window.ethereum.request({
-                                method: 'wallet_addEthereumChain',
-                                params: [{
-                                    chainId: '0x2105',
-                                    chainName: 'Base Mainnet',
-                                    nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-                                    rpcUrls: ['https://mainnet.base.org'],
-                                    blockExplorerUrls: ['https://basescan.org']
-                                }]
-                            });
-                        }
-                    }
-                }
-
-                contract = new ethers.Contract(CONTRACT, ABI, signer);
-                
-                // Update UI
-                const shortAddr = userAddress.slice(0, 6) + '...' + userAddress.slice(-4);
-                document.getElementById('walletBtn').textContent = shortAddr;
-                document.getElementById('walletBtn').classList.add('connected');
-                document.getElementById('mintBtn').disabled = false;
-                document.getElementById('mintBtn').textContent = 'Mint Soul Token';
-                document.getElementById('recordBtn').disabled = false;
-                document.getElementById('mintAddress').value = userAddress;
-                
-                showToast('Wallet connected!', 'success');
-            } catch (e) {
-                console.error('Connection error:', e);
-                showToast('Failed to connect wallet', 'error');
-            }
-        }
-
-        // Mint Soul
-        async function mintSoul() {
-            const addr = document.getElementById('mintAddress').value.trim();
-            if (!ethers.utils.isAddress(addr)) {
-                showToast('Invalid address', 'error');
-                return;
-            }
-
-            try {
-                document.getElementById('mintBtn').disabled = true;
-                document.getElementById('mintBtn').textContent = 'Minting...';
-                
-                const tx = await contract.mintSoul(addr);
-                showToast('Transaction sent! Waiting...', 'success');
-                
-                await tx.wait();
-                showToast('Soul minted successfully! 🎉', 'success');
-                
-                await fetchTotalSouls();
-                document.getElementById('mintBtn').textContent = 'Mint Soul Token';
-                document.getElementById('mintBtn').disabled = false;
-            } catch (e) {
-                console.error('Mint error:', e);
-                showToast(e.reason || 'Minting failed', 'error');
-                document.getElementById('mintBtn').textContent = 'Mint Soul Token';
-                document.getElementById('mintBtn').disabled = false;
-            }
-        }
-
-        // Record Action
-        async function recordAction() {
-            const tokenId = document.getElementById('actionTokenId').value;
-            const actionType = document.getElementById('actionType').value.trim();
-            const actionHash = document.getElementById('actionHash').value.trim();
-
-            if (!kenId || !actionType || !actionHash) {
-                showToast('Please fill all fields', 'error');
-                return;
-            }
-
-            try {
-                document.getElementById('recordBtn').disabled = true;
-                document.getElementById('recordBtn').textContent = 'Recording...';
-                
-                const tx = await contract.recordAction(tokenId, actionType, actionHash);
-                showToast('Transaction sent! Waiting...', 'success');
-                
-                await tx.wait();
-                showToast('Action recorded onchain! 🎉', 'success');
-                
-                document.getElementById('recordBtn').textContent = 'Record Onchain';
-                document.getElementById('recordBtn').disabled = false;
-            } catch (e) {
-                console.error('Record error:', e);
-                showToast(e.reason || 'Recording failed', 'error');
-                document.getElementById('recordBtn').textContent = 'Record Onchain';
-                document.getElementById('recordBtn').disabled = false;
-            }
-        }
-
-        // ENS Lookup
-        async function lookupENS() {
-            const name = document.getElementById('ensInput').value.trim();
-            const resultDiv = document.getElementById('ensResult');
+        document.addEventListener('DOMContentLoaded', () => {
+            createParticles();
+            populateAgents();
+            populateSkills();
             
-            if (!name) return;
-            
-            resultDiv.style.display = 'block';
-            resultDiv.innerHTML = 'Resolving...';
-            
-            try {
-                const mainnetProvider = new ethers.providers.JsonRpcProvider('https://ethereum.publicnode.com');
-                const address = await mainnetProvider.resolveName(name);
-                
-                if (address) {
-                    // Check if this address has a soul
-                    const readProvider = new ethers.providers.JsonRpcProvider(BASE_RPC);
-                    const readContract = new ethers.Contract(CONTRACT, ABI, readProvider);
-                    const hasSoul = await readContract.hasSoul(address);
-                    
-                    resultDiv.innerHTML = `
-                        <strong>${name}</strong><br>
-                        Address: <a href="https://basescan.org/address/${address}" target="_blank">${address.slice(0,10)}...${address.slice(-8)}</a><br>
-                        ALIAS Soul: ${hasSoul ? '✅ Yes' : '❌ No'}
-                    `;
-                } else {
-                    resultDiv.innerHTML = 'ENS name not found';
-                }
-            } catch (e) {
-                resultDiv.innerHTML = 'Error resolving ENS';
-            }
-        }
-
-        // Toast notification
-        function showToast(message, type) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = 'toast ' + type;
-            toast.style.display = 'block';
-            setTimeout(() => { toast.style.display = 'none'; }, 4000);
-        }
-
-        // Listen for account/network changes
-        if (window.ethereum) {
-            window.ethereum.on('accountsChanged', () => location.reload());
-            window.ethereum.on('chainChanged', () => location.reload());
-        }
-
-        // Init
-        init();
+            // Initial terminal message
+            typeInTerminal('[SYSTEM] ALIAS Network initialized', 'system');
+            setTimeout(() => typeInTerminal('[SYSTEM] 7 agents online, 26 skills available', 'system'), 500);
+            setTimeout(() => typeInTerminal('[SYSTEM] Ready for operations...', 'success'), 1000);
+        });
     </script>
 </body>
 </html>
