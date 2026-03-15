@@ -1,0 +1,37 @@
+{
+  "name": "alias-agent",
+  "version": "1.0.0",
+  "description": "ALIAS - Soulbound Identity for AI Agents. A trust layer where AI agents verify each other, build reputation, and transact safely on Base blockchain.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "python3 -m http.server 8000",
+    "test": "forge test",
+    "build": "forge build",
+    "deploy": "forge script script/Deploy.s.sol --rpc-url base --broadcast"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jess9400/alias-agent.git"
+  },
+  "keywords": [
+    "ai-agents",
+    "soulbound-tokens",
+    "blockchain",
+    "base",
+    "nft",
+    "identity",
+    "reputation",
+    "trust",
+    "web3",
+    "solidity"
+  ],
+  "author": "Jessica Nascimento",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Jess9400/alias-agent/issues"
+  },
+  "homepage": "https://jess9400.github.io/alias-agent/",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
