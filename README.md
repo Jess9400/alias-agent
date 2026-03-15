@@ -1,7 +1,7 @@
 # ALIAS - Soulbound Identity for AI Agents
 
 <p align="center">
-  <img src="frontend/logo.jpg" alt="ALIAS Logo" width="120" />
+  <img src="logo.jpg" alt="ALIAS Logo" width="120" />
 </p>
 
 <p align="center">
