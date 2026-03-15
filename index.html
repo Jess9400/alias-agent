@@ -280,7 +280,8 @@
                             typeInTerminal("[ENS] Resolved!", "success");
                             typeInTerminal("[ADDRESS] " + data.address, "system");
                             typeInTerminal("[NAME] " + (data.ens || q), "agent");
-                            if (data.avatar) typeInTerminal("[AVATAR] " + data.avatar, "agent");
+                            // Now check if this address has a soul
+                            checkSoulOnchain(data.address);
                         } else {
                             typeInTerminal("[ERROR] ENS name not found", "warning");
                         }
@@ -291,7 +292,14 @@
                 return;
             }
             
-            // Search local agents
+            // Check if wallet address (0x...)
+            if (q.startsWith("0x") && q.length === 42) {
+                typeInTerminal("[CHAIN] Checking onchain...", "warning");
+                checkSoulOnchain(q);
+                return;
+            }
+            
+            // Search local agents by name
             var found = null;
             for (var i = 0; i < agents.length; i++) {
                 if (agents[i].name.toLowerCase().indexOf(qLower) !== -1 || agents[i].address.toLowerCase().indexOf(qLower) !== -1) {
@@ -305,8 +313,69 @@
                 typeInTerminal("[REP] " + found.rep + " (" + found.tier + ")", "success");
                 typeInTerminal("[SKILLS] " + found.skills.join(", "), "agent");
             } else {
-                typeInTerminal("[ERROR] Agent not found", "warning");
+                typeInTerminal("[ERROR] Agent not found in local registry", "warning");
+                typeInTerminal("[TIP] Try a full 0x address or .eth name", "system");
             }
+        }
+
+        function checkSoulOnchain(address) {
+            var CONTRACT = "0x0F2f94281F87793ee086a2B6517B6db450192874";
+            var RPC = "https://mainnet.base.org";
+            
+            // Call hasSoul(address)
+            var callData = "0x" + "9f8e7291" + address.slice(2).toLowerCase().padStart(64, "0");
+            
+            fetch(RPC, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    jsonrpc: "2.0",
+                    method: "eth_call",
+                    params: [{ to: CONTRACT, data: callData }, "latest"],
+                    id: 1
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.result && data.result !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
+                    typeInTerminal("[SOUL] ✓ Soul found!", "success");
+                    // Get token ID
+                    getTokenId(address);
+                } else {
+                    typeInTerminal("[SOUL] ✗ No soul found", "warning");
+                    typeInTerminal("[INFO] This address has no ALIAS identity", "system");
+                }
+            })
+            .catch(function() {
+                typeInTerminal("[ERROR] Chain lookup failed", "warning");
+            });
+        }
+
+        function getTokenId(address) {
+            var CONTRACT = "0x0F2f94281F87793ee086a2B6517B6db450192874";
+            var RPC = "https://mainnet.base.org";
+            
+            // Call agentToSoul(address)
+            var callData = "0x" + "c9c65396" + address.slice(2).toLowerCase().padStart(64, "0");
+            
+            fetch(RPC, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    jsonrpc: "2.0",
+                    method: "eth_call",
+                    params: [{ to: CONTRACT, data: callData }, "latest"],
+                    id: 1
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.result) {
+                    var tokenId = parseInt(data.result, 16);
+                    typeInTerminal("[TOKEN] ID: #" + tokenId, "agent");
+                    typeInTerminal("[LINK] basescan.org/token/" + CONTRACT + "?a=" + tokenId, "system");
+                }
+            });
         }
         function searchSkill(skill) {
             clearTerminal();
