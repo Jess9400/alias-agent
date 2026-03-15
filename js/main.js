@@ -158,14 +158,14 @@ async function loadAgentsFromChain() {
         
         if (newSkills.length > 0) allSkills = newSkills;
         
-        loadAgentsFromChain();
+        populateAgents();
         populateSkills();
         typeInTerminal("[CHAIN] Loaded " + agents.length + " agents from blockchain", "success");
         
     } catch (error) {
         console.error("Failed to load from chain:", error);
         typeInTerminal("[WARN] Using cached agents", "warning");
-        loadAgentsFromChain();
+        populateAgents();
         populateSkills();
     }
 }
