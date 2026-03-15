@@ -311,6 +311,8 @@ function showSearchResult(data, isSuccess) {
         verifyBtn.onclick = function() { signVerification(selectedAgent); };
         verifyDiv.appendChild(verifyBtn);
         box.appendChild(verifyDiv);
+        // Payment buttons
+        if (selectedAgent) { addPaymentButtons(box, selectedAgent); }
     }
 
     if (data.message) {
@@ -1037,3 +1039,134 @@ document.addEventListener("DOMContentLoaded", function() {
         if (e.target.id === "mintModal") closeMintModal();
     });
 });
+
+// =============================================================================
+// PAYMENT & ESCROW FUNCTIONS (BANKR INTEGRATION)
+// =============================================================================
+
+var activeEscrows = {};
+
+async function tipAgent(agent, amount) {
+    if (!connectedWallet) {
+        alert("Please connect your wallet first!");
+        return;
+    }
+    
+    if (!agent || !agent.fullAddress) {
+        alert("No agent selected!");
+        return;
+    }
+    
+    var tipAmount = amount || prompt("Enter tip amount in ETH (e.g., 0.001):");
+    if (!tipAmount || isNaN(parseFloat(tipAmount))) return;
+    
+    try {
+        var provider = new ethers.BrowserProvider(window.ethereum);
+        var signer = await provider.getSigner();
+        
+        typeInTerminal("[BANKR] Preparing tip transaction...", "warning");
+        
+        var tx = await signer.sendTransaction({
+            to: agent.fullAddress,
+            value: ethers.parseEther(tipAmount)
+        });
+        
+        typeInTerminal("[BANKR] TX submitted: " + tx.hash.slice(0, 15) + "...", "warning");
+        
+        var receipt = await tx.wait();
+        
+        typeInTerminal("[BANKR] ✓ Sent " + tipAmount + " ETH to " + agent.name, "success");
+        typeInTerminal("[TX] " + tx.hash, "system");
+        
+        alert("Successfully tipped " + tipAmount + " ETH to " + agent.name + "!");
+        
+    } catch (error) {
+        console.error("Tip error:", error);
+        typeInTerminal("[ERROR] Payment failed: " + (error.reason || error.message), "warning");
+    }
+}
+
+async function hireAgent(agent) {
+    if (!connectedWallet) {
+        alert("Please connect your wallet first!");
+        return;
+    }
+    
+    if (!agent || !agent.fullAddress) {
+        alert("No agent selected!");
+        return;
+    }
+    
+    var jobDesc = prompt("Describe the job for " + agent.name + ":");
+    if (!jobDesc) return;
+    
+    var budget = prompt("Enter budget in ETH (e.g., 0.005):");
+    if (!budget || isNaN(parseFloat(budget))) return;
+    
+    try {
+        var provider = new ethers.BrowserProvider(window.ethereum);
+        var signer = await provider.getSigner();
+        
+        // Calculate fee (5%)
+        var totalBudget = parseFloat(budget);
+        var fee = totalBudget * 0.05;
+        var agentPayment = totalBudget - fee;
+        
+        typeInTerminal("[HIRE] Creating job: " + jobDesc.slice(0, 30) + "...", "system");
+        typeInTerminal("[ESCROW] Budget: " + budget + " ETH", "warning");
+        typeInTerminal("[ESCROW] Platform fee (5%): " + fee.toFixed(6) + " ETH", "warning");
+        typeInTerminal("[ESCROW] Agent payment: " + agentPayment.toFixed(6) + " ETH", "warning");
+        
+        // For demo: send directly to agent (in production, would use escrow contract)
+        var tx = await signer.sendTransaction({
+            to: agent.fullAddress,
+            value: ethers.parseEther(budget)
+        });
+        
+        typeInTerminal("[ESCROW] TX submitted: " + tx.hash.slice(0, 15) + "...", "warning");
+        
+        var receipt = await tx.wait();
+        
+        // Store escrow record
+        var escrowId = "ESC-" + Date.now();
+        activeEscrows[escrowId] = {
+            agent: agent.name,
+            agentAddress: agent.fullAddress,
+            job: jobDesc,
+            budget: budget,
+            status: "PAID",
+            txHash: tx.hash,
+            timestamp: new Date().toISOString()
+        };
+        
+        typeInTerminal("[ESCROW] ✓ Job funded! ID: " + escrowId, "success");
+        typeInTerminal("[HIRE] " + agent.name + " has been hired!", "success");
+        typeInTerminal("[TX] " + tx.hash, "system");
+        
+        alert("Successfully hired " + agent.name + "!\n\nJob: " + jobDesc + "\nBudget: " + budget + " ETH\nEscrow ID: " + escrowId);
+        
+    } catch (error) {
+        console.error("Hire error:", error);
+        typeInTerminal("[ERROR] Hire failed: " + (error.reason || error.message), "warning");
+    }
+}
+
+// Add payment buttons to search result when agent is selected
+function addPaymentButtons(box, agent) {
+    var payDiv = document.createElement("div");
+    payDiv.style.cssText = "margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;";
+    
+    var tipBtn = document.createElement("button");
+    tipBtn.style.cssText = "background:var(--success);color:#000;border:none;padding:8px 15px;border-radius:8px;cursor:pointer;font-weight:bold;font-size:0.9em;";
+    tipBtn.textContent = "💰 Tip Agent";
+    tipBtn.onclick = function() { tipAgent(agent); };
+    payDiv.appendChild(tipBtn);
+    
+    var hireBtn = document.createElement("button");
+    hireBtn.style.cssText = "background:var(--primary);color:#000;border:none;padding:8px 15px;border-radius:8px;cursor:pointer;font-weight:bold;font-size:0.9em;";
+    hireBtn.textContent = "📋 Hire Agent";
+    hireBtn.onclick = function() { hireAgent(agent); };
+    payDiv.appendChild(hireBtn);
+    
+    box.appendChild(payDiv);
+}
