@@ -128,7 +128,7 @@ async function loadAgentsFromChain() {
         var newSkills = [];
         
         for (var i = 1; i <= count; i++) {
-            await new Promise(function(r) { setTimeout(r, 100); });
+            await new Promise(function(r) { setTimeout(r, 200); });
             try {
                 var soul = await contract.souls(i);
                 
