@@ -163,7 +163,7 @@ async function loadAgentsFromChain() {
                     });
                 }
             } catch (e) {
-                console.log("Failed to load soul #" + i);
+                console.log("Failed to load soul #" + i, e);
             }
         }
         
