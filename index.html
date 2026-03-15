@@ -239,6 +239,7 @@
                     '<div class="rep-tier">' + a.tier + '</div>' +
                     '</div></div>';
             }
+        }
             list.innerHTML = html;
         }
 
@@ -248,6 +249,7 @@
             for (var i = 0; i < allSkills.length; i++) {
                 html += '<span class="skill-tag" onclick="searchSkill(\'' + allSkills[i] + '\')">' + allSkills[i] + '</span>';
             }
+        }
             grid.innerHTML = html;
         }
 
@@ -274,7 +276,9 @@
                     found = agents[i];
                     break;
                 }
+        }
             }
+        }
             if (found) {
                 typeInTerminal("[FOUND] " + found.name, "success");
                 typeInTerminal("[ADDRESS] " + found.address, "system");
@@ -284,6 +288,7 @@
                 typeInTerminal("[ERROR] Agent not found", "warning");
             }
         }
+        }
 
         function searchSkill(skill) {
             clearTerminal();
@@ -292,7 +297,9 @@
                 if (agents[i].skills.indexOf(skill) !== -1) {
                     typeInTerminal("[MATCH] " + agents[i].name + " - Rep: " + agents[i].rep, "agent");
                 }
+        }
             }
+        }
         }
 
         function selectAgent(name) {
@@ -300,6 +307,7 @@
             for (var i = 0; i < agents.length; i++) {
                 if (agents[i].name === name) { a = agents[i]; break; }
             }
+        }
             if (!a) return;
             clearTerminal();
             typeInTerminal("[SELECT] " + a.name, "system");
@@ -360,7 +368,9 @@
                     typeInTerminal("[ERROR] Connection failed", "warning");
                 });
             } else {
-                alert("Please insta        }
+                alert("Please install MetaMask!");
+            }
+        }
 
         document.addEventListener("DOMContentLoaded", function() {
             populateAgents();
