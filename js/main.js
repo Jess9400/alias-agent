@@ -445,7 +445,7 @@ async function loadAgentsFromChain() {
             })
         });
         var countData = await countResponse.json();
-        var totalSouls = parseInt(countData.result, 16);
+        var totalSouls = parseInt(countData.result, 16); console.log("Total souls:", totalSouls);
         
         // Clear the agents array
         agents = [];
@@ -455,7 +455,7 @@ async function loadAgentsFromChain() {
         for (var i = 1; i <= totalSouls; i++) {
             try {
                 var soulData = await fetchSoulData(i);
-                if (soulData && soulData.active) {
+                console.log("Soul " + i + ":", soulData); if (soulData && soulData.active) {
                     agents.push(soulData);
                     soulData.skills.forEach(function(skill) {
                         if (newSkills.indexOf(skill) === -1 && skill.length > 0) {
