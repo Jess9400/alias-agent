@@ -29,7 +29,8 @@ const CONFIG = {
 const SELECTORS = {
     hasSoul: "0xbdd75202",
     agentToSoul: "0xf7c3328c",
-    totalSouls: "0x4879a9a6"
+    totalSouls: "0x4879a9a6",
+    souls: "0x7f0df684"      // souls(uint256)
 };
 
 // =============================================================================
@@ -419,6 +420,164 @@ function selectAgent(name) {
 // UI POPULATION (XSS-safe)
 // =============================================================================
 
+
+// =============================================================================
+// DYNAMIC AGENT LOADING FROM BLOCKCHAIN
+// =============================================================================
+
+/**
+ * Load all agents dynamically from blockchain
+ */
+async function loadAgentsFromChain() {
+    var list = document.getElementById("agentList");
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim)"><span class="loading-spinner"></span> Loading agents from blockchain...</div>';
+    
+    try {
+        // First get total souls count
+        var countResponse = await fetch(CONFIG.RPC_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                jsonrpc: "2.0", 
+                method: "eth_call", 
+                params: [{ to: CONFIG.CONTRACT_ADDRESS, data: SELECTORS.totalSouls }, "latest"], 
+                id: 1 
+            })
+        });
+        var countData = await countResponse.json();
+        var totalSouls = parseInt(countData.result, 16);
+        
+        // Clear the agents array
+        agents = [];
+        var newSkills = [];
+        
+        // Fetch each soul
+        for (var i = 1; i <= totalSouls; i++) {
+            try {
+                var soulData = await fetchSoulData(i);
+                if (soulData && soulData.active) {
+                    agents.push(soulData);
+                    soulData.skills.forEach(function(skill) {
+                        if (newSkills.indexOf(skill) === -1 && skill.length > 0) {
+                            newSkills.push(skill);
+                        }
+                    });
+                }
+            } catch (e) {
+                // Skip failed fetches
+            }
+        }
+        
+        // Update allSkills
+        if (newSkills.length > 0) {
+            allSkills = newSkills;
+        }
+        
+        // Re-populate the UI
+        loadAgentsFromChain();
+        populateSkills();
+        typeInTerminal("[CHAIN] Loaded " + agents.length + " agents from blockchain", "success");
+        
+    } catch (error) {
+        typeInTerminal("[ERROR] Failed to load agents from chain", "warning");
+        // Keep hardcoded agents as fallback
+        loadAgentsFromChain();
+        populateSkills();
+    }
+}
+
+/**
+ * Fetch individual soul data from blockchain
+ */
+async function fetchSoulData(tokenId) {
+    var callData = SELECTORS.souls + tokenId.toString(16).padStart(64, "0");
+    
+    var response = await fetch(CONFIG.RPC_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            jsonrpc: "2.0",
+            method: "eth_call",
+            params: [{ to: CONFIG.CONTRACT_ADDRESS, data: callData }, "latest"],
+            id: 1
+        })
+    });
+    
+    var data = await response.json();
+    if (!data.result || data.result === "0x") return null;
+    
+    var decoded = decodeSoulResponse(data.result);
+    
+    // Calculate reputation based on action count (from contract)
+    var rep = decoded.createdAt > 43350000 ? 0 : Math.floor((43400000 - decoded.createdAt) / 500);
+    rep = Math.min(rep, 300);
+    
+    var tier = "NEWCOMER";
+    if (rep >= 200) tier = "ELITE";
+    else if (rep >= 50) tier = "VERIFIED";
+    
+    // Parse skills string into array
+    var skillsArray = decoded.skills.split(",").map(function(s) { 
+        return s.trim().toLowerCase(); 
+    }).filter(function(s) { 
+        return s.length > 0; 
+    });
+    
+    return {
+        name: decoded.name,
+        address: decoded.creator.slice(0, 6) + "..." + decoded.creator.slice(-3),
+        fullAddress: decoded.creator,
+        skills: skillsArray.length > 0 ? skillsArray : ["general"],
+        rep: rep,
+        tier: tier,
+        tokenId: tokenId,
+        active: decoded.active,
+        metadataURI: decoded.metadataURI
+    };
+}
+
+/**
+ * Decode souls() function response
+ */
+function decodeSoulResponse(hexData) {
+    var data = hexData.slice(2);
+    
+    function readUint256(bytePos) {
+        return parseInt(data.slice(bytePos * 2, bytePos * 2 + 64), 16);
+    }
+    
+    function readString(byteOffset) {
+        var offset = readUint256(byteOffset) * 2;
+        var length = parseInt(data.slice(offset, offset + 64), 16);
+        var strHex = data.slice(offset + 64, offset + 64 + length * 2);
+        return hexToString(strHex);
+    }
+    
+    function readAddress(bytePos) {
+        return "0x" + data.slice(bytePos * 2 + 24, bytePos * 2 + 64);
+    }
+    
+    return {
+        name: readString(0),
+        metadataURI: readString(32),
+        creator: readAddress(64),
+        createdAt: readUint256(96),
+        skills: readString(128),
+        active: readUint256(160) === 1
+    };
+}
+
+/**
+ * Convert hex to string
+ */
+function hexToString(hex) {
+    var str = '';
+    for (var i = 0; i < hex.length; i += 2) {
+        var code = parseInt(hex.slice(i, i + 2), 16);
+        if (code > 0 && code < 128) str += String.fromCharCode(code);
+    }
+    return str;
+}
 function populateAgents() {
     var list = document.getElementById("agentList");
     list.innerHTML = '';
@@ -560,7 +719,7 @@ function connectWallet() {
 
 document.addEventListener("DOMContentLoaded", function() {
     loadStats();
-    populateAgents();
+    loadAgentsFromChain();
     populateSkills();
     
     typeInTerminal("[SYSTEM] ALIAS Network initialized", "system");
