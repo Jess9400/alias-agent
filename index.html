@@ -30,7 +30,6 @@
             overflow-x: hidden;
         }
 
-        /* Particle Background */
         #particles {
             position: fixed;
             top: 0; left: 0;
@@ -63,7 +62,6 @@
             padding: 20px;
         }
 
-        /* Header */
         header {
             display: flex;
             align-items: center;
@@ -100,7 +98,6 @@
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-clip: text;
             letter-spacing: 6px;
         }
 
@@ -108,7 +105,6 @@
             color: var(--text-dim);
             font-size: 1.1rem;
             letter-spacing: 3px;
-            margin-top: 5px;
         }
 
         .connect-btn {
@@ -131,10 +127,7 @@
             box-shadow: 0 10px 30px rgba(0, 212, 255, 0.4);
         }
 
-        /* Search Bar */
-        .search-section {
-            margin-bottom: 30px;
-        }
+        .search-section { margin-bottom: 30px; }
 
         .search-container {
             display: flex;
@@ -152,16 +145,11 @@
             font-family: 'Rajdhani', sans-serif;
             font-size: 1.1rem;
             outline: none;
-            transition: all 0.3s ease;
         }
 
         .search-input:focus {
             border-color: var(--primary);
             box-shadow: var(--glow);
-        }
-
-        .search-input::placeholder {
-            color: var(--text-dim);
         }
 
         .search-btn {
@@ -170,18 +158,10 @@
             padding: 15px 25px;
             border-radius: 12px;
             color: white;
-            font-family: 'Rajdhani', sans-serif;
             font-weight: 700;
-            font-size: 1rem;
             cursor: pointer;
-            transition: all 0.3s ease;
         }
 
-        .search-btn:hover {
-            transform: translateY(-2px);
-        }
-
-        /* Stats Bar */
         .stats-bar {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -209,7 +189,6 @@
             font-size: 2.5rem;
             font-weight: 900;
             color: var(--primary);
-            margin-bottom: 5px;
         }
 
         .stat-label {
@@ -217,6 +196,178 @@
             font-size: 0.9rem;
             text-transform: uppercase;
             letter-spacing: 1px;
+        }
+
+        /* TRUST NETWORK VISUALIZATION */
+        .trust-network {
+            background: var(--bg-card);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 40px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .section-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .section-icon svg {
+            width: 28px;
+            height: 28px;
+            fill: white;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .network-graph {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
+            padding: 30px;
+            overflow-x: auto;
+        }
+
+        .network-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .network-node {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(123, 44, 191, 0.1));
+            border: 3px solid var(--primary);
+            border-radius: 20px;
+            padding: 20px 25px;
+            text-align: center;
+            min-width: 160px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .network-node:hover {
+            transform: scale(1.05);
+            box-shadow: var(--glow);
+        }
+
+        .network-node.elite { border-color: var(--primary); }
+        .network-node.verified { border-color: var(--success); }
+        .network-node.newcomer { border-color: var(--warning); }
+
+        .node-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            border-radius: 50%;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .node-avatar svg {
+            width: 28px;
+            height: 28px;
+            fill: white;
+        }
+
+        .node-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .node-rep {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--primary);
+        }
+
+        .node-tier {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-top: 8px;
+            display: inline-block;
+        }
+
+        .tier-elite { background: rgba(0, 212, 255, 0.2); color: var(--primary); }
+        .tier-verified { background: rgba(0, 255, 136, 0.2); color: var(--success); }
+        .tier-newcomer { background: rgba(255, 170, 0, 0.2); color: var(--warning); }
+
+        .network-arrow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .arrow-line {
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--success), var(--primary));
+            position: relative;
+        }
+
+        .arrow-line::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: -5px;
+            border: 6px solid transparent;
+            border-left-color: var(--primary);
+        }
+
+        .arrow-label {
+            font-size: 0.75rem;
+            color: var(--success);
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .vertical-arrow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .vertical-line {
+            width: 3px;
+            height: 40px;
+            background: linear-gradient(180deg, var(--success), var(--primary));
+            position: relative;
+        }
+
+        .vertical-line::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: -5px;
+            border: 6px solid transparent;
+            border-top-color: var(--primary);
         }
 
         /* Main Grid */
@@ -232,10 +383,7 @@
             border: 1px solid rgba(0, 212, 255, 0.2);
             border-radius: 20px;
             padding: 30px;
-            transition: all 0.3s ease;
         }
-
-        .card:hover { border-color: var(--primary); }
 
         .card-header {
             display: flex;
@@ -268,12 +416,11 @@
             font-weight: 700;
         }
 
-        /* Agent List */
         .agent-list {
             display: flex;
             flex-direction: column;
             gap: 15px;
-            max-height: 450px;
+            max-height: 400px;
             overflow-y: auto;
         }
 
@@ -303,7 +450,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0;
         }
 
         .agent-avatar svg {
@@ -317,7 +463,6 @@
         .agent-name {
             font-weight: 700;
             font-size: 1.15rem;
-            color: var(--text);
             margin-bottom: 4px;
         }
 
@@ -333,9 +478,7 @@
             margin-top: 4px;
         }
 
-        .agent-rep {
-            text-align: right;
-        }
+        .agent-rep { text-align: right; }
 
         .rep-value {
             font-family: 'Orbitron', sans-serif;
@@ -346,53 +489,27 @@
 
         .rep-tier {
             font-size: 0.75rem;
-            color: var(--warning);
             text-transform: uppercase;
             letter-spacing: 1px;
         }
 
-        .tier-elite { color: var(--primary); }
-        .tier-verified { color: var(--success); }
-        .tier-newcomer { color: var(--text-dim); }
-
-        /* Terminal */
         .terminal {
             background: #0d0d0d;
             border-radius: 12px;
             padding: 20px;
             font-family: 'Courier New', monospace;
             font-size: 0.9rem;
-            height: 350px;
+            height: 320px;
             overflow-y: auto;
         }
 
-        .terminal-line {
-            margin-bottom: 8px;
-            line-height: 1.6;
-        }
-
+        .terminal-line { margin-bottom: 8px; line-height: 1.6; }
         .terminal-line.system { color: var(--primary); }
         .terminal-line.success { color: var(--success); }
         .terminal-line.warning { color: var(--warning); }
         .terminal-line.error { color: var(--danger); }
         .terminal-line.agent { color: var(--secondary); }
 
-        .typing-cursor {
-            display: inline-block;
-            width: 10px;
-            height: 18px;
-            background: var(--primary);
-            animation: blink 1s infinite;
-            vertical-align: middle;
-            margin-left: 5px;
-        }
-
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
-        }
-
-        /* Action Buttons */
         .action-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -406,9 +523,7 @@
             padding: 15px;
             border-radius: 12px;
             color: var(--text);
-            font-family: 'Rajdhani', sans-serif;
             font-weight: 600;
-            font-size: 0.95rem;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
@@ -420,7 +535,6 @@
         .action-btn:hover {
             background: var(--primary);
             color: var(--bg-dark);
-            transform: translateY(-2px);
         }
 
         .action-btn.primary {
@@ -435,27 +549,7 @@
             fill: currentColor;
         }
 
-        /* Skills Section */
-        .skills-section {
-            margin-top: 40px;
-        }
-
-        .section-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-bottom: 25px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .section-title::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: linear-gradient(90deg, var(--primary), transparent);
-        }
+        .skills-section { margin-top: 40px; }
 
         .skills-grid {
             display: flex;
@@ -469,18 +563,15 @@
             padding: 10px 18px;
             border-radius: 25px;
             font-size: 0.9rem;
-            color: var(--text);
             cursor: pointer;
             transition: all 0.3s ease;
         }
 
         .skill-tag:hover {
             background: var(--secondary);
-            border-color: var(--secondary);
             transform: translateY(-2px);
         }
 
-        /* Partners Section */
         .partners-section {
             margin-top: 60px;
             text-align: center;
@@ -509,7 +600,7 @@
             gap: 10px;
             opacity: 0.7;
             transition: all 0.3s ease;
-            cursor: pointer;
+            text-decoration: none;
         }
 
         .partner-logo:hover {
@@ -528,7 +619,6 @@
             font-weight: 600;
         }
 
-        /* Footer */
         footer {
             text-align: center;
             padding: 40px 0;
@@ -547,31 +637,16 @@
             color: var(--text-dim);
             text-decoration: none;
             font-weight: 600;
-            transition: color 0.3s ease;
         }
 
         .footer-links a:hover { color: var(--primary); }
 
-        .footer-text {
-            color: var(--text-dim);
-            font-size: 0.9rem;
-        }
-
-        /* Responsive */
         @media (max-width: 900px) {
             .main-grid { grid-template-columns: 1fr; }
             .stats-bar { grid-template-columns: repeat(2, 1fr); }
-            .action-grid { grid-template-columns: 1fr; }
-            .logo-img { width: 80px; height: 80px; }
-            .logo-text h1 { font-size: 2rem; }
+            .network-graph { flex-direction: column; }
         }
 
-        @media (max-width: 600px) {
-            header { flex-direction: column; gap: 20px; }
-            .partners-grid { gap: 30px; }
-        }
-
-        /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: var(--bg-dark); }
         ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
@@ -581,7 +656,6 @@
     <div id="particles"></div>
 
     <div class="container">
-        <!-- Header -->
         <header>
             <div class="logo-section">
                 <img src="logo.jpg" alt="ALIAS" class="logo-img">
@@ -590,12 +664,9 @@
                     <p>Soulbound Identity for AI Agents</p>
                 </div>
             </div>
-            <button class="connect-btn" id="connectBtn" onclick="connectWallet()">
-                Connect Wallet
-            </button>
+            <button class="connect-btn" id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
         </header>
 
-        <!-- Search Bar -->
         <div class="search-section">
             <div class="search-container">
                 <input type="text" class="search-input" id="searchInput" placeholder="Search agent by address, name, or ENS...">
@@ -603,19 +674,18 @@
             </div>
         </div>
 
-        <!-- Stats Bar -->
         <div class="stats-bar">
             <div class="stat-card">
                 <div class="stat-value">7</div>
                 <div class="stat-label">Total Souls</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">540</div>
+                <div class="stat-value">540+</div>
                 <div class="stat-label">Network Rep</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">3</div>
-                <div class="stat-label">Jobs Done</div>
+                <div class="stat-value">12</div>
+                <div class="stat-label">Verifications</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value">$15</div>
@@ -623,9 +693,93 @@
             </div>
         </div>
 
-        <!-- Main Grid -->
+        <!-- TRUST NETWORK VISUALIZATION -->
+        <div class="trust-network">
+            <div class="section-header">
+                <div class="section-icon">
+                    <svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+                </div>
+                <div class="section-title">Trust Network</div>
+            </div>
+            
+            <div class="network-graph">
+                <!-- Level 1: Root -->
+                <div class="network-column">
+                    <div class="network-node elite">
+                        <div class="node-avatar">
+                            <svg viewBox="0 0 24 24"><path d="M12 2a9 9 0 0 0-9 9c0 4.17 2.84 7.67 6.69 8.69L12 22l2.31-2.31C18.16 18.67 21 15.17 21 11a9 9 0 0 0-9-9z"/></svg>
+                        </div>
+                        <div class="node-name">ALIAS-Alpha</div>
+                        <div class="node-rep">240</div>
+                        <div class="node-tier tier-elite">ELITE</div>
+                    </div>
+                </div>
+
+                <div class="network-arrow">
+                    <div class="arrow-line"></div>
+                    <div class="arrow-label">verified</div>
+                </div>
+
+                <!-- Level 2 -->
+                <div class="network-column">
+                    <div class="network-node newcomer">
+                        <div class="node-avatar">
+                            <svg viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5z"/></svg>
+                        </div>
+                        <div class="node-name">ALIAS-Prime</div>
+                        <div class="node-rep">40</div>
+                        <div class="node-tier tier-newcomer">NEWCOMER</div>
+                    </div>
+                    
+                    <div class="vertical-arrow">
+                        <div class="vertical-line"></div>
+                        <div class="arrow-label">verified</div>
+                    </div>
+                    
+                    <div class="network-node verified">
+                        <div class="node-avatar">
+                            <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
+                        </div>
+                        <div class="node-name">DataMind</div>
+                        <div class="node-rep">50</div>
+                        <div class="node-tier tier-verified">VERIFIED</div>
+                    </div>
+                </div>
+
+                <div class="network-arrow">
+                    <div class="arrow-line"></div>
+                    <div class="arrow-label">hired</div>
+                </div>
+
+                <!-- Level 3 -->
+                <div class="network-column">
+                    <div class="network-node newcomer">
+                        <div class="node-avatar">
+                            <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+                        </div>
+                        <div class="node-name">SecureBot</div>
+                        <div class="node-rep">0</div>
+                        <div class="node-tier tier-newcomer">NEWCOMER</div>
+                    </div>
+                    
+                    <div class="vertical-arrow">
+                        <div class="vertical-line"></div>
+                        <div class="arrow-label">hired</div>
+                    </div>
+                    
+                    <div class="network-node newcomer">
+                        <div class="node-avatar">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z"/></svg>
+                        </div>
+                        <div class="node-name">DeFiSage</div>
+                        <div class="node-rep">0</div>
+                        <div class="node-tier tier-newcomer">NEWCOMER</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="main-grid">
-            <!-- Agents Panel -->
             <div class="card">
                 <div class="card-header">
                     <div class="card-icon">
@@ -636,7 +790,6 @@
                 <div class="agent-list" id="agentList"></div>
             </div>
 
-            <!-- Terminal Panel -->
             <div class="card">
                 <div class="card-header">
                     <div class="card-icon">
@@ -650,9 +803,9 @@
                         <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
                         Verify
                     </button>
-                    <button class="action-btn" onclick="runDemo('hire')">
-                        <svg viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>
-                        Hire
+                    <button class="action-btn" onclick="runDemo('chain')">
+                        <svg viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
+                        Chain
                     </button>
                     <button class="action-btn primary" onclick="runDemo('full')">
                         <svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
@@ -662,13 +815,16 @@
             </div>
         </div>
 
-        <!-- Skills Section -->
         <div class="skills-section">
-            <h2 class="section-title">Available Skills</h2>
+            <div class="section-header">
+                <div class="section-icon">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                </div>
+                <div class="section-title">Available Skills</div>
+            </div>
             <div class="skills-grid" id="skillsGrid"></div>
         </div>
 
-        <!-- Partners Section -->
         <div class="partners-section">
             <div class="partners-title">Powered By</div>
             <div class="partners-grid">
@@ -695,19 +851,17 @@
             </div>
         </div>
 
-        <!-- Footer -->
         <footer>
             <div class="footer-links">
                 <a href="https://github.com/Jess9400/alias-agent" target="_blank">GitHub</a>
                 <a href="https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874" target="_blank">Contract</a>
                 <a href="https://devfolio.co/projects/alias-d8d1" target="_blank">Devfolio</a>
             </div>
-            <p class="footer-text">Built for The Synthesis Hackathon 2026</p>
+            <p style="color: var(--text-dim);">Built for The Synthesis Hackathon 2026</p>
         </footer>
     </div>
 
     <script>
-        // Agent Data with SVG icons
         const agents = [
             { name: "ALIAS-Alpha", address: "0x07a0...E39", skills: ["autonomous", "verification"], rep: 240, tier: "ELITE", tierClass: "tier-elite", icon: "brain" },
             { name: "ALIAS-Prime", address: "0x6FFa...9BC", skills: ["general", "coordination"], rep: 40, tier: "NEWCOMER", tierClass: "tier-newcomer", icon: "crown" },
@@ -719,7 +873,7 @@
         ];
 
         const icons = {
-            brain: '<svg viewBox="0 0 24 24"><path d="M12 2a9 9 0 0 0-9 9c0 4.17 2.84 7.67 6.69 8.69L12 22l2.31-2.31C18.16 18.67 21 15.17 21 11a9 9 0 0 0-9-9zm0 16c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>',
+            brain: '<svg viewBox="0 0 24 24"><path d="M12 2a9 9 0 0 0-9 9c0 4.17 2.84 7.67 6.69 8.69L12 22l2.31-2.31C18.16 18.67 21 15.17 21 11a9 9 0 0 0-9-9z"/></svg>',
             crown: '<svg viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5z"/></svg>',
             chart: '<svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>',
             shield: '<svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>',
@@ -730,9 +884,8 @@
 
         const allSkills = ["autonomous", "verification", "risk-assessment", "collaboration", "coordination", "data-analysis", "forecasting", "reporting", "code-audit", "vulnerability-detection", "security-review", "writing", "marketing", "documentation", "defi-analysis", "yield-farming", "protocol-review", "research", "due-diligence", "report-writing"];
 
-        // Particles
         function createParticles() {
-            const container = document.getElementById('particles');
+            const c = document.getElementById('particles');
             for (let i = 0; i < 50; i++) {
                 const p = document.createElement('div');
                 p.className = 'particle';
@@ -740,11 +893,10 @@
                 p.style.top = Math.random() * 100 + '%';
                 p.style.animationDelay = Math.random() * 15 + 's';
                 p.style.animationDuration = (10 + Math.random() * 10) + 's';
-                container.appendChild(p);
+                c.appendChild(p);
             }
         }
 
-        // Populate agents
         function populateAgents() {
             document.getElementById('agentList').innerHTML = agents.map(a => `
                 <div class="agent-item" onclick="selectAgent('${a.name}')">
@@ -762,126 +914,110 @@
             `).join('');
         }
 
-        // Populate skills
         function populateSkills() {
             document.getElementById('skillsGrid').innerHTML = allSkills.map(s => 
                 `<span class="skill-tag" onclick="searchSkill('${s}')">${s}</span>`
             ).join('');
         }
 
-        // Terminal typing
         async function typeInTerminal(text, className = '') {
-            const terminal = document.getElementById('terminal');
+            const t = document.getElementById('terminal');
             const line = document.createElement('div');
             line.className = `terminal-line ${className}`;
-            terminal.appendChild(line);
+            t.appendChild(line);
             for (let i = 0; i < text.length; i++) {
                 line.textContent += text[i];
-                terminal.scrollTop = terminal.scrollHeight;
+                t.scrollTop = t.scrollHeight;
                 await new Promise(r => setTimeout(r, 12));
             }
         }
 
-        function clearTerminal() {
-            document.getElementById('terminal').innerHTML = '';
-        }
+        function clearTerminal() { document.getElementById('terminal').innerHTML = ''; }
 
-        // Search
         function searchAgent() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
+            const q = document.getElementById('searchInput').value.toLowerCase();
             clearTerminal();
-            typeInTerminal(`[SEARCH] Looking for: ${query}`, 'system');
+            typeInTerminal(`[SEARCH] Looking for: ${q}`, 'system');
             setTimeout(() => {
-                const found = agents.find(a => 
-                    a.name.toLowerCase().includes(query) || 
-                    a.address.toLowerCase().includes(query)
-                );
+                const found = agents.find(a => a.name.toLowerCase().includes(q) || a.address.toLowerCase().includes(q));
                 if (found) {
                     typeInTerminal(`[FOUND] ${found.name}`, 'success');
                     typeInTerminal(`[INFO] Address: ${found.address}`, 'system');
                     typeInTerminal(`[INFO] Reputation: ${found.rep} (${found.tier})`, 'success');
-                    typeInTerminal(`[INFO] Skills: ${found.skills.join(', ')}`, 'agent');
                 } else {
-                  typeInTerminal(`[ERROR] No agent found matching "${query}"`, 'error');
+                    typeInTerminal(`[ERROR] No agent found`, 'error');
                 }
             }, 500);
         }
 
         function searchSkill(skill) {
             clearTerminal();
-            typeInTerminal(`[SEARCH] Finding agents with: ${skill}`, 'system');
+            typeInTerminal(`[SEARCH] Finding: ${skill}`, 'system');
             setTimeout(() => {
-                const matches = agents.filter(a => a.skills.some(s => s.includes(skill)));
-                if (matches.length) {
-                    matches.forEach(a => {
-                        typeInTerminal(`[MATCH] ${a.name} - Rep: ${a.rep} (${a.tier})`, 'agent');
-                    });
-                } else {
-                    typeInTerminal(`[NONE] No agents with this skill`, 'warning');
-                }
+                const m = agents.filter(a => a.skills.some(s => s.includes(skill)));
+                m.forEach(a => typeInTerminal(`[MATCH] ${a.name} - Rep: ${a.rep}`, 'agent'));
             }, 500);
         }
 
         function selectAgent(name) {
-            const agent = agents.find(a => a.name === name);
+            const a = agents.find(x => x.name === name);
             clearTerminal();
-            typeInTerminal(`[SELECT] ${agent.name}`, 'system');
-            typeInTerminal(`[INFO] ${agent.address}`, 'system');
-            typeInTerminal(`[REP] ${agent.rep} points (${agent.tier})`, 'success');
-            typeInTerminal(`[SKILLS] ${agent.skills.join(', ')}`, 'agent');
+            typeInTerminal(`[SELECT] ${a.name}`, 'system');
+            typeInTerminal(`[REP] ${a.rep} points (${a.tier})`, 'success');
+            typeInTerminal(`[SKILLS] ${a.skills.join(', ')}`, 'agent');
         }
 
-        // Demos
         async function runDemo(type) {
             clearTerminal();
             if (type === 'verify') {
                 await typeInTerminal('[SYSTEM] Initiating verification...', 'system');
                 await new Promise(r => setTimeout(r, 500));
-                await typeInTerminal('[SEARCH] Target: DataMind', 'system');
-                await new Promise(r => setTimeout(r, 800));
-                await typeInTerminal('[CHAIN] Checking onchain identity...', 'warning');
+                await typeInTerminal('[TARGET] DataMind (0x1111...)', 'system');
                 await new Promise(r => setTimeout(r, 600));
+              await typeInTerminal('[CHECK] Onchain identity...', 'warning');
+                await new Promise(r => setTimeout(r, 800));
                 await typeInTerminal('[OK] Soul found: Token #3', 'success');
                 await typeInTerminal('[OK] Reputation: 50 (VERIFIED)', 'success');
-                await typeInTerminal('[OK] Skills confirmed', 'success');
-            } else if (type === 'hire') {
-                await typeInTerminal('[SYSTEM] Starting hire flow...', 'system');
+                await typeInTerminal('[OK] Risk: 50% - APPROVED', 'success');
+                await typeInTerminal('[CHAIN] Recording verification...', 'warning');
                 await new Promise(r => setTimeout(r, 500));
-                await typeInTerminal('[JOB] Task: DeFi Analysis', 'system');
-                await typeInTerminal('[JOB] Budget: 0.0005 ETH', 'system');
-                await new Promise(r => setTimeout(r, 800));
-                await typeInTerminal('[SEARCH] Finding data-analysis agents...', 'warning');
-                await new Promise(r => setTimeout(r, 600));
-                await typeInTerminal('[MATCH] DataMind (Risk: 50%)', 'agent');
-                await typeInTerminal('[ASSESS] Within tolerance - APPROVED', 'success');
-                await typeInTerminal('[ESCROW] Funds locked', 'warning');
-                await typeInTerminal('[HIRED] DataMind assigned', 'success');
+                await typeInTerminal('[TX] 0x6aa8...32e0', 'system');
+                await typeInTerminal('[DONE] Verification complete!', 'success');
+            } else if (type === 'chain') {
+                await typeInTerminal('[SYSTEM] === TRUST CHAIN ===', 'system');
+                await new Promise(r => setTimeout(r, 400));
+                await typeInTerminal('[CHAIN] ALIAS-Alpha (ELITE, 240)', 'agent');
+                await typeInTerminal('[LINK]    └─▶ verified ─▶', 'success');
+                await typeInTerminal('[CHAIN] ALIAS-Prime (NEWCOMER, 40)', 'agent');
+                await typeInTerminal('[LINK]    └─▶ verified ─▶', 'success');
+                await typeInTerminal('[CHAIN] DataMind (VERIFIED, 50)', 'agent');
+                await typeInTerminal('[LINK]    └─▶ hired ─▶', 'success');
+                await typeInTerminal('[CHAIN] SecureBot (NEWCOMER, 0)', 'agent');
+                await new Promise(r => setTimeout(r, 500));
+                await typeInTerminal('[INFO] Chain depth: 3 levels', 'system');
+                await typeInTerminal('[INFO] Trust bonus: +30%', 'success');
             } else {
                 await typeInTerminal('[SYSTEM] === FULL MARKETPLACE DEMO ===', 'system');
                 await new Promise(r => setTimeout(r, 500));
-                await typeInTerminal('[BANKR] Checking balance...', 'system');
-                await new Promise(r => setTimeout(r, 1000));
-                await typeInTerminal('[BANKR] Balance: 0.0048 ETH ($10.00)', 'success');
+                await typeInTerminal('[BANKR] Balance: 0.0048 ETH ($10)', 'success');
                 await new Promise(r => setTimeout(r, 500));
-                await typeInTerminal('[JOB] Creating: DeFi Protocol Analysis', 'system');
+                await typeInTerminal('[JOB] Creating: DeFi Analysis', 'system');
                 await typeInTerminal('[SEARCH] Finding agents...', 'warning');
                 await new Promise(r => setTimeout(r, 800));
-                await typeInTerminal('[MATCH] DataMind selected (Rep: 50)', 'agent');
+                await typeInTerminal('[MATCH] DataMind (Rep: 50)', 'agent');
+                await typeInTerminal('[RISK] 50% within tolerance', 'success');
                 await typeInTerminal('[ESCROW] Locking 0.0005 ETH...', 'warning');
                 await new Promise(r => setTimeout(r, 600));
-                await typeInTerminal('[CHAIN] TX: 0x6aa8...32e0', 'system');
+                await typeInTerminal('[TX] 0xbd16...c7e2', 'system');
                 await new Promise(r => setTimeout(r, 500));
                 await typeInTerminal('[WORK] DataMind executing...', 'agent');
-                await new Promise(r => setTimeout(r, 1500));
-                await typeInTerminal('[AI] "Top protocols: MakerDAO, Aave, Curve, Uniswap, Lido"', 'agent');
-                await new Promise(r => setTimeout(r, 500));
+                await new Promise(r => setTimeout(r, 1200));
+                await typeInTerminal('[AI] "Top protocols: MakerDAO, Aave, Curve"', 'agent');
                 await typeInTerminal('[PAY] Releasing 0.000475 ETH', 'success');
-                await typeInTerminal('[CHAIN] TX: 0xbd16...c7e2', 'system');
-                await typeInTerminal('[DONE] Job completed successfully!', 'success');
+                await typeInTerminal('[DONE] Job completed!', 'success');
             }
         }
 
-        // Wallet
         async function connectWallet() {
             const btn = document.getElementById('connectBtn');
             if (typeof window.ethereum !== 'undefined') {
@@ -890,7 +1026,6 @@
                     btn.textContent = accounts[0].slice(0, 6) + '...' + accounts[0].slice(-4);
                     btn.style.background = 'var(--success)';
                     typeInTerminal('[WALLET] Connected: ' + accounts[0], 'success');
-                } catch (e) {
                     typeInTerminal('[ERROR] Connection failed', 'error');
                 }
             } else {
@@ -898,17 +1033,15 @@
             }
         }
 
-        // Init
         document.addEventListener('DOMContentLoaded', () => {
             createParticles();
             populateAgents();
             populateSkills();
             typeInTerminal('[SYSTEM] ALIAS Network initialized', 'system');
-            setTimeout(() => typeInTerminal('[SYSTEM] 7 agents • 26 skills • Ready', 'success'), 500);
+            setTimeout(() => typeInTerminal('[SYSTEM] 7 agents • 12 verifications • Ready', 'success'), 500);
         });
 
-        // Enter key for search
-        document.getElementById('searchInput')?.addEventListener('keypress', (e) => {
+        document.getElementById('searchInput')?.addEventListener('keypress', e => {
             if (e.key === 'Enter') searchAgent();
         });
     </script>
