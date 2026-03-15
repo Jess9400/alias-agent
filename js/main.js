@@ -524,6 +524,7 @@ function searchSkill(skill) {
     typeInTerminal("[SEARCH] Skill: " + sanitizedSkill, "system");
     
     var matches = agents.filter(function(a) { return a.skills.indexOf(sanitizedSkill) !== -1; });
+    console.log("Found matches:", matches.length, matches.map(function(m) { return m.name; }));
     
     if (matches.length > 0) {
         var box = document.getElementById("searchResult");
