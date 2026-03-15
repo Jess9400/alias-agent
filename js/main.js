@@ -4,16 +4,14 @@
  * Main JavaScript for the ALIAS dashboard
  * 
  * @author Jessica Nascimento
- * @version 1.0.0
+ * @version 1.1.0
  * @license MIT
  * @see https://github.com/Jess9400/alias-agent
  * 
- * Features:
- * - Search by agent name, ENS, or wallet address
- * - Real-time onchain soul verification
- * - Dynamic stats loaded from blockchain
- * - Trust network visualization
- * - Agent activity terminal
+ * Security Features:
+ * - XSS protection via HTML escaping
+ * - Input sanitization for all user inputs
+ * - Safe DOM manipulation (textContent over innerHTML)
  */
 
 // =============================================================================
@@ -28,129 +26,200 @@ const CONFIG = {
     BASESCAN_URL: "https://basescan.org"
 };
 
-// Function selectors (keccak256 hash of function signature, first 4 bytes)
 const SELECTORS = {
-    hasSoul: "0xbdd75202",      // hasSoul(address)
-    agentToSoul: "0xf7c3328c",  // agentToSoul(address)
-    totalSouls: "0x4879a9a6"    // totalSouls()
+    hasSoul: "0xbdd75202",
+    agentToSoul: "0xf7c3328c",
+    totalSouls: "0x4879a9a6"
 };
 
 // =============================================================================
-// AGENT REGISTRY (Local cache of known agents)
+// SECURITY UTILITIES
 // =============================================================================
 
-const agents = [
-    { 
-        name: "ALIAS-Alpha", 
-        address: "0x07a0...E39", 
-        fullAddress: "0x07a0afcb49a764007439671Ec5148947EfC62E39",
-        skills: ["autonomous", "verification", "risk-assessment"], 
-        rep: 240, 
-        tier: "ELITE",
-        tokenId: 2
-    },
-    { 
-        name: "ALIAS-Prime", 
-        address: "0x6FFa...9BC", 
-        fullAddress: "0x6FFa1e00509d8B625c2F061D7dB07893B37199BC",
-        skills: ["general", "coordination"], 
-        rep: 40, 
-        tier: "NEWCOMER",
-        tokenId: 1
-    },
-    { 
-        name: "DataMind", 
-        address: "0x1111...111", 
-        skills: ["data-analysis", "forecasting", "reporting"], 
-        rep: 50, 
-        tier: "VERIFIED",
-        tokenId: 3
-    },
-    { 
-        name: "SecureBot", 
-        address: "0x2222...222", 
-        skills: ["code-audit", "vulnerability-detection", "security-review"], 
-        rep: 0, 
-        tier: "NEWCOMER",
-        tokenId: 4
-    },
-    { 
-        name: "CreativeAI", 
-        address: "0x3333...333", 
-        skills: ["writing", "marketing", "documentation"], 
-        rep: 0, 
-        tier: "NEWCOMER",
-        tokenId: 5
-    },
-    { 
-        name: "DeFiSage", 
-        address: "0x4444...444", 
-        skills: ["defi-analysis", "yield-farming", "protocol-review"], 
-        rep: 0, 
-        tier: "NEWCOMER",
-        tokenId: 6
-    },
-    { 
-        name: "ResearchPrime", 
-        address: "0x5555...555", 
-        skills: ["research", "due-diligence", "report-writing"], 
-        rep: 0, 
-        tier: "NEWCOMER",
-        tokenId: 7
-    }
+/**
+ * Escape HTML to prevent XSS attacks
+ * @param {string} text - Raw text that may contain HTML
+ * @returns {string} - Safely escaped text
+ */
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    var div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+}
+
+/**
+ * Sanitize user input
+ * @param {string} input - Raw user input
+ * @returns {string} - Sanitized input
+ */
+function sanitizeInput(input) {
+    if (!input) return '';
+    return String(input).replace(/<[^>]*>/g, '').replace(/[<>\"'&]/g, '').trim();
+}
+
+/**
+ * Validate Ethereum address format
+ */
+function isValidAddress(address) {
+    return /^0x[a-fA-F0-9]{40}$/.test(address);
+}
+
+/**
+ * Validate ENS name format
+ */
+function isValidENS(name) {
+    return /^[a-zA-Z0-9-]+\.eth$/.test(name);
+}
+
+// =============================================================================
+// AGENT REGISTRY
+// =============================================================================
+
+var agents = [
+    { name: "ALIAS-Alpha", address: "0x07a0...E39", fullAddress: "0x07a0afcb49a764007439671Ec5148947EfC62E39", skills: ["autonomous", "verification", "risk-assessment"], rep: 240, tier: "ELITE", tokenId: 2 },
+    { name: "ALIAS-Prime", address: "0x6FFa...9BC", fullAddress: "0x6FFa1e00509d8B625c2F061D7dB07893B37199BC", skills: ["general", "coordination"], rep: 40, tier: "NEWCOMER", tokenId: 1 },
+    { name: "DataMind", address: "0x1111...111", skills: ["data-analysis", "forecasting", "reporting"], rep: 50, tier: "VERIFIED", tokenId: 3 },
+    { name: "SecureBot", address: "0x2222...222", skills: ["code-audit", "vulnerability-detection", "security-review"], rep: 0, tier: "NEWCOMER", tokenId: 4 },
+    { name: "CreativeAI", address: "0x3333...333", skills: ["writing", "marketing", "documentation"], rep: 0, tier: "NEWCOMER", tokenId: 5 },
+    { name: "DeFiSage", address: "0x4444...444", skills: ["defi-analysis", "yield-farming", "protocol-review"], rep: 0, tier: "NEWCOMER", tokenId: 6 },
+    { name: "ResearchPrime", address: "0x5555...555", skills: ["research", "due-diligence", "report-writing"], rep: 0, tier: "NEWCOMER", tokenId: 7 }
 ];
 
-// All available skills in the network
-const allSkills = [
-    "autonomous", "verification", "risk-assessment", 
-    "data-analysis", "forecasting", "reporting", 
-    "code-audit", "vulnerability-detection", "security-review", 
-    "writing", "marketing", "documentation", 
-    "defi-analysis", "yield-farming", "protocol-review", 
-    "research", "due-diligence", "report-writing"
-];
+var allSkills = ["autonomous", "verification", "risk-assessment", "data-analysis", "forecasting", "reporting", "code-audit", "vulnerability-detection", "security-review", "writing", "marketing", "documentation", "defi-analysis", "yield-farming", "protocol-review", "research", "due-diligence", "report-writing"];
 
 // =============================================================================
 // UI HELPER FUNCTIONS
 // =============================================================================
 
 /**
- * Display search result in the result box below search bar
- * @param {string} html - HTML content to display
- * @param {boolean} isSuccess - Whether to show success (green) or warning (orange) styling
+ * Show loading skeleton in stats
  */
-function showSearchResult(html, isSuccess) {
-    const box = document.getElementById("searchResult");
-    box.style.display = "block";
-    box.style.borderColor = isSuccess ? "var(--success)" : "var(--warning)";
-    box.style.background = isSuccess ? "rgba(0,255,136,0.1)" : "rgba(255,170,0,0.1)";
-    box.innerHTML = html;
+function showStatsSkeleton() {
+    ["totalSouls", "networkRep", "totalVerifications"].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.innerHTML = '<span class="skeleton-loader"></span>';
+    });
 }
 
 /**
- * Hide the search result box
+ * Display search result safely (no XSS)
  */
+function showSearchResult(data, isSuccess) {
+    var box = document.getElementById("searchResult");
+    box.style.display = "block";
+    box.style.borderColor = isSuccess ? "var(--success)" : "var(--warning)";
+    box.style.background = isSuccess ? "rgba(0,255,136,0.1)" : "rgba(255,170,0,0.1)";
+    box.innerHTML = '';
+    
+    if (data.title) {
+        var titleDiv = document.createElement('div');
+        titleDiv.style.cssText = 'font-size:1.2rem;margin-bottom:10px;color:' + (isSuccess ? 'var(--success)' : 'var(--warning)');
+        titleDiv.textContent = data.title;
+        box.appendChild(titleDiv);
+    }
+    
+    if (data.name) {
+        var nameDiv = document.createElement('div');
+        nameDiv.style.cssText = 'font-size:1.3rem;font-weight:bold';
+        nameDiv.textContent = data.name;
+        box.appendChild(nameDiv);
+    }
+    
+    if (data.address) {
+        var addrDiv = document.createElement('div');
+        addrDiv.style.cssText = 'color:var(--text-dim);font-family:monospace;margin-top:5px';
+        addrDiv.textContent = data.address;
+        box.appendChild(addrDiv);
+    }
+    
+    if (data.tokenId !== undefined) {
+        var tokenDiv = document.createElement('div');
+        tokenDiv.style.cssText = 'margin-top:15px';
+        var tokenSpan = document.createElement('span');
+        tokenSpan.style.cssText = 'color:var(--primary);font-size:2rem;font-weight:bold';
+        tokenSpan.textContent = '#' + data.tokenId;
+        tokenDiv.appendChild(tokenSpan);
+        var labelSpan = document.createElement('span');
+        labelSpan.style.cssText = 'color:var(--text-dim);margin-left:10px';
+        labelSpan.textContent = 'TOKEN ID';
+        tokenDiv.appendChild(labelSpan);
+        box.appendChild(tokenDiv);
+    }
+    
+    if (data.rep !== undefined) {
+        var repDiv = document.createElement('div');
+        repDiv.style.cssText = 'margin-top:10px';
+        var repSpan = document.createElement('span');
+        repSpan.style.cssText = 'color:var(--success);font-size:1.5rem;font-weight:bold';
+        repSpan.textContent = data.rep;
+        repDiv.appendChild(repSpan);
+        var repLabel = document.createElement('span');
+        repLabel.style.cssText = 'color:var(--text-dim);margin-left:5px';
+        repLabel.textContent = ' REP';
+        repDiv.appendChild(repLabel);
+        if (data.tier) {
+            var tierSpan = document.createElement('span');
+            tierSpan.style.cssText = 'background:rgba(0,212,255,0.2);padding:3px 10px;border-radius:10px;margin-left:10px';
+            tierSpan.textContent = data.tier;
+            repDiv.appendChild(tierSpan);
+        }
+        box.appendChild(repDiv);
+    }
+    
+    if (data.skills && data.skills.length > 0) {
+        var skillsDiv = document.createElement('div');
+        skillsDiv.style.cssText = 'color:var(--primary);margin-top:10px';
+        skillsDiv.textContent = data.skills.join(' • ');
+        box.appendChild(skillsDiv);
+    }
+    
+    if (data.link) {
+        var linkDiv = document.createElement('div');
+        linkDiv.style.cssText = 'margin-top:15px';
+        var link = document.createElement('a');
+        link.href = data.link;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.style.cssText = 'color:var(--primary)';
+        link.textContent = 'View on BaseScan →';
+        linkDiv.appendChild(link);
+        box.appendChild(linkDiv);
+    }
+    
+    if (data.message) {
+        var msgDiv = document.createElement('div');
+        msgDiv.style.cssText = 'margin-top:10px;color:var(--text-dim)';
+        msgDiv.textContent = data.message;
+        box.appendChild(msgDiv);
+    }
+}
+
+function showSearchLoading(message) {
+    var box = document.getElementById("searchResult");
+    box.style.display = "block";
+    box.style.borderColor = "var(--primary)";
+    box.style.background = "rgba(0,212,255,0.1)";
+    box.innerHTML = '';
+    var spinner = document.createElement('span');
+    spinner.className = 'loading-spinner';
+    box.appendChild(spinner);
+    box.appendChild(document.createTextNode(' ' + escapeHtml(message)));
+}
+
 function hideSearchResult() {
     document.getElementById("searchResult").style.display = "none";
 }
 
-/**
- * Add a line to the terminal output
- * @param {string} text - Text to display
- * @param {string} cls - CSS class for styling (system, success, warning, agent)
- */
 function typeInTerminal(text, cls) {
-    const terminal = document.getElementById("terminal");
-    const line = document.createElement("div");
+    var terminal = document.getElementById("terminal");
+    var line = document.createElement("div");
     line.className = "terminal-line " + (cls || "");
     line.textContent = text;
     terminal.appendChild(line);
     terminal.scrollTop = terminal.scrollHeight;
 }
 
-/**
- * Clear all terminal output
- */
 function clearTerminal() {
     document.getElementById("terminal").innerHTML = "";
 }
@@ -159,199 +228,141 @@ function clearTerminal() {
 // BLOCKCHAIN FUNCTIONS
 // =============================================================================
 
-/**
- * Load stats from blockchain (totalSouls)
- * Called on page load to display real-time data
- */
 function loadStats() {
-    const CONTRACT = CONFIG.CONTRACT_ADDRESS;
-    const RPC = CONFIG.RPC_URL;
+    showStatsSkeleton();
     
-    fetch(RPC, {
+    fetch(CONFIG.RPC_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-            jsonrpc: "2.0", 
-            method: "eth_call", 
-            params: [{ to: CONTRACT, data: SELECTORS.totalSouls }, "latest"], 
-            id: 1 
-        })
+        body: JSON.stringify({ jsonrpc: "2.0", method: "eth_call", params: [{ to: CONFIG.CONTRACT_ADDRESS, data: SELECTORS.totalSouls }, "latest"], id: 1 })
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
         if (data.result) {
-            const count = parseInt(data.result, 16);
+            var count = parseInt(data.result, 16);
             document.getElementById("totalSouls").textContent = count;
             document.getElementById("networkRep").textContent = (count * 70) + "+";
             document.getElementById("totalVerifications").textContent = Math.floor(count * 1.5);
         }
     })
-    .catch(function(error) {
-        console.error("Failed to load stats:", error);
-        // Fallback values
+    .catch(function() {
         document.getElementById("totalSouls").textContent = "8";
         document.getElementById("networkRep").textContent = "560+";
         document.getElementById("totalVerifications").textContent = "12";
     });
 }
 
-/**
- * Check if an address has a soul token onchain
- * @param {string} address - Ethereum address to check
- * @param {string|null} ensName - Optional ENS name for display
- */
 function checkSoulOnchain(address, ensName) {
-    const CONTRACT = CONFIG.CONTRACT_ADDRESS;
-    const RPC = CONFIG.RPC_URL;
-    const callData = SELECTORS.hasSoul + address.slice(2).toLowerCase().padStart(64, "0");
+    if (!isValidAddress(address)) {
+        typeInTerminal("[ERROR] Invalid address format", "warning");
+        showSearchResult({ title: "✗ Invalid address format", message: "Please enter a valid Ethereum address" }, false);
+        return;
+    }
     
-    fetch(RPC, {
+    var callData = SELECTORS.hasSoul + address.slice(2).toLowerCase().padStart(64, "0");
+    
+    fetch(CONFIG.RPC_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            jsonrpc: "2.0",
-            method: "eth_call",
-            params: [{ to: CONTRACT, data: callData }, "latest"],
-            id: 1
-        })
+        body: JSON.stringify({ jsonrpc: "2.0", method: "eth_call", params: [{ to: CONFIG.CONTRACT_ADDRESS, data: callData }, "latest"], id: 1 })
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
-        const hasSoul = data.result && data.result !== "0x0000000000000000000000000000000000000000000000000000000000000000";
+        var hasSoul = data.result && data.result !== "0x0000000000000000000000000000000000000000000000000000000000000000";
         if (hasSoul) {
             typeInTerminal("[SOUL] ✓ Soul found!", "success");
             getTokenId(address, ensName);
         } else {
             typeInTerminal("[SOUL] ✗ No soul found", "warning");
-            typeInTerminal("[INFO] This address has no ALIAS identity", "system");
-            const displayName = ensName || address.slice(0,10) + "..." + address.slice(-8);
-            showSearchResult(
-                "<div style='color:var(--warning);font-size:1.2rem;margin-bottom:10px'>✗ NO SOUL FOUND</div>" +
-                "<div><strong>" + displayName + "</strong></div>" +
-                "<div style='color:var(--text-dim);font-family:monospace;margin-top:5px'>" + address + "</div>" +
-                "<div style='margin-top:15px;color:var(--text-dim)'>This address does not have an ALIAS identity yet.</div>", 
-                false
-            );
+            var displayName = ensName || address.slice(0,10) + "..." + address.slice(-8);
+            showSearchResult({ title: "✗ NO SOUL FOUND", name: displayName, address: address, message: "This address does not have an ALIAS identity yet." }, false);
         }
     })
-    .catch(function(error) {
-        console.error("Chain lookup failed:", error);
+    .catch(function() {
         typeInTerminal("[ERROR] Chain lookup failed", "warning");
-        showSearchResult("<div style='color:var(--warning)'>✗ Chain lookup failed</div>", false);
+        showSearchResult({ title: "✗ Chain lookup failed", message: "Please try again" }, false);
     });
 }
 
-/**
- * Get the token ID for an address that has a soul
- * @param {string} address - Ethereum address
- * @param {string|null} ensName - Optional ENS name for display
- */
 function getTokenId(address, ensName) {
-    const CONTRACT = CONFIG.CONTRACT_ADDRESS;
-    const RPC = CONFIG.RPC_URL;
-    const callData = SELECTORS.agentToSoul + address.slice(2).toLowerCase().padStart(64, "0");
+    var callData = SELECTORS.agentToSoul + address.slice(2).toLowerCase().padStart(64, "0");
     
-    fetch(RPC, {
+    fetch(CONFIG.RPC_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            jsonrpc: "2.0",
-            method: "eth_call",
-            params: [{ to: CONTRACT, data: callData }, "latest"],
-            id: 1
-        })
+        body: JSON.stringify({ jsonrpc: "2.0", method: "eth_call", params: [{ to: CONFIG.CONTRACT_ADDRESS, data: callData }, "latest"], id: 1 })
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
         if (data.result) {
-            const tokenId = parseInt(data.result, 16);
+            var tokenId = parseInt(data.result, 16);
             typeInTerminal("[TOKEN] ID: #" + tokenId, "agent");
-            typeInTerminal("[LINK] " + CONFIG.BASESCAN_URL + "/token/" + CONTRACT, "system");
-            
-            const displayName = ensName || address.slice(0,10) + "..." + address.slice(-8);
-            showSearchResult(
-                "<div style='color:var(--success);font-size:1.2rem;margin-bottom:10px'>✓ SOUL VERIFIED</div>" +
-                "<div style='font-size:1.3rem;font-weight:bold'>" + displayName + "</div>" +
-                "<div style='color:var(--text-dim);font-family:monospace;margin-top:5px'>" + address + "</div>" +
-                "<div style='margin-top:15px'><span style='color:var(--primary);font-size:2rem;font-weight:bold'>#" + tokenId + "</span>" +
-                "<span style='color:var(--text-dim);margin-left:10px'>TOKEN ID</span></div>" +
-                "<div style='margin-top:15px'><a href='" + CONFIG.BASESCAN_URL + "/token/" + CONTRACT + "?a=" + tokenId + "' target='_blank' style='color:var(--primary)'>View on BaseScan →</a></div>" +
-                "<div style='margin-top:10px;color:var(--text-dim)'>See Agent Activity for logs</div>", 
-                true
-            );
+            var displayName = ensName || address.slice(0,10) + "..." + address.slice(-8);
+            showSearchResult({ title: "✓ SOUL VERIFIED", name: displayName, address: address, tokenId: tokenId, link: CONFIG.BASESCAN_URL + "/token/" + CONFIG.CONTRACT_ADDRESS + "?a=" + tokenId, message: "See Agent Activity for logs" }, true);
         }
     })
-    .catch(function(error) {
-        console.error("Failed to get token ID:", error);
-    });
+    .catch(function() {});
 }
 
 // =============================================================================
 // SEARCH FUNCTIONS
 // =============================================================================
 
-/**
- * Main search function - handles ENS, addresses, and local agents
- */
 function searchAgent() {
-    const q = document.getElementById("searchInput").value.trim();
-    const qLower = q.toLowerCase();
+    var rawInput = document.getElementById("searchInput").value;
+    var q = sanitizeInput(rawInput);
+    var qLower = q.toLowerCase();
     
     clearTerminal();
     hideSearchResult();
     typeInTerminal("[SEARCH] Looking for: " + q, "system");
     
-    // Handle empty search
     if (!q) {
         typeInTerminal("[ERROR] Please enter a search term", "warning");
         return;
     }
     
-    // ENS Resolution (.eth names)
     if (q.endsWith(".eth")) {
-        showSearchResult("<span class='loading-spinner'></span> Resolving " + q + "...", false);
+        if (!isValidENS(q)) {
+            typeInTerminal("[ERROR] Invalid ENS format", "warning");
+            showSearchResult({ title: "✗ Invalid ENS format" }, false);
+            return;
+        }
+        showSearchLoading("Resolving " + q + "...");
         typeInTerminal("[ENS] Resolving " + q + "...", "warning");
         
-        fetch(CONFIG.ENS_API + "/" + q)
+        fetch(CONFIG.ENS_API + "/" + encodeURIComponent(q))
             .then(function(r) { return r.json(); })
             .then(function(data) {
-                if (data.address) {
+                if (data.address && isValidAddress(data.address)) {
                     typeInTerminal("[ENS] Resolved!", "success");
-                    typeInTerminal("[ADDRESS] " + data.address, "system");
-                    showSearchResult(
-                        "<div style='color:var(--success);font-size:1.2rem;margin-bottom:10px'>✓ ENS RESOLVED</div>" +
-                        "<div><strong>" + q + "</strong></div>" +
-                        "<div style='color:var(--text-dim);font-family:monospace;margin-top:5px'>" + data.address + "</div>" +
-                        "<div style='margin-top:10px;color:var(--warning)'>Checking for ALIAS soul...</div>", 
-                        true
-                    );
+                    showSearchResult({ title: "✓ ENS RESOLVED", name: q, address: data.address, message: "Checking for ALIAS soul..." }, true);
                     checkSoulOnchain(data.address, q);
                 } else {
                     typeInTerminal("[ERROR] ENS name not found", "warning");
-                    showSearchResult("<div style='color:var(--warning)'>✗ ENS name not found</div>", false);
+                    showSearchResult({ title: "✗ ENS name not found" }, false);
                 }
             })
-            .catch(function(error) {
-                console.error("ENS lookup failed:", error);
+            .catch(function() {
                 typeInTerminal("[ERROR] ENS lookup failed", "warning");
-                showSearchResult("<div style='color:var(--warning)'>✗ ENS lookup failed</div>", false);
+                showSearchResult({ title: "✗ ENS lookup failed" }, false);
             });
         return;
     }
     
-    // Wallet Address (0x...)
     if (q.startsWith("0x") && q.length === 42) {
-        showSearchResult("<span class='loading-spinner'></span> Checking onchain...", false);
-        typeInTerminal("[CHAIN] Checking onchain...", "warning");
+        if (!isValidAddress(q)) {
+            showSearchResult({ title: "✗ Invalid address format" }, false);
+            return;
+        }
+        showSearchLoading("Checking onchain...");
         checkSoulOnchain(q, null);
         return;
     }
     
-    // Local Agent Search (by name)
-    let found = null;
-    for (let i = 0; i < agents.length; i++) {
-        if (agents[i].name.toLowerCase().indexOf(qLower) !== -1 || 
-            agents[i].address.toLowerCase().indexOf(qLower) !== -1) {
+    var found = null;
+    for (var i = 0; i < agents.length; i++) {
+        if (agents[i].name.toLowerCase().indexOf(qLower) !== -1) {
             found = agents[i];
             break;
         }
@@ -359,139 +370,124 @@ function searchAgent() {
     
     if (found) {
         typeInTerminal("[FOUND] " + found.name, "success");
-        typeInTerminal("[ADDRESS] " + found.address, "system");
-        typeInTerminal("[REP] " + found.rep + " (" + found.tier + ")", "success");
-        typeInTerminal("[SKILLS] " + found.skills.join(", "), "agent");
-        showSearchResult(
-            "<div style='color:var(--success);font-size:1.2rem;margin-bottom:10px'>✓ AGENT FOUND</div>" +
-            "<div style='font-size:1.3rem;font-weight:bold'>" + found.name + "</div>" +
-            "<div style='color:var(--text-dim);margin:5px 0'>" + found.address + "</div>" +
-            "<div style='margin-top:10px'><span style='color:var(--success);font-size:1.5rem;font-weight:bold'>" + found.rep + "</span> " +
-            "<span style='color:var(--text-dim)'>REP</span> " +
-            "<span style='background:rgba(0,212,255,0.2);padding:3px 10px;border-radius:10px;margin-left:10px'>" + found.tier + "</span></div>" +
-            "<div style='color:var(--primary);margin-top:10px'>" + found.skills.join(" • ") + "</div>" +
-            "<div style='margin-top:10px;color:var(--text-dim)'>See Agent Activity for details</div>", 
-            true
-        );
+        showSearchResult({ title: "✓ AGENT FOUND", name: found.name, address: found.address, rep: found.rep, tier: found.tier, skills: found.skills, message: "See Agent Activity for details" }, true);
     } else {
-        typeInTerminal("[ERROR] Agent not found in local registry", "warning");
-        typeInTerminal("[TIP] Try a full 0x address or .eth name", "system");
-        showSearchResult(
-            "<div style='color:var(--warning)'>✗ Agent not found</div>" +
-            "<div style='color:var(--text-dim);margin-top:5px'>Try a full wallet address (0x...) or ENS name (.eth)</div>", 
-            false
-        );
+        typeInTerminal("[ERROR] Agent not found", "warning");
+        showSearchResult({ title: "✗ Agent not found", message: "Try a wallet address (0x...) or ENS name (.eth)" }, false);
     }
 }
 
-/**
- * Search for agents with a specific skill
- * @param {string} skill - Skill to search for
- */
 function searchSkill(skill) {
+    var sanitizedSkill = sanitizeInput(skill);
     clearTerminal();
     hideSearchResult();
-    typeInTerminal("[SEARCH] Skill: " + skill, "system");
+    typeInTerminal("[SEARCH] Skill: " + sanitizedSkill, "system");
     
-    const matches = [];
-    for (let i = 0; i < agents.length; i++) {
-        if (agents[i].skills.indexOf(skill) !== -1) {
-            typeInTerminal("[MATCH] " + agents[i].name + " - Rep: " + agents[i].rep, "agent");
-            matches.push(agents[i]);
-        }
-    }
+    var matches = agents.filter(function(a) { return a.skills.indexOf(sanitizedSkill) !== -1; });
     
     if (matches.length > 0) {
-        let html = "<div style='color:var(--success);font-size:1.2rem;margin-bottom:10px'>✓ " + matches.length + " AGENT(S) WITH SKILL: " + skill + "</div>";
-        for (let j = 0; j < matches.length; j++) {
-            html += "<div style='padding:10px;background:rgba(0,212,255,0.05);border-radius:8px;margin-top:8px'>" +
-                "<strong>" + matches[j].name + "</strong> - Rep: " + matches[j].rep + " (" + matches[j].tier + ")</div>";
-        }
-        showSearchResult(html, true);
+        var box = document.getElementById("searchResult");
+        box.style.display = "block";
+        box.style.borderColor = "var(--success)";
+        box.style.background = "rgba(0,255,136,0.1)";
+        box.innerHTML = '';
+        
+        var titleDiv = document.createElement('div');
+        titleDiv.style.cssText = 'color:var(--success);font-size:1.2rem;margin-bottom:10px';
+        titleDiv.textContent = '✓ ' + matches.length + ' AGENT(S) WITH SKILL: ' + sanitizedSkill;
+        box.appendChild(titleDiv);
+        
+        matches.forEach(function(agent) {
+            var agentDiv = document.createElement('div');
+            agentDiv.style.cssText = 'padding:10px;background:rgba(0,212,255,0.05);border-radius:8px;margin-top:8px';
+            agentDiv.textContent = agent.name + ' - Rep: ' + agent.rep + ' (' + agent.tier + ')';
+            box.appendChild(agentDiv);
+        });
     }
 }
 
-/**
- * Select an agent from the agent list
- * @param {string} name - Agent name to select
- */
 function selectAgent(name) {
-    let agent = null;
-    for (let i = 0; i < agents.length; i++) {
-        if (agents[i].name === name) {
-            agent = agents[i];
-            break;
-        }
-    }
+    var agent = agents.find(function(a) { return a.name === name; });
     if (!agent) return;
     
     clearTerminal();
     typeInTerminal("[SELECT] " + agent.name, "system");
-    typeInTerminal("[ADDRESS] " + agent.address, "system");
-    typeInTerminal("[REP] " + agent.rep + " (" + agent.tier + ")", "success");
-    typeInTerminal("[SKILLS] " + agent.skills.join(", "), "agent");
-    
-    showSearchResult(
-        "<div style='color:var(--success);font-size:1.2rem;margin-bottom:10px'>✓ AGENT SELECTED</div>" +
-        "<div style='font-size:1.3rem;font-weight:bold'>" + agent.name + "</div>" +
-        "<div style='color:var(--text-dim);margin:5px 0'>" + agent.address + "</div>" +
-        "<div style='margin-top:10px'><span style='color:var(--success);font-size:1.5rem;font-weight:bold'>" + agent.rep + "</span> " +
-        "<span style='color:var(--text-dim)'>REP</span> " +
-        "<span style='background:rgba(0,212,255,0.2);padding:3px 10px;border-radius:10px;margin-left:10px'>" + agent.tier + "</span></div>" +
-        "<div style='color:var(--primary);margin-top:10px'>" + agent.skills.join(" • ") + "</div>" +
-        "<div style='margin-top:10px;color:var(--text-dim)'>See Agent Activity for details</div>", 
-        true
-    );
+    showSearchResult({ title: "✓ AGENT SELECTED", name: agent.name, address: agent.address, rep: agent.rep, tier: agent.tier, skills: agent.skills, message: "See Agent Activity for details" }, true);
 }
 
 // =============================================================================
-// UI POPULATION FUNCTIONS
+// UI POPULATION (XSS-safe)
 // =============================================================================
 
-/**
- * Populate the agent list in the sidebar
- */
 function populateAgents() {
-    const list = document.getElementById("agentList");
-    let html = "";
+    var list = document.getElementById("agentList");
+    list.innerHTML = '';
     
-    for (let i = 0; i < agents.length; i++) {
-        const a = agents[i];
-        html += '<div class="agent-item" onclick="selectAgent(\'' + a.name + '\')">' +
-            '<div class="agent-icon"><svg viewBox="0 0 24 24"><path d="M12 2a9 9 0 00-9 9c0 4.17 2.84 7.67 6.69 8.69L12 22l2.31-2.31C18.16 18.67 21 15.17 21 11a9 9 0 00-9-9z"/></svg></div>' +
-            '<div class="agent-info">' +
-            '<div class="agent-name">' + a.name + '</div>' +
-            '<div class="agent-addr">' + a.address + '</div>' +
-            '<div class="agent-skills">' + a.skills.join(" • ") + '</div>' +
-            '</div>' +
-            '<div class="agent-rep">' +
-            '<div class="rep-value">' + a.rep + '</div>' +
-            '<div class="rep-tier">' + a.tier + '</div>' +
-            '</div></div>';
-    }
-    list.innerHTML = html;
+    agents.forEach(function(a) {
+        var item = document.createElement('div');
+        item.className = 'agent-item';
+        item.onclick = function() { selectAgent(a.name); };
+        
+        var icon = document.createElement('div');
+        icon.className = 'agent-icon';
+        icon.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 2a9 9 0 00-9 9c0 4.17 2.84 7.67 6.69 8.69L12 22l2.31-2.31C18.16 18.67 21 15.17 21 11a9 9 0 00-9-9z"/></svg>';
+        item.appendChild(icon);
+        
+        var info = document.createElement('div');
+        info.className = 'agent-info';
+        
+        var nameDiv = document.createElement('div');
+        nameDiv.className = 'agent-name';
+        nameDiv.textContent = a.name;
+        info.appendChild(nameDiv);
+        
+        var addrDiv = document.createElement('div');
+        addrDiv.className = 'agent-addr';
+        addrDiv.textContent = a.address;
+        info.appendChild(addrDiv);
+        
+        var skillsDiv = document.createElement('div');
+        skillsDiv.className = 'agent-skills';
+        skillsDiv.textContent = a.skills.join(' • ');
+        info.appendChild(skillsDiv);
+        
+        item.appendChild(info);
+        
+        var rep = document.createElement('div');
+        rep.className = 'agent-rep';
+        
+        var repValue = document.createElement('div');
+        repValue.className = 'rep-value';
+        repValue.textContent = a.rep;
+        rep.appendChild(repValue);
+        
+        var repTier = document.createElement('div');
+        repTier.className = 'rep-tier';
+        repTier.textContent = a.tier;
+        rep.appendChild(repTier);
+        
+        item.appendChild(rep);
+        list.appendChild(item);
+    });
 }
 
-/**
- * Populate the skills grid
- */
 function populateSkills() {
-    const grid = document.getElementById("skillsGrid");
-    let html = "";
+    var grid = document.getElementById("skillsGrid");
+    grid.innerHTML = '';
     
-    for (let i = 0; i < allSkills.length; i++) {
-        html += '<span class="skill-tag" onclick="searchSkill(\'' + allSkills[i] + '\')">' + allSkills[i] + '</span>';
-    }
-    grid.innerHTML = html;
+    allSkills.forEach(function(skill) {
+        var tag = document.createElement('span');
+        tag.className = 'skill-tag';
+        tag.textContent = skill;
+        tag.onclick = function() { searchSkill(skill); };
+        grid.appendChild(tag);
+    });
 }
 
 // =============================================================================
 // DEMO FUNCTIONS
 // =============================================================================
 
-/**
- * Run the verification demo animation
- */
 function runVerifyDemo() {
     clearTerminal();
     hideSearchResult();
@@ -506,9 +502,6 @@ function runVerifyDemo() {
     setTimeout(function() { typeInTerminal("[DONE] Verification complete!", "success"); }, 3200);
 }
 
-/**
- * Run the trust chain demo animation
- */
 function runChainDemo() {
     clearTerminal();
     hideSearchResult();
@@ -524,9 +517,6 @@ function runChainDemo() {
     setTimeout(function() { typeInTerminal("[INFO] Trust bonus: +30%", "success"); }, 2200);
 }
 
-/**
- * Run the full marketplace demo animation
- */
 function runFullDemo() {
     clearTerminal();
     hideSearchResult();
@@ -548,19 +538,15 @@ function runFullDemo() {
 // WALLET CONNECTION
 // =============================================================================
 
-/**
- * Connect to MetaMask wallet
- */
 function connectWallet() {
     if (typeof window.ethereum !== "undefined") {
         window.ethereum.request({ method: "eth_requestAccounts" })
             .then(function(accounts) {
-                const address = accounts[0];
+                var address = accounts[0];
                 document.getElementById("connectBtn").textContent = address.slice(0, 6) + "..." + address.slice(-4);
                 typeInTerminal("[WALLET] Connected: " + address, "success");
             })
-            .catch(function(err) {
-                console.error("Wallet connection failed:", err);
+            .catch(function() {
                 typeInTerminal("[ERROR] Connection failed", "warning");
             });
     } else {
@@ -572,32 +558,21 @@ function connectWallet() {
 // INITIALIZATION
 // =============================================================================
 
-/**
- * Initialize the application when DOM is ready
- */
 document.addEventListener("DOMContentLoaded", function() {
-    // Load blockchain stats
     loadStats();
-    
-    // Populate UI elements
     populateAgents();
     populateSkills();
     
-    // Initialize terminal
     typeInTerminal("[SYSTEM] ALIAS Network initialized", "system");
     typeInTerminal("[INFO] Loading stats from blockchain...", "warning");
     
-    // Attach event listeners
     document.getElementById("connectBtn").addEventListener("click", connectWallet);
     document.getElementById("searchBtn").addEventListener("click", searchAgent);
     document.getElementById("verifyBtn").addEventListener("click", runVerifyDemo);
     document.getElementById("chainBtn").addEventListener("click", runChainDemo);
     document.getElementById("demoBtn").addEventListener("click", runFullDemo);
     
-    // Search on Enter key
     document.getElementById("searchInput").addEventListener("keypress", function(e) {
         if (e.key === "Enter") searchAgent();
     });
-    
-    console.log("ALIAS Frontend v1.0.0 loaded successfully");
 });
