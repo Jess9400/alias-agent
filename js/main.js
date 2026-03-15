@@ -20,7 +20,7 @@
 
 const CONFIG = {
     CONTRACT_ADDRESS: "0x0F2f94281F87793ee086a2B6517B6db450192874",
-    RPC_URL: "https://mainnet.base.org",
+    RPC_URL: "https://base.publicnode.com",
     CHAIN_ID: 8453,
     ENS_API: "https://api.ensdata.net",
     BASESCAN_URL: "https://basescan.org",
