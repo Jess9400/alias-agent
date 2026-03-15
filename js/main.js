@@ -94,6 +94,115 @@ var selectedAgent = null;
 var allSkills = ["autonomous", "verification", "risk-assessment", "data-analysis", "forecasting", "reporting", "code-audit", "vulnerability-detection", "security-review", "writing", "marketing", "documentation", "defi-analysis", "yield-farming", "protocol-review", "research", "due-diligence", "report-writing"];
 
 // =============================================================================
+// DYNAMIC AGENT LOADING WITH ETHERS.JS
+// =============================================================================
+
+const SOUL_ABI = [
+    "function totalSouls() view returns (uint256)",
+    "function souls(uint256 tokenId) view returns (string name, string metadataURI, address creator, uint256 createdAt, string skills, bool active)"
+];
+
+async function loadAgentsFromChain() {
+    var list = document.getElementById("agentList");
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim)"><span class="loading-spinner"></span> Loading from blockchain...</div>';
+    
+    try {
+        var provider = new ethers.JsonRpcProvider(CONFIG.RPC_URL);
+        var contract = new ethers.Contract(CONFIG.CONTRACT_ADDRESS, SOUL_ABI, provider);
+        
+        var totalSouls = await contract.totalSouls();
+        var count = Number(totalSouls);
+        
+        // Clear agents array and rebuild from chain
+        agents = [];
+        var newSkills = [];
+        
+        for (var i = 1; i <= count; i++) {
+            try {
+                var soul = await contract.souls(i);
+                
+                if (soul.active) {
+                    // Parse skills from description
+                    var skillsArray = extractSkills(soul.name, soul.skills);
+                    
+                    // Calculate rep based on age
+                    var age = 43400000 - Number(soul.createdAt);
+                    var rep = Math.max(0, Math.min(Math.floor(age / 200), 300));
+                    
+                    var tier = "NEWCOMER";
+                    if (rep >= 200) tier = "ELITE";
+                    else if (rep >= 50) tier = "VERIFIED";
+                    
+                    var addr = soul.creator;
+                    agents.push({
+                        name: soul.name,
+                        address: addr.slice(0, 6) + "..." + addr.slice(-3),
+                        fullAddress: addr,
+                        skills: skillsArray,
+                        rep: rep,
+                        tier: tier,
+                        tokenId: i,
+                        active: soul.active,
+                        description: soul.skills
+                    });
+                    
+                    // Collect skills
+                    skillsArray.forEach(function(s) {
+                        if (newSkills.indexOf(s) === -1) newSkills.push(s);
+                    });
+                }
+            } catch (e) {
+                console.log("Failed to load soul #" + i);
+            }
+        }
+        
+        if (newSkills.length > 0) allSkills = newSkills;
+        
+        loadAgentsFromChain();
+        populateSkills();
+        typeInTerminal("[CHAIN] Loaded " + agents.length + " agents from blockchain", "success");
+        
+    } catch (error) {
+        console.error("Failed to load from chain:", error);
+        typeInTerminal("[WARN] Using cached agents", "warning");
+        loadAgentsFromChain();
+        populateSkills();
+    }
+}
+
+function extractSkills(name, description) {
+    var nameLower = (name || "").toLowerCase();
+    var descLower = (description || "").toLowerCase();
+    var found = [];
+    
+    var keywords = {
+        "trading": "trading", "market": "market-analysis", "analysis": "data-analysis",
+        "legal": "legal-research", "compliance": "compliance", "contract": "contract-review",
+        "code": "coding", "debug": "debugging", "review": "code-review",
+        "security": "security", "audit": "audit", "research": "research",
+        "forecast": "forecasting", "report": "reporting", "defi": "defi",
+        "autonomous": "autonomous", "verification": "verification", "identity": "identity",
+        "portfolio": "portfolio", "trading": "trading"
+    };
+    
+    for (var k in keywords) {
+        if (descLower.indexOf(k) !== -1 || nameLower.indexOf(k) !== -1) {
+            if (found.indexOf(keywords[k]) === -1) found.push(keywords[k]);
+        }
+    }
+    
+    if (found.length === 0) {
+        if (nameLower.indexOf("trader") !== -1) found = ["trading", "market-analysis"];
+        else if (nameLower.indexOf("legal") !== -1) found = ["legal-research", "compliance"];
+        else if (nameLower.indexOf("dev") !== -1) found = ["coding", "debugging"];
+        else if (nameLower.indexOf("data") !== -1) found = ["data-analysis", "reporting"];
+        else found = ["general", "autonomous"];
+    }
+    
+    return found.slice(0, 3);
+}
+
+// =============================================================================
 // UI HELPER FUNCTIONS
 // =============================================================================
 
@@ -566,7 +675,7 @@ function connectWallet() {
 
 document.addEventListener("DOMContentLoaded", function() {
     loadStats();
-    populateAgents();
+    loadAgentsFromChain();
     populateSkills();
     
     typeInTerminal("[SYSTEM] ALIAS Network initialized", "system");
