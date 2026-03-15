@@ -231,7 +231,7 @@ function showStatsSkeleton() {
  * Display search result safely (no XSS)
  */
 function showSearchResult(data, isSuccess) {
-    var box = document.getElementById("skillSearchResults");
+    var box = document.getElementById("searchResult");
     box.style.display = "block";
     box.style.borderColor = isSuccess ? "var(--success)" : "var(--warning)";
     box.style.background = isSuccess ? "rgba(0,255,136,0.1)" : "rgba(255,170,0,0.1)";
@@ -334,7 +334,7 @@ function showSearchResult(data, isSuccess) {
 }
 
 function showSearchLoading(message) {
-    var box = document.getElementById("skillSearchResults");
+    var box = document.getElementById("searchResult");
     box.style.display = "block";
     box.style.borderColor = "var(--primary)";
     box.style.background = "rgba(0,212,255,0.1)";
