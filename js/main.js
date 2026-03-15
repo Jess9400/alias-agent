@@ -97,23 +97,18 @@ var allSkills = ["autonomous", "verification", "risk-assessment", "data-analysis
 // =============================================================================
 // DYNAMIC AGENT LOADING WITH ETHERS.JS
 // =============================================================================
-
 const SOUL_ABI = [
+    "function registerSoul(address agent, string name, string metadataURI, string skills) returns (uint256)",
+    "function totalSouls() view returns (uint256)",
+    "function actionCount(uint256 tokenId) view returns (uint256)",
+    "function souls(uint256 tokenId) view returns (string name, string metadataURI, address creator, uint256 createdAt, string skills, bool active)"
+];
 
 const VERIFICATION_ABI = [
     "function verify(uint256 tokenId, string message) external",
     "function getVerificationCount(uint256 tokenId) external view returns (uint256)",
     "function getVerifications(uint256 tokenId) external view returns (tuple(address verifier, uint256 timestamp, string message)[])",
     "function isVerifiedBy(address verifier, uint256 tokenId) external view returns (bool)"
-];
-    "function registerSoul(address agent, string name, string metadataURI, string skills) returns (uint256)",
-
-    "function totalSouls() view returns (uint256)",
-
-    "function actionCount(uint256 tokenId) view returns (uint256)",
-
-    "function souls(uint256 tokenId) view returns (string name, string metadataURI, address creator, uint256 createdAt, string skills, bool active)"
-
 ];
 
 
