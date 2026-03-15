@@ -23,7 +23,8 @@ const CONFIG = {
     RPC_URL: "https://mainnet.base.org",
     CHAIN_ID: 8453,
     ENS_API: "https://api.ensdata.net",
-    BASESCAN_URL: "https://basescan.org"
+    BASESCAN_URL: "https://basescan.org",
+    VERIFICATION_REGISTRY: "0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715"
 };
 
 const SELECTORS = {
@@ -98,11 +99,23 @@ var allSkills = ["autonomous", "verification", "risk-assessment", "data-analysis
 // =============================================================================
 
 const SOUL_ABI = [
-    "function registerSoul(address agent, string name, string metadataURI, string skills) returns (uint256)",
-    "function totalSouls() view returns (uint256)",
-    "function actionCount(uint256 tokenId) view returns (uint256)",
-    "function souls(uint256 tokenId) view returns (string name, string metadataURI, address creator, uint256 createdAt, string skills, bool active)"
+
+const VERIFICATION_ABI = [
+    "function verify(uint256 tokenId, string message) external",
+    "function getVerificationCount(uint256 tokenId) external view returns (uint256)",
+    "function getVerifications(uint256 tokenId) external view returns (tuple(address verifier, uint256 timestamp, string message)[])",
+    "function isVerifiedBy(address verifier, uint256 tokenId) external view returns (bool)"
 ];
+    "function registerSoul(address agent, string name, string metadataURI, string skills) returns (uint256)",
+
+    "function totalSouls() view returns (uint256)",
+
+    "function actionCount(uint256 tokenId) view returns (uint256)",
+
+    "function souls(uint256 tokenId) view returns (string name, string metadataURI, address creator, uint256 createdAt, string skills, bool active)"
+
+];
+
 
 async function loadAgentsFromChain() {
     var list = document.getElementById("agentList");
@@ -1007,23 +1020,41 @@ async function signVerification(agent) {
         return;
     }
     
+    if (!agent || !agent.tokenId) {
+        alert("No agent selected!");
+        return;
+    }
+    
+    var message = prompt("Enter verification message (e.g., \"Trusted for DeFi tasks\"):", "Verified as trusted AI agent");
+    if (!message) return;
+    
     try {
         var provider = new ethers.BrowserProvider(window.ethereum);
         var signer = await provider.getSigner();
+        var contract = new ethers.Contract(CONFIG.VERIFICATION_REGISTRY, VERIFICATION_ABI, signer);
         
-        var message = "I verify that " + agent.name + " (Token #" + agent.tokenId + ") is a trusted AI agent.\n\nTimestamp: " + new Date().toISOString() + "\nVerifier: " + connectedWallet;
+        typeInTerminal("[VERIFY] Recording on-chain verification...", "warning");
+        typeInTerminal("[TARGET] " + agent.name + " (Token #" + agent.tokenId + ")", "system");
         
-        typeInTerminal("[VERIFY] Requesting signature...", "warning");
+        var tx = await contract.verify(agent.tokenId, message);
         
-        var signature = await signer.signMessage(message);
+        typeInTerminal("[TX] " + tx.hash.slice(0, 15) + "... submitted", "warning");
         
-        typeInTerminal("[VERIFY] Signed verification for " + agent.name, "success");
-        typeInTerminal("[SIG] " + signature.slice(0, 20) + "...", "system");
+        var receipt = await tx.wait();
         
-        alert("Verification signed!\n\nAgent: " + agent.name + "\nSignature: " + signature.slice(0, 30) + "...\n\n(In production, this would be stored on-chain or IPFS)");
+        typeInTerminal("[CHAIN] ✓ Verification recorded on-chain!", "success");
+        typeInTerminal("[TX] " + tx.hash, "system");
+        
+        alert("On-chain verification complete!\n\nAgent: " + agent.name + "\nToken: #" + agent.tokenId + "\nMessage: " + message + "\nTX: " + tx.hash.slice(0, 20) + "...");
         
     } catch (error) {
-        typeInTerminal("[ERROR] Signing failed", "warning");
+        console.error("Verification error:", error);
+        if (error.message && error.message.includes("Already verified")) {
+            typeInTerminal("[INFO] You have already verified this agent", "warning");
+            alert("You have already verified this agent!");
+        } else {
+            typeInTerminal("[ERROR] Verification failed: " + (error.reason || error.message || "Unknown"), "warning");
+        }
     }
 }
 
@@ -1202,19 +1233,22 @@ async function showAgentActivity(agent) {
     
     var actionCount = await fetchAgentActivity(agent);
     
-    if (actionCount !== null) {
-        typeInTerminal("[CHAIN] Token #" + agent.tokenId + " | Actions: " + actionCount, "success");
-        typeInTerminal("[CHAIN] Reputation score: " + agent.rep + " (" + agent.tier + ")", "success");
-        typeInTerminal("[CHAIN] Created by: " + agent.fullAddress.slice(0,10) + "...", "system");
-        
-        // Show activity breakdown (simulated categories based on count)
-        if (actionCount > 0) {
-            var verifications = Math.floor(actionCount * 0.4);
-            var hires = Math.floor(actionCount * 0.3);
-            var completions = actionCount - verifications - hires;
-            typeInTerminal("[STATS] Verifications: " + verifications + " | Hires: " + hires + " | Completions: " + completions, "system");
-        }
-    } else {
-        typeInTerminal("[INFO] No on-chain activity recorded yet", "warning");
+    // Fetch verification count from new registry
+    var verifyCount = 0;
+    try {
+        var provider = new ethers.JsonRpcProvider(CONFIG.RPC_URL);
+        var verifyContract = new ethers.Contract(CONFIG.VERIFICATION_REGISTRY, VERIFICATION_ABI, provider);
+        verifyCount = Number(await verifyContract.getVerificationCount(agent.tokenId));
+    } catch (e) {
+        console.log("Could not fetch verifications:", e);
+    }
+    
+    typeInTerminal("[CHAIN] Token #" + agent.tokenId, "success");
+    typeInTerminal("[CHAIN] Reputation: " + agent.rep + " (" + agent.tier + ")", "success");
+    typeInTerminal("[CHAIN] On-chain verifications: " + verifyCount, verifyCount > 0 ? "success" : "system");
+    typeInTerminal("[CHAIN] Creator: " + agent.fullAddress.slice(0,10) + "...", "system");
+    
+    if (actionCount !== null && actionCount > 0) {
+        typeInTerminal("[STATS] Total actions: " + actionCount, "system");
     }
 }
