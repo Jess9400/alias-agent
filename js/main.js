@@ -159,14 +159,14 @@ async function loadAgentsFromChain() {
         if (newSkills.length > 0) allSkills = newSkills;
         
         populateAgents();
-        populateSkills();
+        populateSkillsWithSearch(); populateTrustNetwork();
         typeInTerminal("[CHAIN] Loaded " + agents.length + " agents from blockchain", "success");
         
     } catch (error) {
         console.error("Failed to load from chain:", error);
         typeInTerminal("[WARN] Using cached agents", "warning");
         populateAgents();
-        populateSkills();
+        populateSkillsWithSearch(); populateTrustNetwork();
     }
 }
 
@@ -676,7 +676,7 @@ function connectWallet() {
 document.addEventListener("DOMContentLoaded", function() {
     loadStats();
     loadAgentsFromChain();
-    populateSkills();
+    populateSkillsWithSearch(); populateTrustNetwork();
     
     typeInTerminal("[SYSTEM] ALIAS Network initialized", "system");
     typeInTerminal("[INFO] Loading stats from blockchain...", "warning");
@@ -691,3 +691,88 @@ document.addEventListener("DOMContentLoaded", function() {
         if (e.key === "Enter") searchAgent();
     });
 });
+
+// =============================================================================
+// DYNAMIC TRUST NETWORK & SKILLS
+// =============================================================================
+
+function populateTrustNetwork() {
+    var container = document.getElementById("trustNetwork");
+    if (!container || agents.length === 0) return;
+    
+    // Sort agents by reputation (highest first) and take top 4
+    var topAgents = agents.slice().sort(function(a, b) {
+        return b.rep - a.rep;
+    }).slice(0, 4);
+    
+    var html = '';
+    var arrows = ['verified', 'trusted', 'hired'];
+    
+    topAgents.forEach(function(agent, index) {
+        var tierClass = agent.tier.toLowerCase();
+        html += '<div class="network-node ' + tierClass + '">';
+        html += '<div class="node-name">' + agent.name + '</div>';
+        html += '<div class="node-rep">' + agent.rep + '</div>';
+        html += '<div class="node-tier tier-' + tierClass + '">' + agent.tier + '</div>';
+        html += '</div>';
+        
+        // Add arrow between nodes (not after last one)
+        if (index < topAgents.length - 1) {
+            html += '<div class="arrow"><svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>' + arrows[index % arrows.length] + '</div>';
+        }
+    });
+    
+    container.innerHTML = html;
+}
+
+function populateSkillsWithSearch() {
+    var grid = document.getElementById("skillsGrid");
+    var searchInput = document.getElementById("skillSearchInput");
+    if (!grid) return;
+    
+    // Count skills across all agents
+    var skillCounts = {};
+    agents.forEach(function(agent) {
+        agent.skills.forEach(function(skill) {
+            skillCounts[skill] = (skillCounts[skill] || 0) + 1;
+        });
+    });
+    
+    // Sort by count (most used first)
+    var sortedSkills = Object.keys(skillCounts).sort(function(a, b) {
+        return skillCounts[b] - skillCounts[a];
+    });
+    
+    function renderSkills(filter) {
+        grid.innerHTML = '';
+        var filterLower = (filter || '').toLowerCase();
+        var displayed = 0;
+        var maxDisplay = filter ? sortedSkills.length : 10; // Show all when searching, top 10 otherwise
+        
+        sortedSkills.forEach(function(skill) {
+            if (displayed >= maxDisplay) return;
+            if (filterLower && skill.toLowerCase().indexOf(filterLower) === -1) return;
+            
+            var tag = document.createElement('span');
+            tag.className = 'skill-tag';
+            tag.innerHTML = skill + ' <span style="opacity:0.6;font-size:0.8em;">(' + skillCounts[skill] + ')</span>';
+            tag.onclick = function() { searchSkill(skill); };
+            grid.appendChild(tag);
+            displayed++;
+        });
+        
+        if (displayed === 0) {
+            grid.innerHTML = '<span style="color:var(--text-dim);">No skills found</span>';
+        }
+    }
+    
+    // Initial render
+    renderSkills('');
+    
+    // Search listener
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            renderSkills(this.value);
+        });
+    }
+}

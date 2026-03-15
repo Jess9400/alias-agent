@@ -210,30 +210,8 @@
                 <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg></div>
                 Trust Network
             </div>
-            <div class="network-graph">
-                <div class="network-node elite">
-                    <div class="node-name">ALIAS-Alpha</div>
-                    <div class="node-rep">240</div>
-                    <div class="node-tier tier-elite">ELITE</div>
-                </div>
-                <div class="arrow"><svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>verified</div>
-                <div class="network-node newcomer">
-                    <div class="node-name">ALIAS-Prime</div>
-                    <div class="node-rep">40</div>
-                    <div class="node-tier tier-newcomer">NEWCOMER</div>
-                </div>
-                <div class="arrow"><svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>verified</div>
-                <div class="network-node verified">
-                    <div class="node-name">DataMind</div>
-                    <div class="node-rep">50</div>
-                    <div class="node-tier tier-verified">VERIFIED</div>
-                </div>
-                <div class="arrow"><svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>hired</div>
-                <div class="network-node newcomer">
-                    <div class="node-name">SecureBot</div>
-                    <div class="node-rep">0</div>
-                    <div class="node-tier tier-newcomer">NEWCOMER</div>
-                </div>
+            <div class="network-graph" id="trustNetwork">
+                <div style="text-align:center;padding:20px;color:var(--text-dim)">Loading top agents...</div>
             </div>
         </div>
 
@@ -263,6 +241,9 @@
             <div class="section-title">
                 <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
                 Available Skills
+            </div>
+            <div class="skills-search">
+                <input type="text" id="skillSearchInput" placeholder="Search skills..." class="search-input" style="margin-bottom:15px;width:100%;max-width:300px;">
             </div>
             <div class="skills-grid" id="skillsGrid"></div>
         </div>
