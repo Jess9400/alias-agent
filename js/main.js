@@ -98,6 +98,7 @@ var allSkills = ["autonomous", "verification", "risk-assessment", "data-analysis
 // =============================================================================
 
 const SOUL_ABI = [
+    "function registerSoul(address agent, string name, string metadataURI, string skills) returns (uint256)",
     "function totalSouls() view returns (uint256)",
     "function souls(uint256 tokenId) view returns (string name, string metadataURI, address creator, uint256 createdAt, string skills, bool active)"
 ];
@@ -301,6 +302,17 @@ function showSearchResult(data, isSuccess) {
         box.appendChild(linkDiv);
     }
     
+    if (isSuccess && data.name && data.rep !== undefined) {
+        var verifyDiv = document.createElement("div");
+        verifyDiv.style.cssText = "margin-top:15px;";
+        var verifyBtn = document.createElement("button");
+        verifyBtn.style.cssText = "background:var(--secondary);color:#000;border:none;padding:10px 20px;border-radius:10px;cursor:pointer;font-weight:bold;";
+        verifyBtn.textContent = "✓ Sign Verification";
+        verifyBtn.onclick = function() { signVerification(selectedAgent); };
+        verifyDiv.appendChild(verifyBtn);
+        box.appendChild(verifyDiv);
+    }
+
     if (data.message) {
         var msgDiv = document.createElement('div');
         msgDiv.style.cssText = 'margin-top:10px;color:var(--text-dim)';
@@ -776,3 +788,232 @@ function populateSkillsWithSearch() {
         });
     }
 }
+
+// =============================================================================
+// WALLET FEATURES: MINT, MY AGENTS, VERIFY
+// =============================================================================
+
+var connectedWallet = null;
+var showingMyAgents = false;
+
+// Store wallet on connect
+function connectWalletEnhanced() {
+    if (typeof window.ethereum !== "undefined") {
+        window.ethereum.request({ method: "eth_requestAccounts" })
+            .then(function(accounts) {
+                connectedWallet = accounts[0].toLowerCase();
+                document.getElementById("connectBtn").textContent = connectedWallet.slice(0, 6) + "..." + connectedWallet.slice(-4);
+                typeInTerminal("[WALLET] Connected: " + connectedWallet, "success");
+                
+                // Check if user owns any agents
+                var myCount = agents.filter(function(a) {
+                    return a.fullAddress && a.fullAddress.toLowerCase() === connectedWallet;
+                }).length;
+                
+                if (myCount > 0) {
+                    typeInTerminal("[INFO] You own " + myCount + " agent(s)!", "success");
+                }
+            })
+            .catch(function() {
+                typeInTerminal("[ERROR] Connection failed", "warning");
+            });
+    } else {
+        alert("Please install MetaMask to connect your wallet!");
+    }
+}
+
+// Toggle My Agents filter
+function toggleMyAgents() {
+    if (!connectedWallet) {
+        alert("Please connect your wallet first!");
+        return;
+    }
+    
+    showingMyAgents = !showingMyAgents;
+    var btn = document.getElementById("myAgentsBtn");
+    
+    if (showingMyAgents) {
+        btn.style.background = "var(--secondary)";
+        btn.style.color = "#000";
+        btn.textContent = "All Agents";
+        filterMyAgents();
+    } else {
+        btn.style.background = "transparent";
+        btn.style.color = "var(--secondary)";
+        btn.textContent = "My Agents";
+        populateAgents();
+    }
+}
+
+function filterMyAgents() {
+    var list = document.getElementById("agentList");
+    list.innerHTML = '';
+    
+    var myAgents = agents.filter(function(a) {
+        return a.fullAddress && a.fullAddress.toLowerCase() === connectedWallet;
+    });
+    
+    if (myAgents.length === 0) {
+        list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-dim);">You don\'t own any agents yet.<br><br><button onclick="openMintModal()" style="background:var(--secondary);color:#000;border:none;padding:10px 20px;border-radius:10px;cursor:pointer;">Mint Your First Soul</button></div>';
+        return;
+    }
+    
+    myAgents.forEach(function(a) {
+        var item = document.createElement('div');
+        item.className = 'agent-item';
+        item.style.border = '1px solid var(--secondary)';
+        item.onclick = function() { selectAgent(a); };
+        
+        var info = document.createElement('div');
+        info.className = 'agent-info';
+        
+        var name = document.createElement('div');
+        name.className = 'agent-name';
+        name.innerHTML = a.name + ' <span style="color:var(--secondary);font-size:0.8em;">YOURS</span>';
+        info.appendChild(name);
+        
+        var addr = document.createElement('div');
+        addr.className = 'agent-address';
+        addr.textContent = a.address;
+        info.appendChild(addr);
+        
+        var skills = document.createElement('div');
+        skills.className = 'agent-skills';
+        a.skills.slice(0, 3).forEach(function(s) {
+            var tag = document.createElement('span');
+            tag.className = 'skill-tag small';
+            tag.textContent = s;
+            skills.appendChild(tag);
+        });
+        info.appendChild(skills);
+        
+        item.appendChild(info);
+        
+        var rep = document.createElement('div');
+        rep.className = 'agent-rep';
+        var repScore = document.createElement('div');
+        repScore.className = 'rep-score';
+        repScore.textContent = a.rep;
+        rep.appendChild(repScore);
+        var repTier = document.createElement('div');
+        repTier.className = 'rep-tier tier-' + a.tier.toLowerCase();
+        repTier.textContent = a.tier;
+        rep.appendChild(repTier);
+        
+        item.appendChild(rep);
+        list.appendChild(item);
+    });
+}
+
+// Mint Modal Functions
+function openMintModal() {
+    if (!connectedWallet) {
+        alert("Please connect your wallet first!");
+        return;
+    }
+    document.getElementById("mintModal").style.display = "flex";
+    document.getElementById("mintStatus").textContent = "";
+}
+
+function closeMintModal() {
+    document.getElementById("mintModal").style.display = "none";
+}
+
+async function mintSoul() {
+    var name = document.getElementById("mintName").value.trim();
+    var agentAddr = document.getElementById("mintAddress").value.trim();
+    var metadata = document.getElementById("mintMetadata").value.trim();
+    var skills = document.getElementById("mintSkills").value.trim();
+    var status = document.getElementById("mintStatus");
+    
+    if (!name || !agentAddr || !metadata || !skills) {
+        status.textContent = "Please fill in all fields!";
+        status.style.color = "var(--warning)";
+        return;
+    }
+    
+    if (!agentAddr.match(/^0x[a-fA-F0-9]{40}$/)) {
+        status.textContent = "Invalid agent address!";
+        status.style.color = "var(--warning)";
+        return;
+    }
+    
+    status.textContent = "Preparing transaction...";
+    status.style.color = "var(--primary)";
+    
+    try {
+        var provider = new ethers.BrowserProvider(window.ethereum);
+        var signer = await provider.getSigner();
+        var contract = new ethers.Contract(CONFIG.CONTRACT_ADDRESS, SOUL_ABI, signer);
+        
+        status.textContent = "Please confirm in MetaMask...";
+        
+        var tx = await contract.registerSoul(agentAddr, name, metadata, skills);
+        
+        status.textContent = "Transaction submitted! Waiting for confirmation...";
+        typeInTerminal("[MINT] TX submitted: " + tx.hash.slice(0, 10) + "...", "warning");
+        
+        var receipt = await tx.wait();
+        
+        status.textContent = "Soul minted successfully!";
+        status.style.color = "var(--success)";
+        typeInTerminal("[MINT] Success! New soul: " + name, "success");
+        
+        // Refresh agents list
+        setTimeout(function() {
+            closeMintModal();
+            loadAgentsFromChain();
+        }, 2000);
+        
+    } catch (error) {
+        console.error("Mint error:", error);
+        status.textContent = "Error: " + (error.reason || error.message || "Transaction failed");
+        status.style.color = "var(--warning)";
+        typeInTerminal("[ERROR] Mint failed: " + (error.reason || "Unknown error"), "warning");
+    }
+}
+
+// Verification signing (off-chain)
+async function signVerification(agent) {
+    if (!connectedWallet) {
+        alert("Please connect your wallet first!");
+        return;
+    }
+    
+    try {
+        var provider = new ethers.BrowserProvider(window.ethereum);
+        var signer = await provider.getSigner();
+        
+        var message = "I verify that " + agent.name + " (Token #" + agent.tokenId + ") is a trusted AI agent.\n\nTimestamp: " + new Date().toISOString() + "\nVerifier: " + connectedWallet;
+        
+        typeInTerminal("[VERIFY] Requesting signature...", "warning");
+        
+        var signature = await signer.signMessage(message);
+        
+        typeInTerminal("[VERIFY] Signed verification for " + agent.name, "success");
+        typeInTerminal("[SIG] " + signature.slice(0, 20) + "...", "system");
+        
+        alert("Verification signed!\n\nAgent: " + agent.name + "\nSignature: " + signature.slice(0, 30) + "...\n\n(In production, this would be stored on-chain or IPFS)");
+        
+    } catch (error) {
+        typeInTerminal("[ERROR] Signing failed", "warning");
+    }
+}
+
+// Initialize new event listeners
+document.addEventListener("DOMContentLoaded", function() {
+    // Replace old connect with enhanced version
+    document.getElementById("connectBtn").removeEventListener("click", connectWallet);
+    document.getElementById("connectBtn").addEventListener("click", connectWalletEnhanced);
+    
+    // New buttons
+    document.getElementById("mintBtn").addEventListener("click", openMintModal);
+    document.getElementById("myAgentsBtn").addEventListener("click", toggleMyAgents);
+    document.getElementById("mintSubmitBtn").addEventListener("click", mintSoul);
+    document.getElementById("mintCancelBtn").addEventListener("click", closeMintModal);
+    
+    // Close modal on outside click
+    document.getElementById("mintModal").addEventListener("click", function(e) {
+        if (e.target.id === "mintModal") closeMintModal();
+    });
+});
