@@ -474,14 +474,14 @@ async function loadAgentsFromChain() {
         }
         
         // Re-populate the UI
-        loadAgentsFromChain();
+        populateAgents();
         populateSkills();
         typeInTerminal("[CHAIN] Loaded " + agents.length + " agents from blockchain", "success");
         
     } catch (error) {
         typeInTerminal("[ERROR] Failed to load agents from chain", "warning");
         // Keep hardcoded agents as fallback
-        loadAgentsFromChain();
+        populateAgents();
         populateSkills();
     }
 }
