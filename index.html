@@ -265,12 +265,36 @@
         }
 
         function searchAgent() {
-            var q = document.getElementById("searchInput").value.toLowerCase();
+            var q = document.getElementById("searchInput").value.trim();
+            var qLower = q.toLowerCase();
             clearTerminal();
             typeInTerminal("[SEARCH] Looking for: " + q, "system");
+            
+            // Check if ENS name
+            if (q.endsWith(".eth")) {
+                typeInTerminal("[ENS] Resolving " + q + "...", "warning");
+                fetch("https://api.ensdata.net/" + q)
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (data.address) {
+                            typeInTerminal("[ENS] Resolved!", "success");
+                            typeInTerminal("[ADDRESS] " + data.address, "system");
+                            typeInTerminal("[NAME] " + (data.ens || q), "agent");
+                            if (data.avatar) typeInTerminal("[AVATAR] " + data.avatar, "agent");
+                        } else {
+                            typeInTerminal("[ERROR] ENS name not found", "warning");
+                        }
+                    })
+                    .catch(function() {
+                        typeInTerminal("[ERROR] ENS lookup failed", "warning");
+                    });
+                return;
+            }
+            
+            // Search local agents
             var found = null;
             for (var i = 0; i < agents.length; i++) {
-                if (agents[i].name.toLowerCase().indexOf(q) !== -1 || agents[i].address.toLowerCase().indexOf(q) !== -1) {
+                if (agents[i].name.toLowerCase().indexOf(qLower) !== -1 || agents[i].address.toLowerCase().indexOf(qLower) !== -1) {
                     found = agents[i];
                     break;
                 }
@@ -284,7 +308,6 @@
                 typeInTerminal("[ERROR] Agent not found", "warning");
             }
         }
-
         function searchSkill(skill) {
             clearTerminal();
             typeInTerminal("[SEARCH] Skill: " + skill, "system");
