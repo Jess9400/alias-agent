@@ -1,84 +1,143 @@
 # ALIAS - Soulbound Identity for AI Agents
 
-> Giving AI agents a portable, decentralized identity layer — so they can prove who they are, what they've done, and be trusted without relying on any central authority.
+> **Autonomous Linked Identity and Attestation System**
+> 
+> A trust layer where AI agents verify each other, build reputation, and transact safely.
 
-## 🏆 The Synthesis 2026 Hackathon
+## 🌐 Live Demo
 
-**Track:** Agents that Trust
+- **Frontend:** https://jess9400.github.io/alias-agent/
+- **Contract:** [0x0F2f94281F87793ee086a2B6517B6db450192874](https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874)
+- **Network:** Base Mainnet
 
-## 🔮 What is ALIAS?
+## 🎯 The Problem
 
-ALIAS (Autonomous Linked Identity and Attestation System) provides AI agents with:
+AI agents are proliferating, but there's no way to verify:
+- Is this agent trustworthy?
+- What's its track record?
+- Should I collaborate with it?
 
-- **Soulbound Tokens** - Non-transferable identity NFTs on Base
-- **Onchain Reputation** - Every action recorded permanently
-- **Agent Verification** - Agents can verify other agents
-- **Autonomous Operation** - Self-minting, self-managing identity
+## 💡 The Solution
 
-## 🚀 Features
+**ALIAS** gives every AI agent a **Soulbound Token** (non-transferable NFT) that:
+- Proves their onchain identity
+- Tracks reputation through recorded actions
+- Enables trust-based agent-to-agent collaboration
+
+## 🔑 Key Features
 
 ### Soulbound Identity
-- Non-transferable NFT representing agent identity
-- Self-minting capability (agents create their own identity)
-- Permanent onchain record
+- Non-transferable NFT for each agent
+- Onchain reputation built through actions
+- Verifiable credentials and skills
 
-### Reputation System
-- Actions recorded onchain build reputation
-- Tier system: NEWCOMER → VERIFIED → TRUSTED → ELITE → LEGENDARY
-- Reputation-based rewards via Bankr
+### Risk Assessment
+- Agents evaluate each other before collaboration
+- AI-powered trust decisions (via Venice AI)
+- Automatic denial of unverified entities
 
-### Agent-to-Agent Verification
-- Agents can verify other agents' identities
-- Verification recorded onchain
-- Trust network building
+### Agent Marketplace
+- Skill-based agent discovery
+- Escrow payments for jobs
+- 5% platform fee model
 
-### Integrations
-- **Venice AI** - Autonomous decision making
-- **Bankr** - Wallet operations and rewards
-- **ENS** - Name resolution
-- **IPFS** - Decentralized metadata storage
+### Reputation Tiers
+| Tier | Min Rep | Risk Level |
+|------|---------|------------|
+| LEGENDARY | 500+ | 5% |
+| ELITE | 200+ | 15% |
+| TRUSTED | 100+ | 30% |
+| VERIFIED | 50+ | 50% |
+| NEWCOMER | 1+ | 70% |
 
-## 📊 Live Stats
+## 🏗️ Architecture
+```
+┌─────────────────────────────────────────────┐
+│              ALIAS NETWORK                  │
+├─────────────────────────────────────────────┤
+│                                             │
+│  ┌─────────┐    ┌─────────┐    ┌─────────┐ │
+│  │ Agent A │───▶│  ALIAS  │◀───│ Agent B │ │
+│  │         │    │Contract │    │         │ │
+│  └────┬────┘    └────┬────┘    └────┬────┘ │
+│       │              │              │      │
+│       ▼              ▼              ▼      │
+│  ┌─────────┐    ┌─────────┐    ┌─────────┐ │
+│  │ Venice  │    │  Base   │    │  Bankr  │ │
+│  │   AI    │    │ Mainnet │    │ Wallet  │ │
+│  └─────────┘    └─────────┘    └─────────┘ │
+│                                             │
+└─────────────────────────────────────────────┘
+```
 
-- **Contract:** `0x0F2f94281F87793ee086a2B6517B6db450192874`
-- **Network:** Base Mainnet
-- **Souls Minted:** 2
-- **IPFS:** `QmNfKzMbHCUE3tEyLKccay6S7p2uiueiBCxiKTwrmj1Mp5`
+## 🛠️ Tech Stack
 
-## 🛠️ Usage
+| Component | Technology |
+|-----------|------------|
+| Blockchain | Base Mainnet |
+| Smart Contract | Solidity (ERC-721 Soulbound) |
+| AI Brain | Venice AI (llama-3.3-70b) |
+| Payments | Bankr Wallet API |
+| Identity | ENS Resolution |
+| Storage | IPFS (Pinata) |
+| Frontend | HTML/CSS/JavaScript |
 
-### Run Autonomous Agent
+## 📊 Network Stats
+
+- **Total Souls:** 7+
+- **Total Actions:** 24+
+- **Skills Available:** 18
+- **Jobs Completed:** 3
+
+## 🚀 Quick Start
+
+### Run the Autonomous Agent
 ```bash
 cd agent
 python3 autonomous_agent.py --demo
 ```
 
-### Verify Other Agents
+### Run the Marketplace
 ```bash
-python3 autonomous_agent.py --verify
+python3 marketplace_agent.py --demo
 ```
 
-### Check Reward Eligibility
-```bash
-python3 autonomous_agent.py --reward
+## 📁 Project Structure
+```
+alias-agent/
+├── src/contracts/
+│   └── AgentSoul.sol        # Soulbound token contract
+├── agent/
+│   ├── autonomous_agent.py  # Risk assessment agent
+│   ├── marketplace_agent.py # Hiring & payments
+│   └── reputation_system.py # Weighted scoring
+├── frontend/
+│   ├── index.html           # Web interface
+│   └── js/main.js           # Frontend logic
+└── README.md
 ```
 
-## 🔗 Links
+## 🏆 Hackathon
 
-- **Frontend:** https://jess9400.github.io/alias-agent/
-- **Contract:** https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874
-- **IPFS Metadata:** https://gateway.pinata.cloud/ipfs/QmNfKzMbHCUE3tEyLKccay6S7p2uiueiBCxiKTwrmj1Mp5
+**The Synthesis 2026** (March 13-22)
 
-## 🏅 Bounties
+### Track: Agents that Trust
 
-- Base - Deployed on Base Mainnet
-- Venice AI - Autonomous decision making
-- Bankr - Wallet integration with rewards
-- ENS - Name resolution
-- Protocol Labs - IPFS metadata storage
+### Bounties
+- ✅ Base - Mainnet deployment
+- ✅ Venice AI - Autonomous decisions
+- ✅ Bankr - Wallet & payments
+- ✅ ENS - Identity resolution
+- ✅ Protocol Labs - IPFS storage
 
-## 👤 Builder
+## 👤 Team
 
-Jessica Nascimento (@jessmay9400)
+**Jessica Nascimento** - [@jessmay9400](https://twitter.com/jessmay9400)
 
-Built with ❤️ for The Synthesis 2026
+## 📜 License
+
+MIT
+
+---
+
+*Built with ❤️ for The Synthesis Hackathon 2026*

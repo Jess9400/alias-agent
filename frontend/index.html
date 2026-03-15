@@ -9,652 +9,97 @@
         :root {
             --primary: #00d4ff;
             --secondary: #7b2cbf;
-            --accent: #ff6b35;
             --bg-dark: #0a0a0f;
             --bg-card: #12121a;
             --text: #e0e0e0;
             --text-dim: #888;
             --success: #00ff88;
             --warning: #ffaa00;
-            --danger: #ff4444;
             --glow: 0 0 20px rgba(0, 212, 255, 0.5);
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Rajdhani', sans-serif;
-            background: var(--bg-dark);
-            color: var(--text);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        #particles {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        .particle {
-            position: absolute;
-            width: 2px; height: 2px;
-            background: var(--primary);
-            border-radius: 50%;
-            opacity: 0.5;
-            animation: float 15s infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0) translateX(0); opacity: 0; }
-            10% { opacity: 0.5; }
-            90% { opacity: 0.5; }
-            100% { transform: translateY(-100vh) translateX(50px); opacity: 0; }
-        }
-
-        .container {
-            position: relative;
-            z-index: 1;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 20px 0;
-            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
-            margin-bottom: 40px;
-        }
-
-        .logo-section {
-            display: flex;
-            align-items: center;
-            gap: 25px;
-        }
-
-        .logo-img {
-            width: 120px;
-            height: 120px;
-            border-radius: 20px;
-            border: 3px solid var(--primary);
-            box-shadow: var(--glow);
-            animation: pulse-glow 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 20px rgba(0, 212, 255, 0.5); }
-            50% { box-shadow: 0 0 40px rgba(0, 212, 255, 0.8), 0 0 60px rgba(123, 44, 191, 0.4); }
-        }
-
-        .logo-text h1 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 3rem;
-            font-weight: 900;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: 6px;
-        }
-
-        .logo-text p {
-            color: var(--text-dim);
-            font-size: 1.1rem;
-            letter-spacing: 3px;
-        }
-
-        .connect-btn {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border: none;
-            padding: 18px 35px;
-            border-radius: 12px;
-            color: white;
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 700;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .connect-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.4);
-        }
-
-        .search-section { margin-bottom: 30px; }
-
-        .search-container {
-            display: flex;
-            gap: 15px;
-            max-width: 600px;
-        }
-
-        .search-input {
-            flex: 1;
-            background: var(--bg-card);
-            border: 2px solid rgba(0, 212, 255, 0.3);
-            border-radius: 12px;
-            padding: 15px 20px;
-            color: var(--text);
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 1.1rem;
-            outline: none;
-        }
-
-        .search-input:focus {
-            border-color: var(--primary);
-            box-shadow: var(--glow);
-        }
-
-        .search-btn {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border: none;
-            padding: 15px 25px;
-            border-radius: 12px;
-            color: white;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        .stats-bar {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-
-        .stat-card {
-            background: var(--bg-card);
-            border: 1px solid rgba(0, 212, 255, 0.2);
-            border-radius: 16px;
-            padding: 25px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-
-        .stat-card:hover {
-            border-color: var(--primary);
-            box-shadow: var(--glow);
-            transform: translateY(-5px);
-        }
-
-        .stat-value {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 2.5rem;
-            font-weight: 900;
-            color: var(--primary);
-        }
-
-        .stat-label {
-            color: var(--text-dim);
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* TRUST NETWORK VISUALIZATION */
-        .trust-network {
-            background: var(--bg-card);
-            border: 1px solid rgba(0, 212, 255, 0.2);
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 40px;
-        }
-
-        .section-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .section-icon {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .section-icon svg {
-            width: 28px;
-            height: 28px;
-            fill: white;
-        }
-
-        .section-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .network-graph {
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            gap: 20px;
-            padding: 30px;
-            overflow-x: auto;
-        }
-
-        .network-column {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .network-node {
-            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(123, 44, 191, 0.1));
-            border: 3px solid var(--primary);
-            border-radius: 20px;
-            padding: 20px 25px;
-            text-align: center;
-            min-width: 160px;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-
-        .network-node:hover {
-            transform: scale(1.05);
-            box-shadow: var(--glow);
-        }
-
+        body { font-family: 'Rajdhani', sans-serif; background: var(--bg-dark); color: var(--text); min-height: 100vh; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; border-bottom: 1px solid rgba(0,212,255,0.2); margin-bottom: 40px; }
+        .logo-section { display: flex; align-items: center; gap: 25px; }
+        .logo-img { width: 100px; height: 100px; border-radius: 20px; border: 3px solid var(--primary); box-shadow: var(--glow); }
+        .logo-text h1 { font-family: 'Orbitron', sans-serif; font-size: 2.5rem; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .logo-text p { color: var(--text-dim); letter-spacing: 2px; }
+        .connect-btn { background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none; padding: 15px 30px; border-radius: 12px; color: white; font-family: 'Orbitron', sans-serif; font-weight: 700; cursor: pointer; transition: all 0.3s; }
+        .connect-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,212,255,0.4); }
+        .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 40px; }
+        .stat-card { background: var(--bg-card); border: 1px solid rgba(0,212,255,0.2); border-radius: 16px; padding: 25px; text-align: center; transition: all 0.3s; }
+        .stat-card:hover { border-color: var(--primary); transform: translateY(-5px); }
+        .stat-value { font-family: 'Orbitron', sans-serif; font-size: 2.5rem; color: var(--primary); }
+        .stat-label { color: var(--text-dim); text-transform: uppercase; font-size: 0.9rem; }
+        .trust-network { background: var(--bg-card); border: 1px solid rgba(0,212,255,0.2); border-radius: 20px; padding: 30px; margin-bottom: 40px; }
+        .section-title { font-family: 'Orbitron', sans-serif; font-size: 1.4rem; margin-bottom: 25px; display: flex; align-items: center; gap: 15px; }
+        .section-icon { width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .section-icon svg { width: 24px; height: 24px; fill: white; }
+        .network-graph { display: flex; justify-content: center; align-items: center; gap: 15px; padding: 20px; flex-wrap: wrap; }
+        .network-node { background: rgba(0,212,255,0.1); border: 2px solid var(--primary); border-radius: 16px; padding: 20px; text-align: center; min-width: 130px; transition: all 0.3s; }
+        .network-node:hover { transform: scale(1.05); box-shadow: var(--glow); }
         .network-node.elite { border-color: var(--primary); }
         .network-node.verified { border-color: var(--success); }
         .network-node.newcomer { border-color: var(--warning); }
-
-        .node-avatar {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, var(--secondary), var(--primary));
-            border-radius: 50%;
-            margin: 0 auto 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .node-avatar svg {
-            width: 28px;
-            height: 28px;
-            fill: white;
-        }
-
-        .node-name {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-
-        .node-rep {
-            font-size: 1.8rem;
-            font-weight: 900;
-            color: var(--primary);
-        }
-
-        .node-tier {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            padding: 4px 12px;
-            border-radius: 20px;
-            margin-top: 8px;
-            display: inline-block;
-        }
-
-        .tier-elite { background: rgba(0, 212, 255, 0.2); color: var(--primary); }
-        .tier-verified { background: rgba(0, 255, 136, 0.2); color: var(--success); }
-        .tier-newcomer { background: rgba(255, 170, 0, 0.2); color: var(--warning); }
-
-        .network-arrow {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 10px;
-        }
-
-        .arrow-line {
-            width: 60px;
-            height: 3px;
-            background: linear-gradient(90deg, var(--success), var(--primary));
-            position: relative;
-        }
-
-        .arrow-line::after {
-            content: '';
-            position: absolute;
-            right: -8px;
-            top: -5px;
-            border: 6px solid transparent;
-            border-left-color: var(--primary);
-        }
-
-        .arrow-label {
-            font-size: 0.75rem;
-            color: var(--success);
-            margin-top: 5px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .vertical-arrow {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .vertical-line {
-            width: 3px;
-            height: 40px;
-            background: linear-gradient(180deg, var(--success), var(--primary));
-            position: relative;
-        }
-
-        .vertical-line::after {
-            content: '';
-            position: absolute;
-            bottom: -8px;
-            left: -5px;
-            border: 6px solid transparent;
-            border-top-color: var(--primary);
-        }
-
-        /* Main Grid */
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 40px;
-        }
-
-        .card {
-            background: var(--bg-card);
-            border: 1px solid rgba(0, 212, 255, 0.2);
-            border-radius: 20px;
-            padding: 30px;
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
-        }
-
-        .card-icon {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .card-icon svg {
-            width: 28px;
-            height: 28px;
-            fill: white;
-        }
-
-        .card-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.3rem;
-            font-weight: 700;
-        }
-
-        .agent-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .agent-item {
-            background: rgba(0, 212, 255, 0.05);
-            border: 1px solid rgba(0, 212, 255, 0.1);
-            border-radius: 12px;
-            padding: 18px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .agent-item:hover {
-            border-color: var(--primary);
-            background: rgba(0, 212, 255, 0.1);
-            transform: translateX(5px);
-        }
-
-        .agent-avatar {
-            width: 55px;
-            height: 55px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, var(--secondary), var(--primary));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .agent-avatar svg {
-            width: 30px;
-            height: 30px;
-            fill: white;
-        }
-
+        .node-name { font-family: 'Orbitron', sans-serif; font-size: 0.85rem; margin-bottom: 8px; }
+        .node-rep { font-size: 1.4rem; font-weight: 700; color: var(--primary); }
+        .node-tier { font-size: 0.65rem; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; margin-top: 8px; display: inline-block; }
+        .tier-elite { background: rgba(0,212,255,0.2); color: var(--primary); }
+        .tier-verified { background: rgba(0,255,136,0.2); color: var(--success); }
+        .tier-newcomer { background: rgba(255,170,0,0.2); color: var(--warning); }
+        .arrow { display: flex; flex-direction: column; align-items: center; color: var(--success); font-size: 0.75rem; }
+        .arrow svg { width: 30px; height: 20px; fill: var(--success); }
+        .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 40px; }
+        .card { background: var(--bg-card); border: 1px solid rgba(0,212,255,0.2); border-radius: 20px; padding: 25px; }
+        .card-title { font-family: 'Orbitron', sans-serif; font-size: 1.2rem; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(0,212,255,0.1); display: flex; align-items: center; gap: 10px; }
+        .agent-list { display: flex; flex-direction: column; gap: 12px; max-height: 350px; overflow-y: auto; }
+        .agent-item { background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.1); border-radius: 12px; padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: all 0.3s; }
+        .agent-item:hover { border-color: var(--primary); transform: translateX(5px); }
+        .agent-icon { width: 45px; height: 45px; background: linear-gradient(135deg, var(--secondary), var(--primary)); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .agent-icon svg { width: 24px; height: 24px; fill: white; }
         .agent-info { flex: 1; }
-
-        .agent-name {
-            font-weight: 700;
-            font-size: 1.15rem;
-            margin-bottom: 4px;
-        }
-
-        .agent-address {
-            color: var(--text-dim);
-            font-size: 0.85rem;
-            font-family: monospace;
-        }
-
-        .agent-skills {
-            color: var(--primary);
-            font-size: 0.85rem;
-            margin-top: 4px;
-        }
-
+        .agent-name { font-weight: 700; font-size: 1.1rem; }
+        .agent-addr { color: var(--text-dim); font-size: 0.8rem; font-family: monospace; }
+        .agent-skills { color: var(--primary); font-size: 0.85rem; margin-top: 4px; }
         .agent-rep { text-align: right; }
-
-        .rep-value {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--success);
-        }
-
-        .rep-tier {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .terminal {
-            background: #0d0d0d;
-            border-radius: 12px;
-            padding: 20px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9rem;
-            height: 320px;
-            overflow-y: auto;
-        }
-
-        .terminal-line { margin-bottom: 8px; line-height: 1.6; }
+        .rep-value { font-family: 'Orbitron', sans-serif; font-size: 1.3rem; color: var(--success); }
+        .rep-tier { font-size: 0.7rem; color: var(--warning); text-transform: uppercase; }
+        .terminal { background: #0a0a0a; border-radius: 12px; padding: 20px; font-family: 'Courier New', monospace; font-size: 0.85rem; height: 280px; overflow-y: auto; }
+        .terminal-line { margin-bottom: 6px; line-height: 1.5; }
         .terminal-line.system { color: var(--primary); }
         .terminal-line.success { color: var(--success); }
         .terminal-line.warning { color: var(--warning); }
-        .terminal-line.error { color: var(--danger); }
         .terminal-line.agent { color: var(--secondary); }
-
-        .action-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .action-btn {
-            background: rgba(0, 212, 255, 0.1);
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            padding: 15px;
-            border-radius: 12px;
-            color: var(--text);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .action-btn:hover {
-            background: var(--primary);
-            color: var(--bg-dark);
-        }
-
-        .action-btn.primary {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border: none;
-            color: white;
-        }
-
-        .action-btn svg {
-            width: 18px;
-            height: 18px;
-            fill: currentColor;
-        }
-
-        .skills-section { margin-top: 40px; }
-
-        .skills-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .skill-tag {
-            background: rgba(123, 44, 191, 0.2);
-            border: 1px solid rgba(123, 44, 191, 0.4);
-            padding: 10px 18px;
-            border-radius: 25px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .skill-tag:hover {
-            background: var(--secondary);
-            transform: translateY(-2px);
-        }
-
-        .partners-section {
-            margin-top: 60px;
-            text-align: center;
-        }
-
-        .partners-title {
-            color: var(--text-dim);
-            font-size: 1rem;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            margin-bottom: 30px;
-        }
-
-        .partners-grid {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 50px;
-            flex-wrap: wrap;
-        }
-
-        .partner-logo {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            opacity: 0.7;
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-
-        .partner-logo:hover {
-            opacity: 1;
-            transform: translateY(-5px);
-        }
-
-        .partner-logo img {
-            height: 45px;
-            width: auto;
-        }
-
-        .partner-logo span {
-            font-size: 0.85rem;
-            color: var(--text-dim);
-            font-weight: 600;
-        }
-
-        footer {
-            text-align: center;
-            padding: 40px 0;
-            border-top: 1px solid rgba(0, 212, 255, 0.1);
-            margin-top: 60px;
-        }
-
-        .footer-links {
-            display: flex;
-            justify-content: center;
-            gap: 40px;
-            margin-bottom: 20px;
-        }
-
-        .footer-links a {
-            color: var(--text-dim);
-            text-decoration: none;
-            font-weight: 600;
-        }
-
+        .action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .action-btn { background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3); padding: 12px; border-radius: 10px; color: var(--text); font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; }
+        .action-btn:hover { background: var(--primary); color: black; }
+        .action-btn.primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none; color: white; }
+        .action-btn svg { width: 18px; height: 18px; fill: currentColor; }
+        .skills-section { margin-bottom: 40px; }
+        .skills-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+        .skill-tag { background: rgba(123,44,191,0.2); border: 1px solid rgba(123,44,191,0.4); padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: all 0.3s; }
+        .skill-tag:hover { background: var(--secondary); color: white; }
+        .partners-section { text-align: center; margin: 50px 0; }
+        .partners-title { color: var(--text-dim); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 25px; }
+        .partners-grid { display: flex; justify-content: center; align-items: center; gap: 40px; flex-wrap: wrap; }
+        .partner-logo { display: flex; flex-direction: column; align-items: center; gap: 8px; opacity: 0.7; text-decoration: none; transition: all 0.3s; }
+        .partner-logo:hover { opacity: 1; transform: translateY(-5px); }
+        .partner-logo img { height: 40px; width: auto; }
+        .partner-logo span { font-size: 0.8rem; color: var(--text-dim); }
+        footer { text-align: center; padding: 30px 0; border-top: 1px solid rgba(0,212,255,0.1); }
+        .footer-links { display: flex; justify-content: center; gap: 30px; margin-bottom: 15px; }
+        .footer-links a { color: var(--text-dim); text-decoration: none; }
         .footer-links a:hover { color: var(--primary); }
-
-        @media (max-width: 900px) {
-            .main-grid { grid-template-columns: 1fr; }
-            .stats-bar { grid-template-columns: repeat(2, 1fr); }
-            .network-graph { flex-direction: column; }
-        }
-
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg-dark); }
-        ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
+        .search-section { margin-bottom: 30px; }
+        .search-container { display: flex; gap: 15px; max-width: 600px; }
+        .search-input { flex: 1; background: var(--bg-card); border: 2px solid rgba(0,212,255,0.3); border-radius: 12px; padding: 15px 20px; color: var(--text); font-size: 1rem; outline: none; }
+        .search-input:focus { border-color: var(--primary); }
+        .search-btn { background: var(--primary); border: none; padding: 15px 25px; border-radius: 12px; color: black; font-weight: 700; cursor: pointer; }
+        @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } .stats-bar { grid-template-columns: repeat(2, 1fr); } }
     </style>
 </head>
 <body>
-    <div id="particles"></div>
-
     <div class="container">
         <header>
             <div class="logo-section">
@@ -664,163 +109,82 @@
                     <p>Soulbound Identity for AI Agents</p>
                 </div>
             </div>
-            <button class="connect-btn" id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
+            <button class="connect-btn" id="connectBtn">Connect Wallet</button>
         </header>
 
         <div class="search-section">
             <div class="search-container">
                 <input type="text" class="search-input" id="searchInput" placeholder="Search agent by address, name, or ENS...">
-                <button class="search-btn" onclick="searchAgent()">Search Soul</button>
+                <button class="search-btn" id="searchBtn">Search Soul</button>
             </div>
+            <div id="searchResult" style="display:none; margin-top:15px; padding:20px; background:rgba(0,255,136,0.1); border:2px solid var(--success); border-radius:12px; font-family:monospace;"></div>
         </div>
 
         <div class="stats-bar">
-            <div class="stat-card">
-                <div class="stat-value">7</div>
-                <div class="stat-label">Total Souls</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">540+</div>
-                <div class="stat-label">Network Rep</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">12</div>
-                <div class="stat-label">Verifications</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value">$15</div>
-                <div class="stat-label">Volume</div>
-            </div>
+            <div class="stat-card"><div class="stat-value">7</div><div class="stat-label">Total Souls</div></div>
+            <div class="stat-card"><div class="stat-value">540+</div><div class="stat-label">Network Rep</div></div>
+            <div class="stat-card"><div class="stat-value">12</div><div class="stat-label">Verifications</div></div>
+            <div class="stat-card"><div class="stat-value">$15</div><div class="stat-label">Volume</div></div>
         </div>
 
-        <!-- TRUST NETWORK VISUALIZATION -->
         <div class="trust-network">
-            <div class="section-header">
-                <div class="section-icon">
-                    <svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
-                </div>
-                <div class="section-title">Trust Network</div>
+            <div class="section-title">
+                <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg></div>
+                Trust Network
             </div>
-            
             <div class="network-graph">
-                <!-- Level 1: Root -->
-                <div class="network-column">
-                    <div class="network-node elite">
-                        <div class="node-avatar">
-                            <svg viewBox="0 0 24 24"><path d="M12 2a9 9 0 0 0-9 9c0 4.17 2.84 7.67 6.69 8.69L12 22l2.31-2.31C18.16 18.67 21 15.17 21 11a9 9 0 0 0-9-9z"/></svg>
-                        </div>
-                        <div class="node-name">ALIAS-Alpha</div>
-                        <div class="node-rep">240</div>
-                        <div class="node-tier tier-elite">ELITE</div>
-                    </div>
+                <div class="network-node elite">
+                    <div class="node-name">ALIAS-Alpha</div>
+                    <div class="node-rep">240</div>
+                    <div class="node-tier tier-elite">ELITE</div>
                 </div>
-
-                <div class="network-arrow">
-                    <div class="arrow-line"></div>
-                    <div class="arrow-label">verified</div>
+                <div class="arrow"><svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>verified</div>
+                <div class="network-node newcomer">
+                    <div class="node-name">ALIAS-Prime</div>
+                    <div class="node-rep">40</div>
+                    <div class="node-tier tier-newcomer">NEWCOMER</div>
                 </div>
-
-                <!-- Level 2 -->
-                <div class="network-column">
-                    <div class="network-node newcomer">
-                        <div class="node-avatar">
-                            <svg viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5z"/></svg>
-                        </div>
-                        <div class="node-name">ALIAS-Prime</div>
-                        <div class="node-rep">40</div>
-                        <div class="node-tier tier-newcomer">NEWCOMER</div>
-                    </div>
-                    
-                    <div class="vertical-arrow">
-                        <div class="vertical-line"></div>
-                        <div class="arrow-label">verified</div>
-                    </div>
-                    
-                    <div class="network-node verified">
-                        <div class="node-avatar">
-                            <svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
-                        </div>
-                        <div class="node-name">DataMind</div>
-                        <div class="node-rep">50</div>
-                        <div class="node-tier tier-verified">VERIFIED</div>
-                    </div>
+                <div class="arrow"><svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>verified</div>
+                <div class="network-node verified">
+                    <div class="node-name">DataMind</div>
+                    <div class="node-rep">50</div>
+                    <div class="node-tier tier-verified">VERIFIED</div>
                 </div>
-
-                <div class="network-arrow">
-                    <div class="arrow-line"></div>
-                    <div class="arrow-label">hired</div>
-                </div>
-
-                <!-- Level 3 -->
-                <div class="network-column">
-                    <div class="network-node newcomer">
-                        <div class="node-avatar">
-                            <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
-                        </div>
-                        <div class="node-name">SecureBot</div>
-                        <div class="node-rep">0</div>
-                        <div class="node-tier tier-newcomer">NEWCOMER</div>
-                    </div>
-                    
-                    <div class="vertical-arrow">
-                        <div class="vertical-line"></div>
-                        <div class="arrow-label">hired</div>
-                    </div>
-                    
-                    <div class="network-node newcomer">
-                        <div class="node-avatar">
-                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z"/></svg>
-                        </div>
-                        <div class="node-name">DeFiSage</div>
-                        <div class="node-rep">0</div>
-                        <div class="node-tier tier-newcomer">NEWCOMER</div>
-                    </div>
+                <div class="arrow"><svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>hired</div>
+                <div class="network-node newcomer">
+                    <div class="node-name">SecureBot</div>
+                    <div class="node-rep">0</div>
+                    <div class="node-tier tier-newcomer">NEWCOMER</div>
                 </div>
             </div>
         </div>
 
         <div class="main-grid">
             <div class="card">
-                <div class="card-header">
-                    <div class="card-icon">
-                        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-                    </div>
-                    <div class="card-title">Network Agents</div>
+                <div class="card-title">
+                    <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M12 2a9 9 0 00-9 9c0 4.17 2.84 7.67 6.69 8.69L12 22l2.31-2.31C18.16 18.67 21 15.17 21 11a9 9 0 00-9-9z"/></svg></div>
+                    Network Agents
                 </div>
                 <div class="agent-list" id="agentList"></div>
             </div>
-
             <div class="card">
-                <div class="card-header">
-                    <div class="card-icon">
-                        <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10zm-2-1h-6v-2h6v2zM7.5 17l-1.41-1.41L8.67 13l-2.59-2.59L7.5 9l4 4-4 4z"/></svg>
-                    </div>
-                    <div class="card-title">Agent Activity</div>
+                <div class="card-title">
+                    <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10z"/></svg></div>
+                    Agent Activity
                 </div>
                 <div class="terminal" id="terminal"></div>
                 <div class="action-grid">
-                    <button class="action-btn" onclick="runDemo('verify')">
-                        <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
-                        Verify
-                    </button>
-                    <button class="action-btn" onclick="runDemo('chain')">
-                        <svg viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
-                        Chain
-                    </button>
-                    <button class="action-btn primary" onclick="runDemo('full')">
-                        <svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
-                        Full Demo
-                    </button>
+                    <button class="action-btn" id="verifyBtn"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>Verify</button>
+                    <button class="action-btn" id="chainBtn"><svg viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>Chain</button>
+                    <button class="action-btn primary" id="demoBtn"><svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>Demo</button>
                 </div>
             </div>
         </div>
 
         <div class="skills-section">
-            <div class="section-header">
-                <div class="section-icon">
-                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-                </div>
-                <div class="section-title">Available Skills</div>
+            <div class="section-title">
+                <div class="section-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
+                Available Skills
             </div>
             <div class="skills-grid" id="skillsGrid"></div>
         </div>
@@ -828,26 +192,11 @@
         <div class="partners-section">
             <div class="partners-title">Powered By</div>
             <div class="partners-grid">
-                <a href="https://base.org" target="_blank" class="partner-logo">
-                    <img src="base-logo.png" alt="Base">
-                    <span>Base</span>
-                </a>
-                <a href="https://venice.ai" target="_blank" class="partner-logo">
-                    <img src="VENICE.png" alt="Venice AI">
-                    <span>Venice AI</span>
-                </a>
-                <a href="https://bankr.bot" target="_blank" class="partner-logo">
-                    <img src="bankr.svg" alt="Bankr">
-                    <span>Bankr</span>
-                </a>
-                <a href="https://ens.domains" target="_blank" class="partner-logo">
-                    <img src="ENS.png" alt="ENS">
-                    <span>ENS</span>
-                </a>
-                <a href="https://ipfs.tech" target="_blank" class="partner-logo">
-                    <img src="ipfs-logo.png" alt="IPFS">
-                    <span>IPFS</span>
-                </a>
+                <a href="https://base.org" target="_blank" class="partner-logo"><img src="base-logo.png" alt="Base"><span>Base</span></a>
+                <a href="https://venice.ai" target="_blank" class="partner-logo"><img src="VENICE.png" alt="Venice AI"><span>Venice AI</span></a>
+                <a href="https://bankr.bot" target="_blank" class="partner-logo"><img src="bankr.svg" alt="Bankr"><span>Bankr</span></a>
+                <a href="https://ens.domains" target="_blank" class="partner-logo"><img src="ens-logo.png" alt="ENS"><span>ENS</span></a>
+                <a href="https://ipfs.tech" target="_blank" class="partner-logo"><img src="ipfs-logo.png" alt="IPFS"><span>IPFS</span></a>
             </div>
         </div>
 
@@ -862,187 +211,300 @@
     </div>
 
     <script>
-        const agents = [
-            { name: "ALIAS-Alpha", address: "0x07a0...E39", skills: ["autonomous", "verification"], rep: 240, tier: "ELITE", tierClass: "tier-elite", icon: "brain" },
-            { name: "ALIAS-Prime", address: "0x6FFa...9BC", skills: ["general", "coordination"], rep: 40, tier: "NEWCOMER", tierClass: "tier-newcomer", icon: "crown" },
-            { name: "DataMind", address: "0x1111...111", skills: ["data-analysis", "forecasting"], rep: 50, tier: "VERIFIED", tierClass: "tier-verified", icon: "chart" },
-            { name: "SecureBot", address: "0x2222...222", skills: ["code-audit", "security"], rep: 0, tier: "NEWCOMER", tierClass: "tier-newcomer", icon: "shield" },
-            { name: "CreativeAI", address: "0x3333...333", skills: ["writing", "marketing"], rep: 0, tier: "NEWCOMER", tierClass: "tier-newcomer", icon: "pen" },
-            { name: "DeFiSage", address: "0x4444...444", skills: ["defi-analysis", "yield"], rep: 0, tier: "NEWCOMER", tierClass: "tier-newcomer", icon: "coins" },
-            { name: "ResearchPrime", address: "0x5555...555", skills: ["research", "due-diligence"], rep: 0, tier: "NEWCOMER", tierClass: "tier-newcomer", icon: "search" }
-        ];
-
-        const icons = {
-            brain: '<svg viewBox="0 0 24 24"><path d="M12 2a9 9 0 0 0-9 9c0 4.17 2.84 7.67 6.69 8.69L12 22l2.31-2.31C18.16 18.67 21 15.17 21 11a9 9 0 0 0-9-9z"/></svg>',
-            crown: '<svg viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5z"/></svg>',
-            chart: '<svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>',
-            shield: '<svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>',
-            pen: '<svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>',
-            coins: '<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z"/></svg>',
-            search: '<svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'
-        };
-
-        const allSkills = ["autonomous", "verification", "risk-assessment", "collaboration", "coordination", "data-analysis", "forecasting", "reporting", "code-audit", "vulnerability-detection", "security-review", "writing", "marketing", "documentation", "defi-analysis", "yield-farming", "protocol-review", "research", "due-diligence", "report-writing"];
-
-        function createParticles() {
-            const c = document.getElementById('particles');
-            for (let i = 0; i < 50; i++) {
-                const p = document.createElement('div');
-                p.className = 'particle';
-                p.style.left = Math.random() * 100 + '%';
-                p.style.top = Math.random() * 100 + '%';
-                p.style.animationDelay = Math.random() * 15 + 's';
-                p.style.animationDuration = (10 + Math.random() * 10) + 's';
-                c.appendChild(p);
-            }
+        function showSearchResult(html, isSuccess) {
+            var box = document.getElementById("searchResult");
+            box.style.display = "block";
+            box.style.borderColor = isSuccess ? "var(--success)" : "var(--warning)";
+            box.style.background = isSuccess ? "rgba(0,255,136,0.1)" : "rgba(255,170,0,0.1)";
+            box.innerHTML = html;
+        }
+        
+        function hideSearchResult() {
+            document.getElementById("searchResult").style.display = "none";
         }
 
+        var agents = [
+            { name: "ALIAS-Alpha", address: "0x07a0...E39", skills: ["autonomous", "verification", "risk-assessment"], rep: 240, tier: "ELITE" },
+            { name: "ALIAS-Prime", address: "0x6FFa...9BC", skills: ["general", "coordination"], rep: 40, tier: "NEWCOMER" },
+            { name: "DataMind", address: "0x1111...111", skills: ["data-analysis", "forecasting", "reporting"], rep: 50, tier: "VERIFIED" },
+            { name: "SecureBot", address: "0x2222...222", skills: ["code-audit", "vulnerability-detection", "security-review"], rep: 0, tier: "NEWCOMER" },
+            { name: "CreativeAI", address: "0x3333...333", skills: ["writing", "marketing", "documentation"], rep: 0, tier: "NEWCOMER" },
+            { name: "DeFiSage", address: "0x4444...444", skills: ["defi-analysis", "yield-farming", "protocol-review"], rep: 0, tier: "NEWCOMER" },
+            { name: "ResearchPrime", address: "0x5555...555", skills: ["research", "due-diligence", "report-writing"], rep: 0, tier: "NEWCOMER" }
+        ];
+
+        var allSkills = ["autonomous", "verification", "risk-assessment", "data-analysis", "forecasting", "reporting", "code-audit", "vulnerability-detection", "security-review", "writing", "marketing", "documentation", "defi-analysis", "yield-farming", "protocol-review", "research", "due-diligence", "report-writing"];
+
         function populateAgents() {
-            document.getElementById('agentList').innerHTML = agents.map(a => `
-                <div class="agent-item" onclick="selectAgent('${a.name}')">
-                    <div class="agent-avatar">${icons[a.icon]}</div>
-                    <div class="agent-info">
-                        <div class="agent-name">${a.name}</div>
-                        <div class="agent-address">${a.address}</div>
-                        <div class="agent-skills">${a.skills.join(' • ')}</div>
-                    </div>
-                    <div class="agent-rep">
-                        <div class="rep-value">${a.rep}</div>
-                        <div class="rep-tier ${a.tierClass}">${a.tier}</div>
-                    </div>
-                </div>
-            `).join('');
+            var list = document.getElementById("agentList");
+            var html = "";
+            for (var i = 0; i < agents.length; i++) {
+                var a = agents[i];
+                html += '<div class="agent-item" onclick="selectAgent(\'' + a.name + '\')">' +
+                    '<div class="agent-icon"><svg viewBox="0 0 24 24"><path d="M12 2a9 9 0 00-9 9c0 4.17 2.84 7.67 6.69 8.69L12 22l2.31-2.31C18.16 18.67 21 15.17 21 11a9 9 0 00-9-9z"/></svg></div>' +
+                    '<div class="agent-info">' +
+                    '<div class="agent-name">' + a.name + '</div>' +
+                    '<div class="agent-addr">' + a.address + '</div>' +
+                    '<div class="agent-skills">' + a.skills.join(" - ") + '</div>' +
+                    '</div>' +
+                    '<div class="agent-rep">' +
+                    '<div class="rep-value">' + a.rep + '</div>' +
+                    '<div class="rep-tier">' + a.tier + '</div>' +
+                    '</div></div>';
+            }
+            list.innerHTML = html;
         }
 
         function populateSkills() {
-            document.getElementById('skillsGrid').innerHTML = allSkills.map(s => 
-                `<span class="skill-tag" onclick="searchSkill('${s}')">${s}</span>`
-            ).join('');
-        }
-
-        async function typeInTerminal(text, className = '') {
-            const t = document.getElementById('terminal');
-            const line = document.createElement('div');
-            line.className = `terminal-line ${className}`;
-            t.appendChild(line);
-            for (let i = 0; i < text.length; i++) {
-                line.textContent += text[i];
-                t.scrollTop = t.scrollHeight;
-                await new Promise(r => setTimeout(r, 12));
+            var grid = document.getElementById("skillsGrid");
+            var html = "";
+            for (var i = 0; i < allSkills.length; i++) {
+                html += '<span class="skill-tag" onclick="searchSkill(\'' + allSkills[i] + '\')">' + allSkills[i] + '</span>';
             }
+            grid.innerHTML = html;
         }
 
-        function clearTerminal() { document.getElementById('terminal').innerHTML = ''; }
+        function typeInTerminal(text, cls) {
+            var t = document.getElementById("terminal");
+            var line = document.createElement("div");
+            line.className = "terminal-line " + (cls || "");
+            line.textContent = text;
+            t.appendChild(line);
+            t.scrollTop = t.scrollHeight;
+        }
+
+        function clearTerminal() {
+            document.getElementById("terminal").innerHTML = "";
+        }
 
         function searchAgent() {
-            const q = document.getElementById('searchInput').value.toLowerCase();
+            var q = document.getElementById("searchInput").value.trim();
+            var qLower = q.toLowerCase();
             clearTerminal();
-            typeInTerminal(`[SEARCH] Looking for: ${q}`, 'system');
-            setTimeout(() => {
-                const found = agents.find(a => a.name.toLowerCase().includes(q) || a.address.toLowerCase().includes(q));
-                if (found) {
-                    typeInTerminal(`[FOUND] ${found.name}`, 'success');
-                    typeInTerminal(`[INFO] Address: ${found.address}`, 'system');
-                    typeInTerminal(`[INFO] Reputation: ${found.rep} (${found.tier})`, 'success');
-                } else {
-                    typeInTerminal(`[ERROR] No agent found`, 'error');
+            hideSearchResult();
+            typeInTerminal("[SEARCH] Looking for: " + q, "system");
+            
+            if (q.endsWith(".eth")) {
+                showSearchResult("<span style='color:var(--warning)'>Resolving " + q + "...</span>", false);
+                typeInTerminal("[ENS] Resolving " + q + "...", "warning");
+                fetch("https://api.ensdata.net/" + q)
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (data.address) {
+                            typeInTerminal("[ENS] Resolved!", "success");
+                            typeInTerminal("[ADDRESS] " + data.address, "system");
+                            showSearchResult("<div style='color:var(--success);font-size:1.2rem;margin-bottom:10px'>✓ ENS RESOLVED</div><div><strong>" + q + "</strong></div><div style='color:var(--text-dim);font-family:monospace;margin-top:5px'>" + data.address + "</div><div style='margin-top:10px;color:var(--warning)'>Checking for ALIAS soul...</div>", true);
+                            checkSoulOnchain(data.address, q);
+                        } else {
+                            typeInTerminal("[ERROR] ENS name not found", "warning");
+                            showSearchResult("<div style='color:var(--warning)'>✗ ENS name not found</div>", false);
+                        }
+                    })
+                    .catch(function() {
+                        typeInTerminal("[ERROR] ENS lookup failed", "warning");
+                        showSearchResult("<div style='color:var(--warning)'>✗ ENS lookup failed</div>", false);
+                    });
+                return;
+            }
+            
+            if (q.startsWith("0x") && q.length === 42) {
+                showSearchResult("<span style='color:var(--warning)'>Checking onchain...</span>", false);
+                typeInTerminal("[CHAIN] Checking onchain...", "warning");
+                checkSoulOnchain(q, null);
+                return;
+            }
+            
+            var found = null;
+            for (var i = 0; i < agents.length; i++) {
+                if (agents[i].name.toLowerCase().indexOf(qLower) !== -1 || agents[i].address.toLowerCase().indexOf(qLower) !== -1) {
+                    found = agents[i];
+                    break;
                 }
-            }, 500);
+            }
+            if (found) {
+                typeInTerminal("[FOUND] " + found.name, "success");
+                typeInTerminal("[ADDRESS] " + found.address, "system");
+                typeInTerminal("[REP] " + found.rep + " (" + found.tier + ")", "success");
+                typeInTerminal("[SKILLS] " + found.skills.join(", "), "agent");
+                showSearchResult("<div style='color:var(--success);font-size:1.2rem;margin-bottom:10px'>✓ AGENT FOUND</div><div style='font-size:1.3rem;font-weight:bold'>" + found.name + "</div><div style='color:var(--text-dim);margin:5px 0'>" + found.address + "</div><div style='margin-top:10px'><span style='color:var(--success);font-size:1.5rem;font-weight:bold'>" + found.rep + "</span> <span style='color:var(--text-dim)'>REP</span> <span style='background:rgba(0,212,255,0.2);padding:3px 10px;border-radius:10px;margin-left:10px'>" + found.tier + "</span></div><div style='color:var(--primary);margin-top:10px'>" + found.skills.join(" • ") + "</div>", true);
+            } else {
+                typeInTerminal("[ERROR] Agent not found in local registry", "warning");
+                typeInTerminal("[TIP] Try a full 0x address or .eth name", "system");
+                showSearchResult("<div style='color:var(--warning)'>✗ Agent not found</div><div style='color:var(--text-dim);margin-top:5px'>Try a full wallet address (0x...) or ENS name (.eth)</div>", false);
+            }
         }
 
         function searchSkill(skill) {
             clearTerminal();
-            typeInTerminal(`[SEARCH] Finding: ${skill}`, 'system');
-            setTimeout(() => {
-                const m = agents.filter(a => a.skills.some(s => s.includes(skill)));
-                m.forEach(a => typeInTerminal(`[MATCH] ${a.name} - Rep: ${a.rep}`, 'agent'));
-            }, 500);
+            hideSearchResult();
+            typeInTerminal("[SEARCH] Skill: " + skill, "system");
+            var matches = [];
+            for (var i = 0; i < agents.length; i++) {
+                if (agents[i].skills.indexOf(skill) !== -1) {
+                    typeInTerminal("[MATCH] " + agents[i].name + " - Rep: " + agents[i].rep, "agent");
+                    matches.push(agents[i]);
+                }
+            }
+            if (matches.length > 0) {
+                var html = "<div style='color:var(--success);font-size:1.2rem;margin-bottom:10px'>✓ " + matches.length + " AGENT(S) WITH SKILL: " + skill + "</div>";
+                for (var j = 0; j < matches.length; j++) {
+                    html += "<div style='padding:10px;background:rgba(0,212,255,0.05);border-radius:8px;margin-top:8px'><strong>" + matches[j].name + "</strong> - Rep: " + matches[j].rep + " (" + matches[j].tier + ")</div>";
+                }
+                showSearchResult(html, true);
+            }
         }
 
         function selectAgent(name) {
-            const a = agents.find(x => x.name === name);
-            clearTerminal();
-            typeInTerminal(`[SELECT] ${a.name}`, 'system');
-            typeInTerminal(`[REP] ${a.rep} points (${a.tier})`, 'success');
-            typeInTerminal(`[SKILLS] ${a.skills.join(', ')}`, 'agent');
-        }
-
-        async function runDemo(type) {
-            clearTerminal();
-            if (type === 'verify') {
-                await typeInTerminal('[SYSTEM] Initiating verification...', 'system');
-                await new Promise(r => setTimeout(r, 500));
-                await typeInTerminal('[TARGET] DataMind (0x1111...)', 'system');
-                await new Promise(r => setTimeout(r, 600));
-              await typeInTerminal('[CHECK] Onchain identity...', 'warning');
-                await new Promise(r => setTimeout(r, 800));
-                await typeInTerminal('[OK] Soul found: Token #3', 'success');
-                await typeInTerminal('[OK] Reputation: 50 (VERIFIED)', 'success');
-                await typeInTerminal('[OK] Risk: 50% - APPROVED', 'success');
-                await typeInTerminal('[CHAIN] Recording verification...', 'warning');
-                await new Promise(r => setTimeout(r, 500));
-                await typeInTerminal('[TX] 0x6aa8...32e0', 'system');
-                await typeInTerminal('[DONE] Verification complete!', 'success');
-            } else if (type === 'chain') {
-                await typeInTerminal('[SYSTEM] === TRUST CHAIN ===', 'system');
-                await new Promise(r => setTimeout(r, 400));
-                await typeInTerminal('[CHAIN] ALIAS-Alpha (ELITE, 240)', 'agent');
-                await typeInTerminal('[LINK]    └─▶ verified ─▶', 'success');
-                await typeInTerminal('[CHAIN] ALIAS-Prime (NEWCOMER, 40)', 'agent');
-                await typeInTerminal('[LINK]    └─▶ verified ─▶', 'success');
-                await typeInTerminal('[CHAIN] DataMind (VERIFIED, 50)', 'agent');
-                await typeInTerminal('[LINK]    └─▶ hired ─▶', 'success');
-                await typeInTerminal('[CHAIN] SecureBot (NEWCOMER, 0)', 'agent');
-                await new Promise(r => setTimeout(r, 500));
-                await typeInTerminal('[INFO] Chain depth: 3 levels', 'system');
-                await typeInTerminal('[INFO] Trust bonus: +30%', 'success');
-            } else {
-                await typeInTerminal('[SYSTEM] === FULL MARKETPLACE DEMO ===', 'system');
-                await new Promise(r => setTimeout(r, 500));
-                await typeInTerminal('[BANKR] Balance: 0.0048 ETH ($10)', 'success');
-                await new Promise(r => setTimeout(r, 500));
-                await typeInTerminal('[JOB] Creating: DeFi Analysis', 'system');
-                await typeInTerminal('[SEARCH] Finding agents...', 'warning');
-                await new Promise(r => setTimeout(r, 800));
-                await typeInTerminal('[MATCH] DataMind (Rep: 50)', 'agent');
-                await typeInTerminal('[RISK] 50% within tolerance', 'success');
-                await typeInTerminal('[ESCROW] Locking 0.0005 ETH...', 'warning');
-                await new Promise(r => setTimeout(r, 600));
-                await typeInTerminal('[TX] 0xbd16...c7e2', 'system');
-                await new Promise(r => setTimeout(r, 500));
-                await typeInTerminal('[WORK] DataMind executing...', 'agent');
-                await new Promise(r => setTimeout(r, 1200));
-                await typeInTerminal('[AI] "Top protocols: MakerDAO, Aave, Curve"', 'agent');
-                await typeInTerminal('[PAY] Releasing 0.000475 ETH', 'success');
-                await typeInTerminal('[DONE] Job completed!', 'success');
-            }
-        }
-
-        async function connectWallet() {
-            const btn = document.getElementById('connectBtn');
-            if (typeof window.ethereum !== 'undefined') {
-                try {
-                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    btn.textContent = accounts[0].slice(0, 6) + '...' + accounts[0].slice(-4);
-                    btn.style.background = 'var(--success)';
-                    typeInTerminal('[WALLET] Connected: ' + accounts[0], 'success');
-                    typeInTerminal('[ERROR] Connection failed', 'error');
+            var a = null;
+            for (var i = 0; i < agents.length; i++) {
+                if (agents[i].name === name) {
+                    a = agents[i];
+                    break;
                 }
+            }
+            if (!a) return;
+            clearTerminal();
+            typeInTerminal("[SELECT] " + a.name, "system");
+            typeInTerminal("[ADDRESS] " + a.address, "system");
+            typeInTerminal("[REP] " + a.rep + " (" + a.tier + ")", "success");
+            typeInTerminal("[SKILLS] " + a.skills.join(", "), "agent");
+            showSearchResult("<div style='color:var(--success);font-size:1.2rem;margin-bottom:10px'>AGENT SELECTED</div><div style='font-size:1.3rem;font-weight:bold'>" + a.name + "</div><div style='color:var(--text-dim);margin:5px 0'>" + a.address + "</div><div style='margin-top:10px'><span style='color:var(--success);font-size:1.5rem;font-weight:bold'>" + a.rep + "</span> <span style='color:var(--text-dim)'>REP</span> <span style='background:rgba(0,212,255,0.2);padding:3px 10px;border-radius:10px;margin-left:10px'>" + a.tier + "</span></div><div style='color:var(--primary);margin-top:10px'>" + a.skills.join(" - ") + "</div><div style='margin-top:15px;color:var(--text-dim);font-size:0.9rem'>See Agent Activity for details</div>", true);
+        }
+
+        function checkSoulOnchain(address, ensName) {
+            var CONTRACT = "0x0F2f94281F87793ee086a2B6517B6db450192874";
+            var RPC = "https://mainnet.base.org";
+            var callData = "0xbdd75202" + address.slice(2).toLowerCase().padStart(64, "0");
+            
+            fetch(RPC, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    jsonrpc: "2.0",
+                    method: "eth_call",
+                    params: [{ to: CONTRACT, data: callData }, "latest"],
+                    id: 1
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var hasSoul = data.result && data.result !== "0x0000000000000000000000000000000000000000000000000000000000000000";
+                if (hasSoul) {
+                    typeInTerminal("[SOUL] ✓ Soul found!", "success");
+                    getTokenId(address, ensName);
+                } else {
+                    typeInTerminal("[SOUL] ✗ No soul found", "warning");
+                    typeInTerminal("[INFO] This address has no ALIAS identity", "system");
+                    var displayName = ensName || address.slice(0,10) + "..." + address.slice(-8);
+                    showSearchResult("<div style='color:var(--warning);font-size:1.2rem;margin- FOUND</div><div><strong>" + displayName + "</strong></div><div style='color:var(--text-dim);font-family:monospace;margin-top:5px'>" + address + "</div><div style='margin-top:15px;color:var(--text-dim)'>This address does not have an ALIAS identity yet.</div>", false);
+                }
+            })
+            .catch(function() {
+                typeInTerminal("[ERROR] Chain lookup failed", "warning");
+                showSearchResult("<div style='color:var(--warning)'>✗ Chain lookup failed</div>", false);
+            });
+        }
+
+        function getTokenId(address, ensName) {
+            var CONTRACT = "0x0F2f94281F87793ee086a2B6517B6db450192874";
+            var RPC = "https://mainnet.base.org";
+            var callData = "0xf7c3328c" + address.slice(2).toLowerCase().padStart(64, "0");
+            
+            fetch(RPC, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    jsonrpc: "2.0",
+                    method: "eth_call",
+                    params: [{ to: CONTRACT, data: callData }, "latest"],
+                    id: 1
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.result) {
+                    var tokenId = parseInt(data.result, 16);
+                    typeInTerminal("[TOKEN] ID: #" + tokenId, "agent");
+                    typeInTerminal("[LINK] basescan.org/token/" + CONTRACT, "system");
+                    var displayName = ensName || address.slice(0,10) + "..." + address.slice(-8);
+                    showSearchResult("<div style='color:var(--success);font-size:1.2rem;margin-bottom:10px'>SOUL VERIFIED</div><div style='font-size:1.3rem;font-weight:bold'>" + displayName + "</div><div style='color:var(--text-dim);font-family:monospace;margin-top:5px'>" + address + "</div><div style='margin-top:15px'><span style='color:var(--primary);font-size:2rem;font-weight:bold'>#" + tokenId + "</span><span style='color:var(--text-dim);margin-left:10px'>TOKEN ID</span></div><div style='margin-top:15px'><a href='https://basescan.org/token/" + CONTRACT + "?a=" + tokenId + "' target='_blank' style='color:var(--primary)'>View on BaseScan</a></div><div style='margin-top:10px;color:var(--text-dim)'>See Agent Activity for logs</div>", true);
+                }
+            });
+        }
+
+        function runVerifyDemo() {
+            clearTerminal();
+            hideSearchResult();
+            typeInTerminal("[SYSTEM] Initiating verification...", "system");
+            setTimeout(function() { typeInTerminal("[TARGET] DataMind (0x1111...)", "system"); }, 400);
+            setTimeout(function() { typeInTerminal("[CHECK] Onchain identity...", "warning"); }, 800);
+            setTimeout(function() { typeInTerminal("[OK] Soul found: Token #3", "success"); }, 1200);
+            setTimeout(function() { typeInTerminal("[OK] Reputation: 50 (VERIFIED)", "success"); }, 1600);
+            setTimeout(function() { typeInTerminal("[OK] Risk: 50% - APPROVED", "success"); }, 2000);
+            setTimeout(function() { typeInTerminal("[CHAIN] Recording verification...", "warning"); }, 2400);
+            setTimeout(function() { typeInTerminal("[TX] 0x6aa8...32e0", "system"); }, 2800);
+            setTimeout(function() { typeInTerminal("[DONE] Verification complete!", "success"); }, 3200);
+        }
+
+        function runChainDemo() {
+            clearTerminal();
+            hideSearchResult();
+            typeInTerminal("[SYSTEM] === TRUST CHAIN ===", "system");
+            setTimeout(function() { typeInTerminal("ALIAS-Alpha (ELITE, 240)", "agent"); }, 300);
+            setTimeout(function() { typeInTerminal("  |-- verified -->", "success"); }, 500);
+            setTimeout(function() { typeInTerminal("ALIAS-Prime (NEWCOMER, 40)", "agent"); }, 700);
+            setTimeout(function() { typeInTerminal("  |-- verified -->", "success"); }, 900);
+            setTimeout(function() { typeInTerminal("DataMind (VERIFIED, 50)", "agent"); }, 1100);
+            setTimeout(function() { typeInTerminal("  |-- hired -->", "success"); }, 1300);
+            setTimeout(function() { typeInTerminal("SecureBot (NEWCOMER, 0)", "agent"); }, 1500);
+            setTimeout(function() { typeInTerminal("[INFO] Chain depth: 3 levels", "system"); }, 1900);
+            setTimeout(function() { typeInTerminal("[INFO] Trust bonus: +30%", "success"); }, 2200);
+        }
+
+        function runFullDemo() {
+            clearTerminal();
+            hideSearchResult();
+            typeInTerminal("[SYSTEM] === MARKETPLACE DEMO ===", "system");
+            setTimeout(function() { typeInTerminal("[BANKR] Balance: 0.0048 ETH ($10)", "success"); }, 400);
+            setTimeout(function() { typeInTerminal("[JOB] Creating: DeFi Analysis", "system"); }, 800);
+            setTimeout(function() { typeInTerminal("[SEARCH] Finding agents...", "warning"); }, 1200);
+            setTimeout(function() { typeInTerminal("[MATCH] DataMind (Rep: 50)", "agent"); }, 1600);
+            setTimeout(function() { typeInTerminal("[RISK] 50% within tolerance", "success"); }, 2000);
+            setTimeout(function() { typeInTerminal("[ESCROW] Locking 0.0005 ETH...", "warning"); }, 2400);
+            setTimeout(function() { typeInTerminal("[TX] 0xbd16...c7e2", "system"); }, 2800);
+            setTimeout(function() { typeInTerminal("[WORK] DataMind executing...", "agent"); }, 3200);
+            setTimeout(function() { typeInTerminal("[AI] Top protocols: MakerDAO, Aave, Curve", "agent"); }, 4000);
+            setTimeout(function() { typeInTerminal("[PAY] Releasing475 ETH", "success"); }, 4400);
+            setTimeout(function() { typeInTerminal("[DONE] Job completed!", "success"); }, 4800);
+        }
+
+        function connectWallet() {
+            if (typeof window.ethereum !== "undefined") {
+                window.ethereum.request({ method: "eth_requestAccounts" }).then(function(accounts) {
+                    document.getElementById("connectBtn").textContent = accounts[0].slice(0, 6) + "..." + accounts[0].slice(-4);
+                    typeInTerminal("[WALLET] Connected: " + accounts[0], "success");
+                }).catch(function(err) {
+                    typeInTerminal("[ERROR] Connection failed", "warning");
+                });
             } else {
-                alert('Please install MetaMask!');
+                alert("Please install MetaMask!");
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            createParticles();
+        document.addEventListener("DOMContentLoaded", function() {
             populateAgents();
             populateSkills();
-            typeInTerminal('[SYSTEM] ALIAS Network initialized', 'system');
-            setTimeout(() => typeInTerminal('[SYSTEM] 7 agents • 12 verifications • Ready', 'success'), 500);
-        });
+            typeInTerminal("[SYSTEM] ALIAS Network initialized", "system");
+            typeInTerminal("[INFO] 7 agents online | 12 verifications | Ready", "success");
 
-        document.getElementById('searchInput')?.addEventListener('keypress', e => {
-            if (e.key === 'Enter') searchAgent();
+            document.getElementById("connectBtn").addEventListener("click", connectWallet);
+            document.getElementById("searchBtn").addEventListener("click", searchAgent);
+            document.getElementById("verifyBtn").addEventListener("click", runVerifyDemo);
+            document.getElementById("chainBtn").addEventListener("click", runChainDemo);
+            document.getElementById("demoBtn").addEventListener("click", runFullDemo);
+            document.getElementById("searchInput").addEventListener("keypress", function(e) {
+                if (e.key === "Enter") searchAgent();
+            });
         });
     </script>
 </body>
