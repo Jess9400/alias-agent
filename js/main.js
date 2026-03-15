@@ -632,22 +632,42 @@ function runVerifyDemo() {
 function runChainDemo() {
     clearTerminal();
     hideSearchResult();
-    typeInTerminal("[SYSTEM] === TRUST CHAIN ===", "system");
-    setTimeout(function() { typeInTerminal("ALIAS-Alpha (ELITE, 240)", "agent"); }, 300);
-    setTimeout(function() { typeInTerminal("  |-- verified -->", "success"); }, 500);
-    setTimeout(function() { typeInTerminal("ALIAS-Prime (NEWCOMER, 40)", "agent"); }, 700);
-    setTimeout(function() { typeInTerminal("  |-- verified -->", "success"); }, 900);
-    setTimeout(function() { typeInTerminal("DataMind (VERIFIED, 50)", "agent"); }, 1100);
-    setTimeout(function() { typeInTerminal("  |-- hired -->", "success"); }, 1300);
-    setTimeout(function() { typeInTerminal("SecureBot (NEWCOMER, 0)", "agent"); }, 1500);
-    setTimeout(function() { typeInTerminal("[INFO] Chain depth: 3 levels", "system"); }, 1900);
-    setTimeout(function() { typeInTerminal("[INFO] Trust bonus: +30%", "success"); }, 2200);
+    
+    // Get top 4 agents by reputation (from blockchain data)
+    var topAgents = agents.slice().sort(function(a, b) {
+        return b.rep - a.rep;
+    }).slice(0, 4);
+    
+    typeInTerminal("[SYSTEM] === TRUST CHAIN (Live from Blockchain) ===", "system");
+    
+    var delay = 300;
+    topAgents.forEach(function(agent, index) {
+        setTimeout(function() {
+            typeInTerminal(agent.name + " (" + agent.tier + ", " + agent.rep + " REP)", "agent");
+        }, delay);
+        delay += 200;
+        
+        if (index < topAgents.length - 1) {
+            var action = ["verified", "trusted", "hired"][index % 3];
+            setTimeout(function() {
+                typeInTerminal("  |-- " + action + " -->", "success");
+            }, delay);
+            delay += 200;
+        }
+    });
+    
+    setTimeout(function() {
+        typeInTerminal("[INFO] Chain depth: " + (topAgents.length - 1) + " levels", "system");
+    }, delay + 200);
+    setTimeout(function() {
+        typeInTerminal("[INFO] Total network agents: " + agents.length, "success");
+    }, delay + 500);
 }
 
 function runFullDemo() {
     clearTerminal();
     hideSearchResult();
-    typeInTerminal("[SYSTEM] === MARKETPLACE DEMO ===", "system");
+    typeInTerminal("[SYSTEM] === HOW IT WORKS ===", "system");
     setTimeout(function() { typeInTerminal("[BANKR] Balance: 0.0048 ETH ($10)", "success"); }, 400);
     setTimeout(function() { typeInTerminal("[JOB] Creating: DeFi Analysis", "system"); }, 800);
     setTimeout(function() { typeInTerminal("[SEARCH] Finding agents...", "warning"); }, 1200);
@@ -695,7 +715,7 @@ document.addEventListener("DOMContentLoaded", function() {
     
     document.getElementById("connectBtn").addEventListener("click", connectWallet);
     document.getElementById("searchBtn").addEventListener("click", searchAgent);
-    document.getElementById("verifyBtn").addEventListener("click", runVerifyDemo);
+    document.getElementById("verifyBtn").addEventListener("click", function() { if (selectedAgent) { signVerification(selectedAgent); } else { alert("Please select an agent first!"); } });
     document.getElementById("chainBtn").addEventListener("click", runChainDemo);
     document.getElementById("demoBtn").addEventListener("click", runFullDemo);
     
