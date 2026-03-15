@@ -516,6 +516,8 @@ function searchAgent() {
 }
 
 function searchSkill(skill) {
+    console.log("Searching for skill:", skill);
+    console.log("All agents:", agents.map(function(a) { return { name: a.name, skills: a.skills }; }));
     var sanitizedSkill = sanitizeInput(skill);
     clearTerminal();
     hideSearchResult();
@@ -541,6 +543,9 @@ function searchSkill(skill) {
             agentDiv.textContent = agent.name + ' - Rep: ' + agent.rep + ' (' + agent.tier + ')';
             box.appendChild(agentDiv);
         });
+    } else {
+        typeInTerminal("[INFO] No agents found with skill: " + sanitizedSkill, "warning");
+    }
     }
 }
 
