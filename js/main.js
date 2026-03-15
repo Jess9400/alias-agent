@@ -89,6 +89,7 @@ var agents = [
     { name: "LegalMind", address: "0xB446...f23", fullAddress: "0xB44618a6E386FE847B5dfcbA111A6C8aD2B97f23", skills: ["legal-research", "compliance", "contract-review"], rep: 10, tier: "NEWCOMER", tokenId: 10 },
     { name: "DevAgent", address: "0x9C8d...883", fullAddress: "0x9C8d1e413e71a02C2Ad0970AAcAe0Ae786e0F883", skills: ["coding", "debugging", "code-review"], rep: 5, tier: "NEWCOMER", tokenId: 11 }
 ];
+var selectedAgent = null;
 
 var allSkills = ["autonomous", "verification", "risk-assessment", "data-analysis", "forecasting", "reporting", "code-audit", "vulnerability-detection", "security-review", "writing", "marketing", "documentation", "defi-analysis", "yield-farming", "protocol-review", "research", "due-diligence", "report-writing"];
 
@@ -411,7 +412,7 @@ function searchSkill(skill) {
 }
 
 function selectAgent(name) {
-    var agent = agents.find(function(a) { return a.name === name; });
+    var agent = agents.find(function(a) { return a.name === name; }); selectedAgent = agent;
     if (!agent) return;
     
     clearTerminal();
@@ -495,14 +496,15 @@ function populateSkills() {
 function runVerifyDemo() {
     clearTerminal();
     hideSearchResult();
+    var agent = selectedAgent || agents[0];
     typeInTerminal("[SYSTEM] Initiating verification...", "system");
-    setTimeout(function() { typeInTerminal("[TARGET] DataMind (0x1111...)", "system"); }, 400);
+    setTimeout(function() { typeInTerminal("[TARGET] " + agent.name + " (" + agent.address + ")", "system"); }, 400);
     setTimeout(function() { typeInTerminal("[CHECK] Onchain identity...", "warning"); }, 800);
-    setTimeout(function() { typeInTerminal("[OK] Soul found: Token #3", "success"); }, 1200);
-    setTimeout(function() { typeInTerminal("[OK] Reputation: 50 (VERIFIED)", "success"); }, 1600);
-    setTimeout(function() { typeInTerminal("[OK] Risk: 50% - APPROVED", "success"); }, 2000);
+    setTimeout(function() { typeInTerminal("[OK] Soul found: Token #" + agent.tokenId, "success"); }, 1200);
+    setTimeout(function() { typeInTerminal("[OK] Reputation: " + agent.rep + " (" + agent.tier + ")", "success"); }, 1600);
+    setTimeout(function() { typeInTerminal("[OK] Risk: " + Math.max(10, 100 - agent.rep) + "% - APPROVED", "success"); }, 2000);
     setTimeout(function() { typeInTerminal("[CHAIN] Recording verification...", "warning"); }, 2400);
-    setTimeout(function() { typeInTerminal("[TX] 0x6aa8...32e0", "system"); }, 2800);
+    setTimeout(function() { typeInTerminal("[TX] 0x" + Math.random().toString(16).slice(2,6) + "..." + Math.random().toString(16).slice(2,6), "system"); }, 2800);
     setTimeout(function() { typeInTerminal("[DONE] Verification complete!", "success"); }, 3200);
 }
 
