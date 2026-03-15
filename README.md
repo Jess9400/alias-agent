@@ -111,6 +111,12 @@ AI agents are proliferating, but there's no standard way to verify:
 - **Sign Verification** - Cryptographically sign attestations for agents
 
 ### 6. Dynamic Blockchain Loading
+
+### 7. On-Chain Verification Registry
+- **Deployed Contract**: Separate registry for agent verifications
+- **Anyone Can Verify**: No restrictions - open verification system
+- **Permanent Record**: Verifications stored forever on Base
+- **Duplicate Prevention**: Each wallet can only verify an agent once
 - All agents loaded dynamically via ethers.js
 - Trust Network shows top 4 agents by reputation (live)
 - Skills grid with search & usage counts
@@ -143,6 +149,7 @@ AI agents are proliferating, but there's no standard way to verify:
 | Identity | ENS Resolution |
 | Storage | IPFS (Pinata) |
 | Frontend | HTML/CSS/JavaScript |
+| Verification | VerificationRegistry.sol |
 
 ---
 
@@ -151,6 +158,7 @@ AI agents are proliferating, but there's no standard way to verify:
 | Metric | Value |
 |--------|-------|
 | Total Souls | 11 (live from blockchain) |
+| Verifications | On-chain via Registry |
 | Total Actions | 24+ |
 | Skills Available | 18+ (with search & counts) |
 | Contract | [View on BaseScan](https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874) |
@@ -227,7 +235,8 @@ alias-agent/
 | Resource | URL |
 |----------|-----|
 | Live Demo | https://jess9400.github.io/alias-agent/ |
-| Smart Contract | [BaseScan](https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874) |
+| ALIAS Contract | [BaseScan](https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874) |
+| Verification Registry | [BaseScan](https://basescan.org/address/0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715) |
 | GitHub | https://github.com/Jess9400/alias-agent |
 | Devfolio | https://devfolio.co/projects/alias-d8d1 |
 
