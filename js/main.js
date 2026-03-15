@@ -540,8 +540,11 @@ function searchSkill(skill) {
         
         matches.forEach(function(agent) {
             var agentDiv = document.createElement('div');
-            agentDiv.style.cssText = 'padding:10px;background:rgba(0,212,255,0.05);border-radius:8px;margin-top:8px';
+            agentDiv.style.cssText = 'padding:10px;background:rgba(0,212,255,0.05);border-radius:8px;margin-top:8px;cursor:pointer;transition:background 0.2s';
             agentDiv.textContent = agent.name + ' - Rep: ' + agent.rep + ' (' + agent.tier + ')';
+            agentDiv.onmouseover = function() { this.style.background = 'rgba(0,212,255,0.15)'; };
+            agentDiv.onmouseout = function() { this.style.background = 'rgba(0,212,255,0.05)'; };
+            agentDiv.onclick = function() { selectAgent(agent.name); window.scrollTo({ top: 0, behavior: 'smooth' }); };
             box.appendChild(agentDiv);
         });
     } else {
