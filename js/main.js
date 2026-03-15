@@ -29,8 +29,7 @@ const CONFIG = {
 const SELECTORS = {
     hasSoul: "0xbdd75202",
     agentToSoul: "0xf7c3328c",
-    totalSouls: "0x4879a9a6",
-    souls: "0x7f0df684"      // souls(uint256)
+    totalSouls: "0x4879a9a6"
 };
 
 // =============================================================================
@@ -78,13 +77,17 @@ function isValidENS(name) {
 // =============================================================================
 
 var agents = [
-    { name: "ALIAS-Alpha", address: "0x07a0...E39", fullAddress: "0x07a0afcb49a764007439671Ec5148947EfC62E39", skills: ["autonomous", "verification", "risk-assessment"], rep: 240, tier: "ELITE", tokenId: 2 },
-    { name: "ALIAS-Prime", address: "0x6FFa...9BC", fullAddress: "0x6FFa1e00509d8B625c2F061D7dB07893B37199BC", skills: ["general", "coordination"], rep: 40, tier: "NEWCOMER", tokenId: 1 },
-    { name: "DataMind", address: "0x1111...111", skills: ["data-analysis", "forecasting", "reporting"], rep: 50, tier: "VERIFIED", tokenId: 3 },
-    { name: "SecureBot", address: "0x2222...222", skills: ["code-audit", "vulnerability-detection", "security-review"], rep: 0, tier: "NEWCOMER", tokenId: 4 },
-    { name: "CreativeAI", address: "0x3333...333", skills: ["writing", "marketing", "documentation"], rep: 0, tier: "NEWCOMER", tokenId: 5 },
-    { name: "DeFiSage", address: "0x4444...444", skills: ["defi-analysis", "yield-farming", "protocol-review"], rep: 0, tier: "NEWCOMER", tokenId: 6 },
-    { name: "ResearchPrime", address: "0x5555...555", skills: ["research", "due-diligence", "report-writing"], rep: 0, tier: "NEWCOMER", tokenId: 7 }
+    { name: "ALIAS", address: "0x07a0...E39", fullAddress: "0x07a0afcb49a764007439671Ec5148947EfC62E39", skills: ["identity", "autonomous", "verification"], rep: 200, tier: "ELITE", tokenId: 1 },
+    { name: "ALIAS-Alpha", address: "0x07a0...E39", fullAddress: "0x07a0afcb49a764007439671Ec5148947EfC62E39", skills: ["autonomous", "verification", "risk-assessment"], rep: 150, tier: "VERIFIED", tokenId: 2 },
+    { name: "DataMind", address: "0x07a0...E39", fullAddress: "0x07a0afcb49a764007439671Ec5148947EfC62E39", skills: ["data-analysis", "forecasting", "reporting"], rep: 100, tier: "VERIFIED", tokenId: 3 },
+    { name: "SecureBot", address: "0x07a0...E39", fullAddress: "0x07a0afcb49a764007439671Ec5148947EfC62E39", skills: ["code-audit", "security", "review"], rep: 50, tier: "NEWCOMER", tokenId: 4 },
+    { name: "CreativeAI", address: "0x07a0...E39", fullAddress: "0x07a0afcb49a764007439671Ec5148947EfC62E39", skills: ["writing", "marketing", "documentation"], rep: 50, tier: "NEWCOMER", tokenId: 5 },
+    { name: "DeFiSage", address: "0x07a0...E39", fullAddress: "0x07a0afcb49a764007439671Ec5148947EfC62E39", skills: ["defi", "yield-farming", "protocol-review"], rep: 50, tier: "NEWCOMER", tokenId: 6 },
+    { name: "ResearchPrime", address: "0x07a0...E39", fullAddress: "0x07a0afcb49a764007439671Ec5148947EfC62E39", skills: ["research", "due-diligence", "reporting"], rep: 50, tier: "NEWCOMER", tokenId: 7 },
+    { name: "ALIAS-Prime", address: "0x6FFa...9BC", fullAddress: "0x6FFa1e00509d8B625c2F061D7dB07893B37199BC", skills: ["general", "coordination"], rep: 40, tier: "NEWCOMER", tokenId: 8 },
+    { name: "TraderBot", address: "0x9a60...DFb", fullAddress: "0x9a60871B684e23D1C05ba9127AA7E72eA0a38DFb", skills: ["trading", "market-analysis", "portfolio"], rep: 20, tier: "NEWCOMER", tokenId: 9 },
+    { name: "LegalMind", address: "0xB446...f23", fullAddress: "0xB44618a6E386FE847B5dfcbA111A6C8aD2B97f23", skills: ["legal-research", "compliance", "contract-review"], rep: 10, tier: "NEWCOMER", tokenId: 10 },
+    { name: "DevAgent", address: "0x9C8d...883", fullAddress: "0x9C8d1e413e71a02C2Ad0970AAcAe0Ae786e0F883", skills: ["coding", "debugging", "code-review"], rep: 5, tier: "NEWCOMER", tokenId: 11 }
 ];
 
 var allSkills = ["autonomous", "verification", "risk-assessment", "data-analysis", "forecasting", "reporting", "code-audit", "vulnerability-detection", "security-review", "writing", "marketing", "documentation", "defi-analysis", "yield-farming", "protocol-review", "research", "due-diligence", "report-writing"];
@@ -420,183 +423,6 @@ function selectAgent(name) {
 // UI POPULATION (XSS-safe)
 // =============================================================================
 
-
-// =============================================================================
-// DYNAMIC AGENT LOADING FROM BLOCKCHAIN
-// =============================================================================
-
-/**
- * Load all agents dynamically from blockchain
- */
-async function loadAgentsFromChain() {
-    var list = document.getElementById("agentList");
-    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim)"><span class="loading-spinner"></span> Loading agents from blockchain...</div>';
-    
-    try {
-        // First get total souls count
-        var countResponse = await fetch(CONFIG.RPC_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                jsonrpc: "2.0", 
-                method: "eth_call", 
-                params: [{ to: CONFIG.CONTRACT_ADDRESS, data: SELECTORS.totalSouls }, "latest"], 
-                id: 1 
-            })
-        });
-        var countData = await countResponse.json();
-        var totalSouls = parseInt(countData.result, 16); console.log("Total souls:", totalSouls);
-        
-        // Clear the agents array
-        agents = [];
-        var newSkills = [];
-        
-        // Fetch each soul
-        for (var i = 1; i <= totalSouls; i++) {
-            try {
-                var soulData = await fetchSoulData(i);
-                console.log("Soul " + i + ":", soulData); if (soulData && soulData.active) {
-                    agents.push(soulData);
-                    soulData.skills.forEach(function(skill) {
-                        if (newSkills.indexOf(skill) === -1 && skill.length > 0) {
-                            newSkills.push(skill);
-                        }
-                    });
-                }
-            } catch (e) {
-                // Skip failed fetches
-            }
-        }
-        
-        // Update allSkills
-        if (newSkills.length > 0) {
-            allSkills = newSkills;
-        }
-        
-        // Re-populate the UI
-        populateAgents();
-        populateSkills();
-        typeInTerminal("[CHAIN] Loaded " + agents.length + " agents from blockchain", "success");
-        
-    } catch (error) {
-        typeInTerminal("[ERROR] Failed to load agents from chain", "warning");
-        // Keep hardcoded agents as fallback
-        populateAgents();
-        populateSkills();
-    }
-}
-
-/**
- * Fetch individual soul data from blockchain
- */
-async function fetchSoulData(tokenId) {
-    var callData = SELECTORS.souls + tokenId.toString(16).padStart(64, "0");
-    
-    var response = await fetch(CONFIG.RPC_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            jsonrpc: "2.0",
-            method: "eth_call",
-            params: [{ to: CONFIG.CONTRACT_ADDRESS, data: callData }, "latest"],
-            id: 1
-        })
-    });
-    
-    var data = await response.json();
-    if (!data.result || data.result === "0x") return null;
-    
-    var decoded = decodeSoulResponse(data.result);
-    
-    var currentBlock = 43400000;
-    var age = currentBlock - decoded.createdAt;
-    var rep = Math.max(0, Math.min(Math.floor(age / 200), 300));
-    
-    var tier = "NEWCOMER";
-    if (rep >= 200) tier = "ELITE";
-    else if (rep >= 50) tier = "VERIFIED";
-    
-    var skillsArray = extractSkillsFromDescription(decoded.name, decoded.skills);
-    
-    return {
-        name: decoded.name,
-        address: decoded.creator.slice(0, 6) + "..." + decoded.creator.slice(-3),
-        fullAddress: decoded.creator,
-        skills: skillsArray,
-        rep: rep,
-        tier: tier,
-        tokenId: tokenId,
-        active: decoded.active
-    };
-}
-
-function extractSkillsFromDescription(name, description) {
-    var nameLower = (name || "").toLowerCase();
-    var descLower = (description || "").toLowerCase();
-    var foundSkills = [];
-    var keywords = {
-        "trading": "trading", "market": "market-analysis", "analysis": "data-analysis",
-        "legal": "legal-research", "compliance": "compliance", "contract": "contract-review",
-        "code": "coding", "debug": "debugging", "review": "code-review",
-        "security": "security", "audit": "audit", "research": "research",
-        "forecast": "forecasting", "report": "reporting", "defi": "defi",
-        "autonomous": "autonomous", "verification": "verification", "identity": "identity"
-    };
-    for (var k in keywords) {
-        if (descLower.indexOf(k) !== -1 || nameLower.indexOf(k) !== -1) {
-            if (foundSkills.indexOf(keywords[k]) === -1) foundSkills.push(keywords[k]);
-        }
-    }
-    if (foundSkills.length === 0) {
-        if (nameLower.indexOf("trader") !== -1) foundSkills = ["trading", "market-analysis"];
-        else if (nameLower.indexOf("legal") !== -1) foundSkills = ["legal-research", "compliance"];
-        else if (nameLower.indexOf("dev") !== -1) foundSkills = ["coding", "debugging"];
-        else if (nameLower.indexOf("data") !== -1) foundSkills = ["data-analysis", "reporting"];
-        else foundSkills = ["general", "autonomous"];
-    }
-    return foundSkills.slice(0, 3);
-}
- * Decode souls() function response
- */
-function decodeSoulResponse(hexData) {
-    var data = hexData.slice(2);
-    
-    function readUint256(bytePos) {
-        return parseInt(data.slice(bytePos * 2, bytePos * 2 + 64), 16);
-    }
-    
-    function readString(byteOffset) {
-        var offset = readUint256(byteOffset) * 2;
-        var length = parseInt(data.slice(offset, offset + 64), 16);
-        var strHex = data.slice(offset + 64, offset + 64 + length * 2);
-        return hexToString(strHex);
-    }
-    
-    function readAddress(bytePos) {
-        return "0x" + data.slice(bytePos * 2 + 24, bytePos * 2 + 64);
-    }
-    
-    return {
-        name: readString(0),
-        metadataURI: readString(32),
-        creator: readAddress(64),
-        createdAt: readUint256(96),
-        skills: readString(128),
-        active: readUint256(160) === 1
-    };
-}
-
-/**
- * Convert hex to string
- */
-function hexToString(hex) {
-    var str = '';
-    for (var i = 0; i < hex.length; i += 2) {
-        var code = parseInt(hex.slice(i, i + 2), 16);
-        if (code > 0 && code < 128) str += String.fromCharCode(code);
-    }
-    return str;
-}
 function populateAgents() {
     var list = document.getElementById("agentList");
     list.innerHTML = '';
@@ -738,7 +564,7 @@ function connectWallet() {
 
 document.addEventListener("DOMContentLoaded", function() {
     loadStats();
-    loadAgentsFromChain();
+    populateAgents();
     populateSkills();
     
     typeInTerminal("[SYSTEM] ALIAS Network initialized", "system");
