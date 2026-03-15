@@ -232,14 +232,13 @@
                     '<div class="agent-info">' +
                     '<div class="agent-name">' + a.name + '</div>' +
                     '<div class="agent-addr">' + a.address + '</div>' +
-                    '<div class="agent-skills">' + a.skills.join(" • ") + '</div>' +
+                    '<div class="agent-skills">' + a.skills.join(" - ") + '</div>' +
                     '</div>' +
                     '<div class="agent-rep">' +
                     '<div class="rep-value">' + a.rep + '</div>' +
                     '<div class="rep-tier">' + a.tier + '</div>' +
                     '</div></div>';
             }
-        }
             list.innerHTML = html;
         }
 
@@ -249,7 +248,6 @@
             for (var i = 0; i < allSkills.length; i++) {
                 html += '<span class="skill-tag" onclick="searchSkill(\'' + allSkills[i] + '\')">' + allSkills[i] + '</span>';
             }
-        }
             grid.innerHTML = html;
         }
 
@@ -276,9 +274,7 @@
                     found = agents[i];
                     break;
                 }
-        }
             }
-        }
             if (found) {
                 typeInTerminal("[FOUND] " + found.name, "success");
                 typeInTerminal("[ADDRESS] " + found.address, "system");
@@ -288,7 +284,6 @@
                 typeInTerminal("[ERROR] Agent not found", "warning");
             }
         }
-        }
 
         function searchSkill(skill) {
             clearTerminal();
@@ -297,17 +292,17 @@
                 if (agents[i].skills.indexOf(skill) !== -1) {
                     typeInTerminal("[MATCH] " + agents[i].name + " - Rep: " + agents[i].rep, "agent");
                 }
-        }
             }
-        }
         }
 
         function selectAgent(name) {
             var a = null;
             for (var i = 0; i < agents.length; i++) {
-                if (agents[i].name === name) { a = agents[i]; break; }
+                if (agents[i].name === name) {
+                    a = agents[i];
+                    break;
+                }
             }
-        }
             if (!a) return;
             clearTerminal();
             typeInTerminal("[SELECT] " + a.name, "system");
@@ -320,7 +315,7 @@
             clearTerminal();
             typeInTerminal("[SYSTEM] Initiating verification...", "system");
             setTimeout(function() { typeInTerminal("[TARGET] DataMind (0x1111...)", "system"); }, 400);
-            setTimeout(function() { typeInTerminal("[CHECK] Onchain identity...", "warning"); },00);
+            setTimeout(function() { typeInTerminal("[CHECK] Onchain identity...", "warning"); }, 800);
             setTimeout(function() { typeInTerminal("[OK] Soul found: Token #3", "success"); }, 1200);
             setTimeout(function() { typeInTerminal("[OK] Reputation: 50 (VERIFIED)", "success"); }, 1600);
             setTimeout(function() { typeInTerminal("[OK] Risk: 50% - APPROVED", "success"); }, 2000);
@@ -333,11 +328,11 @@
             clearTerminal();
             typeInTerminal("[SYSTEM] === TRUST CHAIN ===", "system");
             setTimeout(function() { typeInTerminal("ALIAS-Alpha (ELITE, 240)", "agent"); }, 300);
-            setTimeout(function() { typeInTerminal("  └─▶ verified ─▶", "success"); }, 500);
+            setTimeout(function() { typeInTerminal("  |-- verified -->", "success"); }, 500);
             setTimeout(function() { typeInTerminal("ALIAS-Prime (NEWCOMER, 40)", "agent"); }, 700);
-            setTimeout(function() { typeInTerminal("  └─▶ verified ─▶", "success"); }, 900);
+            setTimeout(function() { typeInTerminal("  |-- verified -->", "success"); }, 900);
             setTimeout(function() { typeInTerminal("DataMind (VERIFIED, 50)", "agent"); }, 1100);
-            setTimeout(function() { typeInTerminal("  └─▶ hired ─▶", "success"); }, 1300);
+            setTimeout(function() { typeInTerminal("  |-- hired -->", "success"); }, 1300);
             setTimeout(function() { typeInTerminal("SecureBot (NEWCOMER, 0)", "agent"); }, 1500);
             setTimeout(function() { typeInTerminal("[INFO] Chain depth: 3 levels", "system"); }, 1900);
             setTimeout(function() { typeInTerminal("[INFO] Trust bonus: +30%", "success"); }, 2200);
@@ -354,7 +349,7 @@
             setTimeout(function() { typeInTerminal("[ESCROW] Locking 0.0005 ETH...", "warning"); }, 2400);
             setTimeout(function() { typeInTerminal("[TX] 0xbd16...c7e2", "system"); }, 2800);
             setTimeout(function() { typeInTerminal("[WORK] DataMind executing...", "agent"); }, 3200);
-            setTimeout(function() { typeInTerminal("[AI] \"Top protocols: MakerDAO, Aave, Curve\"", "agent"); }, 4000);
+            setTimeout(function() { typeInTerminal("[AI] Top protocols: MakerDAO, Aave, Curve", "agent"); }, 4000);
             setTimeout(function() { typeInTerminal("[PAY] Releasing 0.000475 ETH", "success"); }, 4400);
             setTimeout(function() { typeInTerminal("[DONE] Job completed!", "success"); }, 4800);
         }
