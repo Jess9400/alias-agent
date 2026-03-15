@@ -508,35 +508,54 @@ async function fetchSoulData(tokenId) {
     
     var decoded = decodeSoulResponse(data.result);
     
-    // Calculate reputation based on action count (from contract)
-    var rep = decoded.createdAt > 43350000 ? 0 : Math.floor((43400000 - decoded.createdAt) / 500);
-    rep = Math.min(rep, 300);
+    var currentBlock = 43400000;
+    var age = currentBlock - decoded.createdAt;
+    var rep = Math.max(0, Math.min(Math.floor(age / 200), 300));
     
     var tier = "NEWCOMER";
     if (rep >= 200) tier = "ELITE";
     else if (rep >= 50) tier = "VERIFIED";
     
-    // Parse skills string into array
-    var skillsArray = decoded.skills.split(",").map(function(s) { 
-        return s.trim().toLowerCase(); 
-    }).filter(function(s) { 
-        return s.length > 0; 
-    });
+    var skillsArray = extractSkillsFromDescription(decoded.name, decoded.skills);
     
     return {
         name: decoded.name,
         address: decoded.creator.slice(0, 6) + "..." + decoded.creator.slice(-3),
         fullAddress: decoded.creator,
-        skills: skillsArray.length > 0 ? skillsArray : ["general"],
+        skills: skillsArray,
         rep: rep,
         tier: tier,
         tokenId: tokenId,
-        active: decoded.active,
-        metadataURI: decoded.metadataURI
+        active: decoded.active
     };
 }
 
-/**
+function extractSkillsFromDescription(name, description) {
+    var nameLower = (name || "").toLowerCase();
+    var descLower = (description || "").toLowerCase();
+    var foundSkills = [];
+    var keywords = {
+        "trading": "trading", "market": "market-analysis", "analysis": "data-analysis",
+        "legal": "legal-research", "compliance": "compliance", "contract": "contract-review",
+        "code": "coding", "debug": "debugging", "review": "code-review",
+        "security": "security", "audit": "audit", "research": "research",
+        "forecast": "forecasting", "report": "reporting", "defi": "defi",
+        "autonomous": "autonomous", "verification": "verification", "identity": "identity"
+    };
+    for (var k in keywords) {
+        if (descLower.indexOf(k) !== -1 || nameLower.indexOf(k) !== -1) {
+            if (foundSkills.indexOf(keywords[k]) === -1) foundSkills.push(keywords[k]);
+        }
+    }
+    if (foundSkills.length === 0) {
+        if (nameLower.indexOf("trader") !== -1) foundSkills = ["trading", "market-analysis"];
+        else if (nameLower.indexOf("legal") !== -1) foundSkills = ["legal-research", "compliance"];
+        else if (nameLower.indexOf("dev") !== -1) foundSkills = ["coding", "debugging"];
+        else if (nameLower.indexOf("data") !== -1) foundSkills = ["data-analysis", "reporting"];
+        else foundSkills = ["general", "autonomous"];
+    }
+    return foundSkills.slice(0, 3);
+}
  * Decode souls() function response
  */
 function decodeSoulResponse(hexData) {
