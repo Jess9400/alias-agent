@@ -154,6 +154,10 @@
         /* Skeleton Loader */
         .skeleton-loader { display: inline-block; width: 60px; height: 24px; background: linear-gradient(90deg, var(--bg-card) 25%, rgba(0,212,255,0.1) 50%, var(--bg-card) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .agent-item { animation: fadeIn 0.3s ease-out; }
+        .stat-value.loading { animation: pulse 1.5s ease-in-out infinite; }
         
         /* Mobile Responsive */
         @media (max-width: 900px) { 
@@ -167,13 +171,24 @@
         }
         @media (max-width: 500px) {
             .container { padding: 15px; }
+            header { flex-direction: column; gap: 15px; text-align: center; }
+            header > div:last-child { width: 100%; justify-content: center; }
+            .connect-btn { padding: 10px 15px; font-size: 0.85rem; }
             .stats-bar { grid-template-columns: repeat(2, 1fr); gap: 10px; }
             .stat-card { padding: 15px; }
             .stat-value { font-size: 1.5rem; }
             .search-container { flex-direction: column; }
             .search-btn { width: 100%; }
+            .search-input { width: 100%; }
             .action-grid { grid-template-columns: 1fr; }
-            .partners-grid { gap: 20px; }
+            .action-btn { padding: 12px; font-size: 0.9rem; }
+            .partners-grid { gap: 20px; flex-wrap: wrap; }
+            .network-graph { flex-direction: column; align-items: center; }
+            .network-node { width: 100%; max-width: 200px; }
+            .skills-grid { justify-content: center; }
+            .agent-item { flex-direction: column; text-align: center; gap: 10px; }
+            .agent-rep { margin-top: 10px; }
+            #searchResult button { width: 100%; margin-top: 5px; }
         }
     </style>
 </head>
