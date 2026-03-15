@@ -546,7 +546,6 @@ function searchSkill(skill) {
     } else {
         typeInTerminal("[INFO] No agents found with skill: " + sanitizedSkill, "warning");
     }
-    }
 }
 
 function selectAgent(name) {
