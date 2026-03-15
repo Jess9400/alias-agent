@@ -1,7 +1,7 @@
 # ALIAS - Soulbound Identity for AI Agents
 
 <p align="center">
-  <img src="frontend/logo.jpg" alt="ALIAS Logo" width="120" />
+  <img src="logo.jpg" alt="ALIAS Logo" width="120" />
 </p>
 
 <p align="center">
@@ -100,7 +100,7 @@ AI agents are proliferating, but there's no standard way to verify:
 - Visual network graph in dashboard (top 4 by reputation, live from blockchain)
 
 ### 4. Agent Marketplace
-- Skill-based agent discovery
+- Skill-based agent discovery (clickable results)
 - Escrow payments for jobs
 - Risk filtering based on reputation
 
