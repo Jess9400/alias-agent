@@ -20,7 +20,7 @@
 
 const CONFIG = {
     CONTRACT_ADDRESS: "0x0F2f94281F87793ee086a2B6517B6db450192874",
-    RPC_URL: "https://mainnet.base.org",
+    RPC_URL: "https://base.publicnode.com",
     CHAIN_ID: 8453,
     ENS_API: "https://api.ensdata.net",
     BASESCAN_URL: "https://basescan.org",
@@ -1044,8 +1044,8 @@ function populateSkillsWithSearch() {
 var connectedWallet = null;
 var showingMyAgents = false;
 
-// Store wallet on connect
-async function connectWalletEnhanced() {
+// Store wallet on connect - uses raw JSON-RPC to avoid MetaMask SES proxy crash
+function connectWalletEnhanced() {
     if (!window.ethereum) {
         showToast("Please install MetaMask to connect your wallet!", "error");
         return;
@@ -1060,34 +1060,48 @@ async function connectWalletEnhanced() {
     // Clear disconnected flag since user is explicitly connecting
     localStorage.removeItem("alias_disconnected");
 
+    // Send raw JSON-RPC request to avoid MetaMask proxy getter issues
+    var payload = JSON.stringify({ jsonrpc: "2.0", method: "eth_requestAccounts", params: [], id: Date.now() });
+
     try {
-        // Use ethers.js BrowserProvider to avoid MetaMask SES proxy issues
-        var browserProvider = new ethers.BrowserProvider(window.ethereum);
-        var accounts = await browserProvider.send("eth_requestAccounts", []);
-
-        if (!accounts || accounts.length === 0) {
-            showToast("No accounts returned from wallet", "error");
-            return;
-        }
-        setConnectedWallet(accounts[0]);
-
-        // Switch to Base (non-blocking)
-        try {
-            await browserProvider.send("wallet_switchEthereumChain", [{ chainId: "0x2105" }]);
-        } catch (switchError) {
-            if (switchError.code === 4902) {
-                await browserProvider.send("wallet_addEthereumChain", [{
-                    chainId: "0x2105",
-                    chainName: "Base",
-                    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-                    rpcUrls: ["https://mainnet.base.org"],
-                    blockExplorerUrls: ["https://basescan.org"]
-                }]);
+        // Use the underlying provider's sendAsync/send if available
+        var cb = function(err, response) {
+            if (err) {
+                console.error("Wallet connection error:", err);
+                showToast("Connection failed. Try again.", "error");
+                return;
             }
+            if (response && response.result && response.result.length > 0) {
+                setConnectedWallet(response.result[0]);
+                // Switch to Base
+                var switchPayload = JSON.stringify({ jsonrpc: "2.0", method: "wallet_switchEthereumChain", params: [{ chainId: "0x2105" }], id: Date.now() });
+                try {
+                    if (window.ethereum.sendAsync) {
+                        window.ethereum.sendAsync(JSON.parse(switchPayload), function() {});
+                    } else if (window.ethereum.send) {
+                        window.ethereum.send(JSON.parse(switchPayload), function() {});
+                    }
+                } catch (e) {}
+            }
+        };
+
+        if (window.ethereum.sendAsync) {
+            window.ethereum.sendAsync(JSON.parse(payload), cb);
+        } else if (window.ethereum.send) {
+            window.ethereum.send(JSON.parse(payload), cb);
+        } else {
+            // Fallback: try request() as last resort
+            window.ethereum.request({ method: "eth_requestAccounts" })
+                .then(function(accounts) {
+                    if (accounts && accounts.length > 0) setConnectedWallet(accounts[0]);
+                })
+                .catch(function(err) {
+                    console.error("Wallet connection error:", err);
+                    showToast("Connection failed. Try again.", "error");
+                });
         }
     } catch (err) {
         console.error("Wallet connection error:", err);
-        typeInTerminal("[ERROR] Connection failed: " + (err.message || "unknown"), "warning");
         showToast("Connection failed. Try again.", "error");
     }
 }
