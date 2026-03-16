@@ -1975,30 +1975,37 @@ async function tipAgent(agent, amount) {
         return;
     }
 
-    if (!agent || !agent.fullAddress) {
+    if (!agent || !agent.tokenId) {
         showToast("No agent selected!", "warning");
         return;
     }
-    
+
+    // Route tip to operator wallet (not minter/creator)
+    var recipient = AGENT_WALLETS[agent.tokenId] || agent.fullAddress;
+    if (!recipient) {
+        showToast("No payment address for this agent!", "warning");
+        return;
+    }
+
     var tipAmount = amount || prompt("Enter tip amount in ETH (e.g., 0.001):");
     if (!tipAmount || isNaN(parseFloat(tipAmount))) return;
-    
+
     try {
         var provider = new ethers.BrowserProvider(getWalletProvider());
         var signer = await provider.getSigner();
-        
-        typeInTerminal("[BANKR] Preparing tip transaction...", "warning");
-        
+
+        typeInTerminal("[BANKR] Preparing tip to operator wallet...", "warning");
+
         var tx = await signer.sendTransaction({
-            to: agent.fullAddress,
+            to: recipient,
             value: ethers.parseEther(tipAmount)
         });
-        
+
         typeInTerminal("[BANKR] TX submitted: " + tx.hash.slice(0, 15) + "...", "warning");
-        
+
         var receipt = await tx.wait();
-        
-        typeInTerminal("[BANKR] ✓ Sent " + tipAmount + " ETH to " + agent.name, "success");
+
+        typeInTerminal("[BANKR] ✓ Sent " + tipAmount + " ETH to " + agent.name + " operator", "success");
         typeInTerminal("[TX] " + tx.hash, "system");
 
         showToast("Tipped " + tipAmount + " ETH to " + agent.name + "!", "success", 7000);
@@ -2077,9 +2084,10 @@ async function hireAgent(agent) {
         typeInTerminal("[ESCROW] Platform fee (5%): " + fee.toFixed(6) + " ETH → gas + AI costs", "warning");
         typeInTerminal("[ESCROW] Agent payment: " + agentPayment.toFixed(6) + " ETH", "warning");
 
-        // Send agent payment (95%)
+        // Send agent payment (95%) to operator wallet
+        var hireRecipient = AGENT_WALLETS[agent.tokenId] || agent.fullAddress;
         var tx = await signer.sendTransaction({
-            to: agent.fullAddress,
+            to: hireRecipient,
             value: ethers.parseEther(agentPayment.toFixed(18))
         });
 
