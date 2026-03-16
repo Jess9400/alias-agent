@@ -1063,9 +1063,13 @@ function connectWalletEnhanced() {
     // Request accounts first (triggers MetaMask popup)
     window.ethereum.request({ method: "eth_requestAccounts" })
     .then(function(accounts) {
+        if (!accounts || accounts.length === 0) {
+            showToast("No accounts returned from wallet", "error");
+            return;
+        }
         setConnectedWallet(accounts[0]);
-        // Then switch to Base
-        return window.ethereum.request({
+        // Then switch to Base (non-blocking - connection works even if chain switch fails)
+        window.ethereum.request({
             method: "wallet_switchEthereumChain",
             params: [{ chainId: "0x2105" }]
         }).catch(function(switchError) {
@@ -1081,9 +1085,13 @@ function connectWalletEnhanced() {
                     }]
                 });
             }
+            // Don't fail the whole connection if chain switch is rejected
+            console.log("Chain switch skipped:", switchError.message);
         });
-    }).catch(function() {
-        typeInTerminal("[ERROR] Connection failed", "warning");
+    }).catch(function(err) {
+        console.error("Wallet connection error:", err);
+        typeInTerminal("[ERROR] Connection failed: " + (err.message || "unknown"), "warning");
+        showToast("Connection failed. Try again.", "error");
     });
 }
 
@@ -1115,14 +1123,7 @@ function disconnectWallet() {
     btn.textContent = "Connect Wallet";
     btn.title = "";
     typeInTerminal("[WALLET] Disconnected", "system");
-
-    // Revoke MetaMask permission if supported
-    if (window.ethereum && window.ethereum.request) {
-        window.ethereum.request({
-            method: "wallet_revokePermissions",
-            params: [{ eth_accounts: {} }]
-        }).catch(function() {});
-    }
+    showToast("Wallet disconnected", "info", 3000);
 
     if (showingMyAgents) {
         showingMyAgents = false;
@@ -1140,16 +1141,29 @@ function disconnectWallet() {
 function autoReconnectWallet() {
     if (typeof window.ethereum === "undefined") return;
 
-    // Don't auto-reconnect if user explicitly disconnected
-    if (localStorage.getItem("alias_disconnected") === "true") return;
+    // Don't auto-reconnect if user explicitly disconnected via the X button
+    if (localStorage.getItem("alias_disconnected") === "true") {
+        console.log("Auto-reconnect skipped: user disconnected previously");
+        return;
+    }
+
+    // Check if we have a saved wallet address
+    var savedWallet = localStorage.getItem("alias_wallet");
 
     // Only use eth_accounts (passive check, no popup)
     window.ethereum.request({ method: "eth_accounts" })
         .then(function(accounts) {
             if (accounts.length > 0) {
                 setConnectedWallet(accounts[0]);
+            } else if (savedWallet) {
+                // MetaMask lost permissions (e.g. after hard refresh on some browsers)
+                // Clear saved wallet since we can't reconnect passively
+                console.log("Saved wallet found but no active accounts - waiting for manual connect");
+                localStorage.removeItem("alias_wallet");
             }
-        }).catch(function() {});
+        }).catch(function(err) {
+            console.log("Auto-reconnect check failed:", err);
+        });
 
     window.ethereum.on("accountsChanged", function(accounts) {
         if (accounts.length === 0) {

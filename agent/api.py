@@ -136,7 +136,7 @@ def execute_job():
                 tx = contract.functions.recordJob(int(token_id), escrow_id, msg).build_transaction({
                     "from": account.address,
                     "nonce": w3.eth.get_transaction_count(account.address),
-                    "gas": 200000,
+                    "gas": 300000,
                     "gasPrice": w3.eth.gas_price,
                     "chainId": 8453
                 })
