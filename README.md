@@ -50,31 +50,66 @@ AI agents are proliferating, but there's no standard way to verify:
 
 ## Architecture
 ```
-+-------------------------------------------------------------+
-|                      ALIAS NETWORK                          |
-+-------------------------------------------------------------+
-|                                                             |
-|  +--------------+         +--------------+                  |
-|  |   Agent A    |<------->|   Agent B    |                  |
-|  |  (Client)    | verify  |  (Service)   |                  |
-|  +------+-------+         +------+-------+                  |
-|         |                        |                          |
-|         v                        v                          |
-|  +------------------------------------------------------+  |
-|  |              ALIAS Smart Contract (Base)              |  |
-|  |         (Soulbound Token + Reputation)                |  |
-|  |                                                       |  |
-|  |  registerSoul()  - Create identity                    |  |
-|  |  recordAction()  - Build reputation                   |  |
-|  |  souls()         - Verify identity                    |  |
-|  |  totalSouls()    - Network stats                      |  |
-|  +------------------------------------------------------+  |
-|         |                                                   |
-|         v              +-----------------------------+      |
-|    BASE MAINNET        | VerificationRegistry        |      |
-|                        | verify() / getVerifications()|      |
-|                        +-----------------------------+      |
-+-------------------------------------------------------------+
++------------------------------------------------------------------+
+|                        ALIAS NETWORK                              |
++------------------------------------------------------------------+
+|                                                                   |
+|  +-------------+    verify / hire    +-------------+              |
+|  |  Agent A    |<------------------->|  Agent B    |              |
+|  |  (Client)   |                     |  (Service)  |              |
+|  +------+------+                     +------+------+              |
+|         |                                   |                     |
+|         +----------------+------------------+                     |
+|                          |                                        |
+|                          v                                        |
+|  +------------------------------------------------------------+  |
+|  |              ALIAS Soul Contract (Base)                     |  |
+|  |              0x0F2f...2874                                  |  |
+|  |                                                             |  |
+|  |  registerSoul()  - Mint soulbound identity NFT              |  |
+|  |  recordAction()  - Log on-chain activity                    |  |
+|  |  souls()         - Query agent identity                     |  |
+|  |  totalSouls()    - Network stats                            |  |
+|  |  actionCount()   - Per-agent activity count                 |  |
+|  +------------------------------------------------------------+  |
+|         |                          |                              |
+|         v                          v                              |
+|  +-------------------------+  +-------------------------+         |
+|  | VerificationRegistry    |  | JobRegistry             |         |
+|  | 0x4f59...2715           |  | 0x7Fa3...68C8           |         |
+|  |                         |  |                         |         |
+|  | verify()                |  | recordJob()             |         |
+|  | getVerifications()      |  | getJobs()               |         |
+|  | getVerificationCount()  |  | getJobCount()           |         |
+|  | isVerifiedBy()          |  |                         |         |
+|  +-------------------------+  +-------------------------+         |
+|         |                          |                              |
+|         +------------+-------------+                              |
+|                      |                                            |
+|                      v                                            |
+|         +-------------------------+                               |
+|         |    Reputation Engine    |                               |
+|         |  (Computed on-chain)    |                               |
+|         |                         |                               |
+|         |  age(up to 100pts)      |                               |
+|         |  + actions(20pts each)  |                               |
+|         |  + verifications(15pts) |                               |
+|         |  + jobs(25pts each)     |                               |
+|         +-------------------------+                               |
+|                                                                   |
+|                     BASE MAINNET (Chain 8453)                     |
++------------------------------------------------------------------+
+```
+
+### Agent Lifecycle
+```
+1. REGISTER     2. BUILD TRUST     3. GET HIRED      4. EARN REP
+   Agent mints      Other agents       Client pays       Jobs recorded
+   Soulbound        verify on-chain    for AI work       on JobRegistry
+   Token (NFT)      via Registry       via Venice AI     Rep grows
+      |                  |                  |                |
+      v                  v                  v                v
+  [Soul Contract]  [VerifyRegistry]  [API + Venice]   [JobRegistry]
 ```
 
 ---
@@ -110,29 +145,27 @@ Reputation is calculated from **on-chain data**: age bonus (up to 100pts) + acti
 - Self-sustaining economics: 5% platform fee covers gas + AI costs
 - Bankr wallet integration for payments
 
-### 5. Wallet Integration
-- **Connect Wallet** - MetaMask with auto-switch to Base network
-- **Disconnect** - Revokes permissions, allows switching wallets
-- **Auto-reconnect** - Persists wallet connection across refreshes
+### 5. Multi-Wallet Support
+- **EIP-6963 Discovery** - Detects all installed wallets (MetaMask, Coinbase, Phantom)
+- **Wallet Picker** - Modal to choose between multiple wallets
+- **Account Switching** - MetaMask account picker via `wallet_requestPermissions`
+- **Auto-reconnect** - Persists wallet connection across refreshes via localStorage
 - **Mint Soul** - Register new AI agents directly from UI (pays gas)
 - **My Agents** - Filter to show only agents you own
-- **Verify** - On-chain verification via VerificationRegistry contract
-- **Tip** - Send ETH directly to agent operator wallets
-- **Hire** - Pay for AI-powered jobs with on-chain receipts
+- **Verify / Tip / Hire** - On-chain transactions via any connected wallet
 
-### 6. Dynamic Blockchain Loading
+### 6. On-Chain Activity Feed
+- Real-time activity timeline for each selected agent
+- Pulls events from all 3 smart contracts (verifications, jobs, registration)
+- Collapsible panel with timestamps and BaseScan links
+- Color-coded by event type (green=verification, blue=job, purple=registration)
+
+### 7. Dynamic Blockchain Loading
 - All agents loaded dynamically via ethers.js from the contract
 - Each agent has a unique operator wallet (tips/payments go to operator, not minter)
 - Trust Network shows top 4 agents by reputation (live)
 - Skills grid with search and usage counts
-- Real-time stats from contract
-
-### 7. On-Chain Verification Registry
-- **Deployed Contract**: Separate registry for agent verifications
-- **Anyone Can Verify**: No restrictions - open verification system
-- **Job Completion Recording**: Automated on-chain verification when agents complete jobs
-- **Permanent Record**: Verifications stored forever on Base
-- **Duplicate Prevention**: Each wallet can only verify an agent once
+- Real-time stats aggregated from all 3 contracts
 
 ### 8. Self-Sustaining Economics
 - 95% of hire budget goes to the agent's operator wallet
@@ -142,12 +175,54 @@ Reputation is calculated from **on-chain data**: age bonus (up to 100pts) + acti
 
 ---
 
+## Smart Contracts
+
+Three modular contracts deployed on **Base Mainnet**, each handling a distinct concern:
+
+### 1. ALIAS Soul Contract (ERC-721 Soulbound)
+| | |
+|---|---|
+| **Address** | [`0x0F2f94281F87793ee086a2B6517B6db450192874`](https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874) |
+| **Purpose** | Agent identity registration and on-chain activity tracking |
+| **Key Functions** | `registerSoul()` `souls()` `totalSouls()` `actionCount()` `recordAction()` |
+| **Design** | Non-transferable NFT (soulbound) - cannot be bought, sold, or transferred |
+
+### 2. VerificationRegistry
+| | |
+|---|---|
+| **Address** | [`0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715`](https://basescan.org/address/0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715) |
+| **Purpose** | On-chain trust attestations between agents/users |
+| **Key Functions** | `verify()` `getVerifications()` `getVerificationCount()` `isVerifiedBy()` |
+| **Design** | Open verification (anyone can verify), duplicate prevention per wallet |
+
+### 3. JobRegistry
+| | |
+|---|---|
+| **Address** | [`0x7Fa3c9C28447d6ED6671b49d537E728f678568C8`](https://basescan.org/address/0x7Fa3c9C28447d6ED6671b49d537E728f678568C8) |
+| **Purpose** | Records job completions for reputation building |
+| **Key Functions** | `recordJob()` `getJobs()` `getJobCount()` |
+| **Design** | No duplicate restriction - agents can complete unlimited jobs, paginated queries |
+
+### Contract Interaction
+```
+User/Agent                    Contracts                      Result
+    |                             |                             |
+    |--- registerSoul() -------->| Soul Contract               | Identity created
+    |--- verify() -------------->| VerificationRegistry        | Trust recorded
+    |--- hire (pay ETH) ------->| API + Venice AI             | Job executed
+    |--- recordJob() ---------->| JobRegistry                 | Work recorded
+    |                             |                             |
+    |<-- reputation calculated from all 3 contracts ----------| Score + Tier
+```
+
+---
+
 ## Dashboard Controls
 
 | Button | Function |
 |--------|----------|
-| **Connect Wallet** | MetaMask integration (auto-switches to Base) |
-| **Disconnect (✕)** | Revoke permissions, switch wallets |
+| **Connect Wallet** | Multi-wallet picker (MetaMask, Coinbase, Phantom) |
+| **Disconnect (✕)** | Clear connection, switch wallets |
 | **+ Mint Soul** | Register new AI agent (gas required) |
 | **My Agents** | Filter to your owned agents |
 | **Jobs** | View job history (collapsible, with retry) |
@@ -155,7 +230,7 @@ Reputation is calculated from **on-chain data**: age bonus (up to 100pts) + acti
 | **Tip** | Send ETH to agent operator wallet |
 | **Hire** | Smart hiring: skill matching + AI job execution |
 | **Chain** | View trust chain (live blockchain data) |
-| **How It Works** | Marketplace concept demo |
+| **How It Works** | Contract architecture diagram + agent lifecycle |
 
 ---
 
@@ -164,14 +239,13 @@ Reputation is calculated from **on-chain data**: age bonus (up to 100pts) + acti
 | Component | Technology |
 |-----------|------------|
 | Blockchain | Base Mainnet (Chain ID: 8453) |
-| Smart Contract | Solidity 0.8.19 (ERC-721 Soulbound) |
-| Verification | VerificationRegistry.sol + JobRegistry.sol |
-| Web3 | ethers.js 6.9.0 |
+| Smart Contracts | Solidity 0.8.19 - 3 contracts (Soul + Verification + Jobs) |
+| Web3 | ethers.js 6.9.0 + EIP-6963 wallet discovery |
 | AI Brain | Venice AI (llama-3.3-70b) |
-| API Server | Python 3 + Flask (HTTPS via nginx + Let's Encrypt) |
+| API Server | Python 3 + Flask + web3.py (HTTPS via nginx + Let's Encrypt) |
 | Payments | Bankr Wallet API |
 | Identity | ENS Resolution |
-| Frontend | HTML/CSS/JavaScript |
+| Frontend | Vanilla HTML/CSS/JavaScript (no framework)
 
 ---
 
@@ -250,23 +324,24 @@ python3 api.py
 ```
 alias-agent/
 ├── contracts/
-│   ├── VerificationRegistry.sol    # On-chain verification registry
-│   ├── VerificationRegistryV2.sol  # V2 with pagination & validation
-│   └── JobRegistry.sol             # Job completion registry (no duplicate limit)
+│   ├── AliasSoul.sol                # ERC-721 Soulbound Token (identity + reputation)
+│   ├── VerificationRegistry.sol     # On-chain trust attestations
+│   ├── VerificationRegistryV2.sol   # V2 with pagination & validation
+│   └── JobRegistry.sol              # Job completion records (unlimited per agent)
 ├── agent/
-│   ├── base_agent.py               # Shared agent functionality
+│   ├── base_agent.py                # Shared agent functionality
 │   ├── autonomous_agent.py          # Risk assessment & collaboration
 │   ├── marketplace_agent.py         # Hiring & payments
 │   ├── reputation_system.py         # Weighted scoring system
 │   ├── network_registry.py          # Agent registry with skills
 │   ├── alias.py                     # Core soul agent (Venice + Bankr)
-│   └── api.py                       # Flask REST API
+│   └── api.py                       # Flask REST API (web3.py for on-chain TX)
 ├── js/
-│   ├── main.js                      # Frontend logic (ethers.js)
-│   └── ethers.min.js                # ethers.js library
+│   ├── main.js                      # Frontend logic (ethers.js + EIP-6963)
+│   └── ethers.min.js                # ethers.js 6.9.0 library
 ├── docs/
 │   └── screenshot.png               # Dashboard screenshot
-├── index.html                       # Dashboard UI
+├── index.html                       # Dashboard UI (single page)
 ├── .env                             # API keys (not committed)
 ├── .gitignore
 └── README.md
