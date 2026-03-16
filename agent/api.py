@@ -114,12 +114,22 @@ def execute_job():
         r.raise_for_status()
         result = r.json()["choices"][0]["message"]["content"]
 
-        # Record action on-chain to increase agent reputation
+        # Record verification on-chain via VerificationRegistry
         token_id = data.get('token_id')
         tx_result = None
         if token_id:
             try:
-                tx_result = agent.record_action(token_id, "job-completed", f"{escrow_id}")
+                import subprocess, os
+                verification_registry = "0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715"
+                pk = os.getenv("PRIVATE_KEY")
+                msg = f"Job completed: {job_desc[:80]}"
+                r2 = subprocess.run([
+                    "cast", "send", "--rpc-url", "https://mainnet.base.org",
+                    "--private-key", pk,
+                    verification_registry,
+                    "verify(uint256,string)", str(token_id), msg
+                ], capture_output=True, text=True)
+                tx_result = "transactionHash" in r2.stdout if r2.returncode == 0 else False
             except Exception:
                 pass
 
