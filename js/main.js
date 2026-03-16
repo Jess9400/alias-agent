@@ -1100,62 +1100,108 @@ function showJobHistory() {
         var j = jobs[id];
         var isCompleted = j.status === "COMPLETED";
 
-        var jobCard = document.createElement('div');
-        jobCard.style.cssText = 'padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;margin-bottom:10px;border-left:3px solid ' + (isCompleted ? 'var(--success)' : 'var(--warning)');
+        // Collapsed row (always visible)
+        var jobRow = document.createElement('div');
+        jobRow.style.cssText = 'padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px;margin-bottom:6px;border-left:3px solid ' + (isCompleted ? 'var(--success)' : 'var(--warning)') + ';cursor:pointer;transition:background 0.2s';
+        jobRow.onmouseover = function() { this.style.background = 'rgba(255,255,255,0.06)'; };
+        jobRow.onmouseout = function() { this.style.background = 'rgba(255,255,255,0.03)'; };
 
-        // Status + ID row
-        var statusRow = document.createElement('div');
-        statusRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:6px';
-        var statusSpan = document.createElement('span');
-        statusSpan.style.cssText = 'font-weight:bold;color:' + (isCompleted ? 'var(--success)' : 'var(--warning)');
-        statusSpan.textContent = (isCompleted ? '✓ COMPLETED' : '⏳ PENDING');
-        statusRow.appendChild(statusSpan);
-        var idSpan = document.createElement('span');
-        idSpan.style.cssText = 'color:var(--text-dim);font-size:0.85em;font-family:monospace';
-        idSpan.textContent = id;
-        statusRow.appendChild(idSpan);
-        jobCard.appendChild(statusRow);
+        var rowContent = document.createElement('div');
+        rowContent.style.cssText = 'display:flex;justify-content:space-between;align-items:center';
 
-        // Agent + Job
-        var infoDiv = document.createElement('div');
-        infoDiv.style.cssText = 'margin-bottom:6px';
-        infoDiv.textContent = escapeHtml(j.agent) + ' — ' + escapeHtml((j.job || '').slice(0, 80));
-        jobCard.appendChild(infoDiv);
+        var leftSide = document.createElement('div');
+        var statusIcon = document.createElement('span');
+        statusIcon.style.cssText = 'color:' + (isCompleted ? 'var(--success)' : 'var(--warning)') + ';margin-right:8px';
+        statusIcon.textContent = isCompleted ? '✓' : '⏳';
+        leftSide.appendChild(statusIcon);
+        var agentSpan = document.createElement('span');
+        agentSpan.style.cssText = 'font-weight:bold;margin-right:8px';
+        agentSpan.textContent = escapeHtml(j.agent);
+        leftSide.appendChild(agentSpan);
+        var jobSpan = document.createElement('span');
+        jobSpan.style.cssText = 'color:var(--text-dim)';
+        jobSpan.textContent = escapeHtml((j.job || '').slice(0, 40)) + ((j.job || '').length > 40 ? '...' : '');
+        leftSide.appendChild(jobSpan);
+        rowContent.appendChild(leftSide);
+
+        var rightSide = document.createElement('div');
+        rightSide.style.cssText = 'display:flex;align-items:center;gap:10px';
+        if (j.budget) {
+            var budgetSpan = document.createElement('span');
+            budgetSpan.style.cssText = 'color:var(--text-dim);font-size:0.85em';
+            budgetSpan.textContent = j.budget + ' ETH';
+            rightSide.appendChild(budgetSpan);
+        }
+        var arrow = document.createElement('span');
+        arrow.style.cssText = 'color:var(--text-dim);font-size:0.8em;transition:transform 0.2s';
+        arrow.textContent = '▶';
+        rightSide.appendChild(arrow);
+        rowContent.appendChild(rightSide);
+
+        jobRow.appendChild(rowContent);
+
+        // Expanded details (hidden by default)
+        var details = document.createElement('div');
+        details.style.cssText = 'display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.1)';
+
+        // Job ID
+        var idDiv = document.createElement('div');
+        idDiv.style.cssText = 'color:var(--text-dim);font-size:0.85em;font-family:monospace;margin-bottom:6px';
+        idDiv.textContent = id;
+        details.appendChild(idDiv);
+
+        // Full job description
+        var jobDiv = document.createElement('div');
+        jobDiv.style.cssText = 'margin-bottom:8px';
+        jobDiv.textContent = 'Job: ' + escapeHtml(j.job || '');
+        details.appendChild(jobDiv);
 
         // Budget + TX
-        if (j.budget) {
-            var budgetDiv = document.createElement('div');
-            budgetDiv.style.cssText = 'color:var(--text-dim);font-size:0.85em;margin-bottom:6px';
-            budgetDiv.textContent = 'Budget: ' + j.budget + ' ETH';
-            if (j.txHash) {
-                var txLink = document.createElement('a');
-                txLink.href = 'https://basescan.org/tx/' + j.txHash;
-                txLink.target = '_blank';
-                txLink.style.cssText = 'color:var(--primary);margin-left:10px;text-decoration:none';
-                txLink.textContent = 'View TX ↗';
-                budgetDiv.appendChild(txLink);
-            }
-            jobCard.appendChild(budgetDiv);
+        if (j.txHash) {
+            var txDiv = document.createElement('div');
+            txDiv.style.cssText = 'margin-bottom:8px;font-size:0.9em';
+            var txLink = document.createElement('a');
+            txLink.href = 'https://basescan.org/tx/' + j.txHash;
+            txLink.target = '_blank';
+            txLink.style.cssText = 'color:var(--primary);text-decoration:none';
+            txLink.textContent = 'View Transaction on BaseScan ↗';
+            txDiv.appendChild(txLink);
+            details.appendChild(txDiv);
         }
 
         // Result
         if (j.result) {
+            var resultLabel = document.createElement('div');
+            resultLabel.style.cssText = 'color:var(--success);font-weight:bold;margin-bottom:4px;font-size:0.9em';
+            resultLabel.textContent = 'Agent Deliverable:';
+            details.appendChild(resultLabel);
+
             var resultDiv = document.createElement('div');
-            resultDiv.style.cssText = 'background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;font-size:0.9em;line-height:1.5;max-height:200px;overflow-y:auto;white-space:pre-wrap;margin-bottom:6px';
+            resultDiv.style.cssText = 'background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;font-size:0.9em;line-height:1.5;max-height:250px;overflow-y:auto;white-space:pre-wrap';
             resultDiv.textContent = j.result;
-            jobCard.appendChild(resultDiv);
+            details.appendChild(resultDiv);
         }
 
         // Retry button for pending jobs
         if (!isCompleted) {
             var retryBtn = document.createElement('button');
-            retryBtn.style.cssText = 'background:var(--warning);color:#000;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-weight:bold;font-size:0.85em;margin-top:4px';
+            retryBtn.style.cssText = 'background:var(--warning);color:#000;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-weight:bold;font-size:0.85em;margin-top:8px';
             retryBtn.textContent = 'Retry Job';
-            retryBtn.onclick = function() { retryJob(id); };
-            jobCard.appendChild(retryBtn);
+            retryBtn.onclick = function(e) { e.stopPropagation(); retryJob(id); };
+            details.appendChild(retryBtn);
         }
 
-        box.appendChild(jobCard);
+        jobRow.appendChild(details);
+
+        // Toggle expand/collapse on click
+        jobRow.onclick = function() {
+            var isOpen = details.style.display !== 'none';
+            details.style.display = isOpen ? 'none' : 'block';
+            arrow.textContent = isOpen ? '▶' : '▼';
+            arrow.style.color = isOpen ? 'var(--text-dim)' : 'var(--primary)';
+        };
+
+        box.appendChild(jobRow);
     });
 }
 
