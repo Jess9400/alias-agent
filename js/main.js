@@ -78,21 +78,20 @@ function isValidENS(name) {
 // =============================================================================
 
 var agents = [
-    { name: "ALIAS", address: "0x07a0...E39", fullAddress: "0x07a0afcb49a764007439671Ec5148947EfC62E39", skills: ["identity", "autonomous", "verification"], rep: 200, tier: "ELITE", tokenId: 1 },
-    { name: "ALIAS-Alpha", address: "0x07a0...E39", fullAddress: "0x07a0afcb49a764007439671Ec5148947EfC62E39", skills: ["autonomous", "verification", "risk-assessment"], rep: 150, tier: "VERIFIED", tokenId: 2 },
-    { name: "DataMind", address: "0x07a0...E39", fullAddress: "0x07a0afcb49a764007439671Ec5148947EfC62E39", skills: ["data-analysis", "forecasting", "reporting"], rep: 100, tier: "VERIFIED", tokenId: 3 },
-    { name: "SecureBot", address: "0x07a0...E39", fullAddress: "0x07a0afcb49a764007439671Ec5148947EfC62E39", skills: ["code-audit", "security", "review"], rep: 50, tier: "NEWCOMER", tokenId: 4 },
-    { name: "CreativeAI", address: "0x07a0...E39", fullAddress: "0x07a0afcb49a764007439671Ec5148947EfC62E39", skills: ["writing", "marketing", "documentation"], rep: 50, tier: "NEWCOMER", tokenId: 5 },
-    { name: "DeFiSage", address: "0x07a0...E39", fullAddress: "0x07a0afcb49a764007439671Ec5148947EfC62E39", skills: ["defi", "yield-farming", "protocol-review"], rep: 50, tier: "NEWCOMER", tokenId: 6 },
-    { name: "ResearchPrime", address: "0x07a0...E39", fullAddress: "0x07a0afcb49a764007439671Ec5148947EfC62E39", skills: ["research", "due-diligence", "reporting"], rep: 50, tier: "NEWCOMER", tokenId: 7 },
-    { name: "ALIAS-Prime", address: "0x6FFa...9BC", fullAddress: "0x6FFa1e00509d8B625c2F061D7dB07893B37199BC", skills: ["general", "coordination"], rep: 40, tier: "NEWCOMER", tokenId: 8 },
+    { name: "ALIAS-Prime", address: "0x6FFa...9BC", fullAddress: "0x6FFa1e00509d8B625c2F061D7dB07893B37199BC", skills: ["general", "coordination"], rep: 200, tier: "ELITE", tokenId: 1 },
+    { name: "ALIAS-Alpha", address: "0x07a0...E39", fullAddress: "0x07a0afcb49a764007439671Ec5148947EfC62E39", skills: ["autonomous", "verification", "risk-assessment", "collaboration"], rep: 150, tier: "VERIFIED", tokenId: 2 },
+    { name: "DataMind", address: "0x1111...111", fullAddress: "0x1111111111111111111111111111111111111111", skills: ["data-analysis", "forecasting", "reporting"], rep: 100, tier: "VERIFIED", tokenId: 3 },
+    { name: "SecureBot", address: "0x2222...222", fullAddress: "0x2222222222222222222222222222222222222222", skills: ["code-audit", "vulnerability-detection", "security-review"], rep: 50, tier: "NEWCOMER", tokenId: 4 },
+    { name: "CreativeAI", address: "0x3333...333", fullAddress: "0x3333333333333333333333333333333333333333", skills: ["writing", "marketing", "documentation"], rep: 50, tier: "NEWCOMER", tokenId: 5 },
+    { name: "DeFiSage", address: "0x4444...444", fullAddress: "0x4444444444444444444444444444444444444444", skills: ["defi-analysis", "yield-farming", "protocol-review"], rep: 50, tier: "NEWCOMER", tokenId: 6 },
+    { name: "ResearchPrime", address: "0x5555...555", fullAddress: "0x5555555555555555555555555555555555555555", skills: ["research", "due-diligence", "report-writing"], rep: 50, tier: "NEWCOMER", tokenId: 7 },
     { name: "TraderBot", address: "0x9a60...DFb", fullAddress: "0x9a60871B684e23D1C05ba9127AA7E72eA0a38DFb", skills: ["trading", "market-analysis", "portfolio"], rep: 20, tier: "NEWCOMER", tokenId: 9 },
     { name: "LegalMind", address: "0xB446...f23", fullAddress: "0xB44618a6E386FE847B5dfcbA111A6C8aD2B97f23", skills: ["legal-research", "compliance", "contract-review"], rep: 10, tier: "NEWCOMER", tokenId: 10 },
     { name: "DevAgent", address: "0x9C8d...883", fullAddress: "0x9C8d1e413e71a02C2Ad0970AAcAe0Ae786e0F883", skills: ["coding", "debugging", "code-review"], rep: 5, tier: "NEWCOMER", tokenId: 11 }
 ];
 var selectedAgent = null;
 
-var allSkills = ["autonomous", "verification", "risk-assessment", "data-analysis", "forecasting", "reporting", "code-audit", "vulnerability-detection", "security-review", "writing", "marketing", "documentation", "defi-analysis", "yield-farming", "protocol-review", "research", "due-diligence", "report-writing"];
+var allSkills = ["general", "coordination", "autonomous", "verification", "risk-assessment", "collaboration", "data-analysis", "forecasting", "reporting", "code-audit", "vulnerability-detection", "security-review", "writing", "marketing", "documentation", "defi-analysis", "yield-farming", "protocol-review", "research", "due-diligence", "report-writing"];
 
 // =============================================================================
 // DYNAMIC AGENT LOADING WITH ETHERS.JS
@@ -137,7 +136,7 @@ async function loadAgentsFromChain() {
                     var skillsArray = extractSkills(soul.name, soul.skills);
                     
                     // Calculate rep based on age
-                    var age = 43400000 - Number(soul.createdAt);
+                    var age = Math.floor(Date.now() / 1000) - Number(soul.createdAt);
                     var rep = Math.max(0, Math.min(Math.floor(age / 200), 300));
                     
                     var tier = "NEWCOMER";
@@ -193,7 +192,7 @@ function extractSkills(name, description) {
         "security": "security", "audit": "audit", "research": "research",
         "forecast": "forecasting", "report": "reporting", "defi": "defi",
         "autonomous": "autonomous", "verification": "verification", "identity": "identity",
-        "portfolio": "portfolio", "trading": "trading"
+        "portfolio": "portfolio"
     };
     
     for (var k in keywords) {
@@ -734,7 +733,7 @@ document.addEventListener("DOMContentLoaded", function() {
     typeInTerminal("[SYSTEM] ALIAS Network initialized", "system");
     typeInTerminal("[INFO] Loading stats from blockchain...", "warning");
     
-    document.getElementById("connectBtn").addEventListener("click", connectWallet);
+    document.getElementById("connectBtn").addEventListener("click", connectWalletEnhanced);
     document.getElementById("searchBtn").addEventListener("click", searchAgent);
     document.getElementById("verifyBtn").addEventListener("click", function() { if (selectedAgent) { signVerification(selectedAgent); } else { alert("Please select an agent first!"); } });
     document.getElementById("chainBtn").addEventListener("click", runChainDemo);
@@ -762,11 +761,11 @@ function populateTrustNetwork() {
     var arrows = ['verified', 'trusted', 'hired'];
     
     topAgents.forEach(function(agent, index) {
-        var tierClass = agent.tier.toLowerCase();
+        var tierClass = escapeHtml(agent.tier.toLowerCase());
         html += '<div class="network-node ' + tierClass + '">';
-        html += '<div class="node-name">' + agent.name + '</div>';
-        html += '<div class="node-rep">' + agent.rep + '</div>';
-        html += '<div class="node-tier tier-' + tierClass + '">' + agent.tier + '</div>';
+        html += '<div class="node-name">' + escapeHtml(agent.name) + '</div>';
+        html += '<div class="node-rep">' + escapeHtml(String(agent.rep)) + '</div>';
+        html += '<div class="node-tier tier-' + tierClass + '">' + escapeHtml(agent.tier) + '</div>';
         html += '</div>';
         
         // Add arrow between nodes (not after last one)
@@ -808,7 +807,12 @@ function populateSkillsWithSearch() {
             
             var tag = document.createElement('span');
             tag.className = 'skill-tag';
-            tag.innerHTML = skill + ' <span style="opacity:0.6;font-size:0.8em;">(' + skillCounts[skill] + ')</span>';
+            tag.textContent = '';
+            tag.appendChild(document.createTextNode(skill + ' '));
+            var countSpan = document.createElement('span');
+            countSpan.style.cssText = 'opacity:0.6;font-size:0.8em;';
+            countSpan.textContent = '(' + skillCounts[skill] + ')';
+            tag.appendChild(countSpan);
             tag.onclick = function() { searchSkill(skill); };
             grid.appendChild(tag);
             displayed++;
@@ -906,14 +910,19 @@ function filterMyAgents() {
         var item = document.createElement('div');
         item.className = 'agent-item';
         item.style.border = '1px solid var(--secondary)';
-        item.onclick = function() { selectAgent(a); };
+        item.onclick = function() { selectAgent(a.name); };
         
         var info = document.createElement('div');
         info.className = 'agent-info';
         
         var name = document.createElement('div');
         name.className = 'agent-name';
-        name.innerHTML = a.name + ' <span style="color:var(--secondary);font-size:0.8em;">YOURS</span>';
+        name.textContent = '';
+        name.appendChild(document.createTextNode(a.name + ' '));
+        var badge = document.createElement('span');
+        badge.style.cssText = 'color:var(--secondary);font-size:0.8em;';
+        badge.textContent = 'YOURS';
+        name.appendChild(badge);
         info.appendChild(name);
         
         var addr = document.createElement('div');
@@ -1064,10 +1073,6 @@ async function signVerification(agent) {
 
 // Initialize new event listeners
 document.addEventListener("DOMContentLoaded", function() {
-    // Replace old connect with enhanced version
-    document.getElementById("connectBtn").removeEventListener("click", connectWallet);
-    document.getElementById("connectBtn").addEventListener("click", connectWalletEnhanced);
-    
     // New buttons
     document.getElementById("mintBtn").addEventListener("click", openMintModal);
     document.getElementById("myAgentsBtn").addEventListener("click", toggleMyAgents);

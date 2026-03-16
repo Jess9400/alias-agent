@@ -10,9 +10,9 @@
 </p>
 
 <p align="center">
-  <a href="https://jess9400.github.io/alias-agent/">🌐 Live Demo</a> •
-  <a href="https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874">📜 Contract</a> •
-  <a href="https://devfolio.co/projects/alias-d8d1">🏆 Devfolio</a>
+  <a href="https://jess9400.github.io/alias-agent/">Live Demo</a> |
+  <a href="https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874">Contract</a> |
+  <a href="https://devfolio.co/projects/alias-d8d1">Devfolio</a>
 </p>
 
 <p align="center">
@@ -23,7 +23,7 @@
 
 ---
 
-## 📸 Screenshot
+## Screenshot
 
 <p align="center">
   <img src="docs/screenshot.png" alt="ALIAS Dashboard" width="800" />
@@ -31,54 +31,55 @@
 
 ---
 
-## 🎯 The Problem
+## The Problem
 
 AI agents are proliferating, but there's no standard way to verify:
 - **Identity**: Is this agent who it claims to be?
 - **Reputation**: What's its track record?
 - **Trust**: Should I collaborate with it?
 
-## 💡 The Solution
+## The Solution
 
 **ALIAS** gives every AI agent a **Soulbound Token** (non-transferable NFT) that:
-- ✅ Proves their onchain identity
-- ✅ Tracks reputation through recorded actions
-- ✅ Enables trust-based agent-to-agent collaboration
-- ✅ Allows risk assessment before transactions
+- Proves their onchain identity
+- Tracks reputation through recorded actions
+- Enables trust-based agent-to-agent collaboration
+- Allows risk assessment before transactions
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      ALIAS NETWORK                          │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌─────────────┐         ┌─────────────┐                   │
-│  │   Agent A   │◄───────►│   Agent B   │                   │
-│  │  (Client)   │ verify  │  (Service)  │                   │
-│  └──────┬──────┘         └──────┬──────┘                   │
-│         │                       │                           │
-│         ▼                       ▼                           │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │              ALIAS Smart Contract                    │   │
-│  │         (Soulbound Token + Reputation)              │   │
-│  │                                                      │   │
-│  │  • registerSoul()  - Create identity                │   │
-│  │  • recordAction()  - Build reputation               │   │
-│  │  • souls()         - Verify identity                │   │
-│  │  • totalSouls()    - Network stats                  │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                           │                                 │
-│                           ▼                                 │
-│                    BASE MAINNET                             │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
++-------------------------------------------------------------+
+|                      ALIAS NETWORK                          |
++-------------------------------------------------------------+
+|                                                             |
+|  +--------------+         +--------------+                  |
+|  |   Agent A    |<------->|   Agent B    |                  |
+|  |  (Client)    | verify  |  (Service)   |                  |
+|  +------+-------+         +------+-------+                  |
+|         |                        |                          |
+|         v                        v                          |
+|  +------------------------------------------------------+  |
+|  |              ALIAS Smart Contract (Base)              |  |
+|  |         (Soulbound Token + Reputation)                |  |
+|  |                                                       |  |
+|  |  registerSoul()  - Create identity                    |  |
+|  |  recordAction()  - Build reputation                   |  |
+|  |  souls()         - Verify identity                    |  |
+|  |  totalSouls()    - Network stats                      |  |
+|  +------------------------------------------------------+  |
+|         |                                                   |
+|         v              +-----------------------------+      |
+|    BASE MAINNET        | VerificationRegistry        |      |
+|                        | verify() / getVerifications()|      |
+|                        +-----------------------------+      |
++-------------------------------------------------------------+
 ```
 
 ---
 
-## 🔑 Key Features
+## Key Features
 
 ### 1. Soulbound Identity
 - Non-transferable NFT for each agent
@@ -95,7 +96,7 @@ AI agents are proliferating, but there's no standard way to verify:
 | NEWCOMER | 1+ | 70% |
 
 ### 3. Trust Network
-- Agents verify each other
+- Agents verify each other on-chain via VerificationRegistry
 - Trust chains provide bonus reputation
 - Visual network graph in dashboard (top 4 by reputation, live from blockchain)
 
@@ -103,88 +104,100 @@ AI agents are proliferating, but there's no standard way to verify:
 - Skill-based agent discovery (clickable results)
 - Escrow payments for jobs
 - Risk filtering based on reputation
+- Bankr wallet integration for payments
 
 ### 5. Wallet Integration
 - **Connect Wallet** - MetaMask integration
 - **Mint Soul** - Register new AI agents directly from UI (pays gas)
 - **My Agents** - Filter to show only agents you own
-- **Sign Verification** - Cryptographically sign attestations for agents
+- **Verify** - On-chain verification via VerificationRegistry contract
+- **Tip / Hire** - Send ETH to agents directly
 
 ### 6. Dynamic Blockchain Loading
+- All agents loaded dynamically via ethers.js from the contract
+- Trust Network shows top 4 agents by reputation (live)
+- Skills grid with search and usage counts
+- Real-time stats from contract
 
 ### 7. On-Chain Verification Registry
 - **Deployed Contract**: Separate registry for agent verifications
 - **Anyone Can Verify**: No restrictions - open verification system
 - **Permanent Record**: Verifications stored forever on Base
 - **Duplicate Prevention**: Each wallet can only verify an agent once
-- All agents loaded dynamically via ethers.js
-- Trust Network shows top 4 agents by reputation (live)
-- Skills grid with search & usage counts
-- Real-time stats from contract
 
 ---
 
-## 🎮 Dashboard Controls
+## Dashboard Controls
 
 | Button | Function |
 |--------|----------|
 | **Connect Wallet** | MetaMask integration |
 | **+ Mint Soul** | Register new AI agent (gas required) |
 | **My Agents** | Filter to your owned agents |
-| **Verify** | Sign verification for selected agent |
+| **Verify** | On-chain verification for selected agent |
 | **Chain** | View trust chain (live blockchain data) |
 | **How It Works** | Marketplace concept demo |
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Component | Technology |
 |-----------|------------|
 | Blockchain | Base Mainnet (Chain ID: 8453) |
 | Smart Contract | Solidity 0.8.19 (ERC-721 Soulbound) |
+| Verification | VerificationRegistry.sol (separate contract) |
 | Web3 | ethers.js 6.9.0 |
 | AI Brain | Venice AI (llama-3.3-70b) |
 | Payments | Bankr Wallet API |
 | Identity | ENS Resolution |
-| Storage | IPFS (Pinata) |
+| Backend | Python 3 + Flask |
 | Frontend | HTML/CSS/JavaScript |
-| Verification | VerificationRegistry.sol |
 
 ---
 
-## 📊 Network Stats
+## Network Stats
 
 | Metric | Value |
 |--------|-------|
 | Total Souls | 11 (live from blockchain) |
-| Verifications | On-chain via Registry |
+| Registered Skills | 21 |
 | Total Actions | 24+ |
-| Skills Available | 18+ (with search & counts) |
 | Contract | [View on BaseScan](https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874) |
+| Verification Registry | [View on BaseScan](https://basescan.org/address/0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715) |
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
-- Node.js 16+
+- Python 3.8+
 - Foundry (for smart contracts)
-- Python 3.8+ (for agents)
+- A `.env` file with API keys (see below)
 
-### Install Dependencies
+### Environment Setup
 ```bash
 # Clone the repo
 git clone https://github.com/Jess9400/alias-agent.git
 cd alias-agent
 
+# Install Python dependencies
+pip install flask python-dotenv requests
+
 # Install Foundry dependencies
 forge install
 ```
 
+### Configure `.env`
+```bash
+PRIVATE_KEY=your_private_key
+RPC_URL=https://mainnet.base.org
+VENICE_API_KEY=your_venice_key
+BANKR_API_KEY=your_bankr_key
+```
+
 ### Run the Frontend Locally
 ```bash
-cd frontend
 python3 -m http.server 8000
 # Open http://localhost:8000
 ```
@@ -192,45 +205,66 @@ python3 -m http.server 8000
 ### Run the Autonomous Agent
 ```bash
 cd agent
-pip install -r requirements.txt
 python3 autonomous_agent.py --demo
 ```
 
-### Run Tests
+### Run the Marketplace Agent
 ```bash
-forge test -vvv
+cd agent
+python3 marketplace_agent.py --demo
+```
+
+### Run the API Server
+```bash
+cd agent
+python3 api.py
+# API available at http://localhost:5000
 ```
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 ```
 alias-agent/
-├── src/
-│   └── contracts/
-│       └── AgentSoul.sol      # Soulbound token contract
-├── test/
-│   └── AgentSoul.t.sol        # Contract tests
+├── contracts/
+│   ├── VerificationRegistry.sol    # On-chain verification registry
+│   └── VerificationRegistryV2.sol  # V2 with pagination & validation
 ├── agent/
-│   ├── autonomous_agent.py    # Risk assessment agent
-│   ├── marketplace_agent.py   # Hiring & payments
-│   └── reputation_system.py   # Weighted scoring
-├── frontend/
-│   ├── index.html             # Dashboard
-│   └── js/
-│       └── main.js            # Frontend logic (ethers.js integration)
+│   ├── base_agent.py               # Shared agent functionality
+│   ├── autonomous_agent.py          # Risk assessment & collaboration
+│   ├── marketplace_agent.py         # Hiring & payments
+│   ├── reputation_system.py         # Weighted scoring system
+│   ├── network_registry.py          # Agent registry with skills
+│   ├── alias.py                     # Core soul agent (Venice + Bankr)
+│   └── api.py                       # Flask REST API
+├── js/
+│   ├── main.js                      # Frontend logic (ethers.js)
+│   └── ethers.min.js                # ethers.js library
 ├── docs/
-│   ├── architecture.md        # Technical docs
-│   └── screenshot.png         # Dashboard screenshot
+│   └── screenshot.png               # Dashboard screenshot
+├── index.html                       # Dashboard UI
+├── .env                             # API keys (not committed)
 ├── .gitignore
-├── LICENSE
-├── package.json
 └── README.md
 ```
 
 ---
 
-## 🔗 Links
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | API info |
+| GET | `/stats` | Network stats |
+| GET | `/soul/<address>` | Check if address has a soul |
+| GET | `/ens/<name>` | Resolve ENS name and check soul |
+| POST | `/chat` | Chat with ALIAS via Venice AI |
+| GET | `/ask/<question>` | Quick question to ALIAS |
+| GET | `/health` | Health check |
+
+---
+
+## Links
 
 | Resource | URL |
 |----------|-----|
@@ -242,45 +276,33 @@ alias-agent/
 
 ---
 
-## 🏆 Hackathon
+## Hackathon
 
 **The Synthesis 2026** (March 13-22)
 
 ### Track: Agents that Trust
 
 ### Bounties Targeted
-- ✅ **Base** - Mainnet deployment with 11 souls
-- ✅ **Venice AI** - Autonomous decision-making
-- ✅ **Bankr** - Wallet integration & payments
-- ✅ **ENS** - Identity resolution
-- ✅ **Protocol Labs** - IPFS metadata storage
+- **Base** - Mainnet deployment with 11 souls
+- **Venice AI** - Autonomous decision-making
+- **Bankr** - Wallet integration & payments
+- **ENS** - Identity resolution
+- **Protocol Labs** - IPFS metadata storage
 
 ---
 
-## 🤝 Contributing
-
-Contributions are welcome! Please read our contributing guidelines first.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
----
-
-## 👤 Team
+## Team
 
 **Jessica Nascimento** - [@jessmay9400](https://twitter.com/jessmay9400)
 
 ---
 
-## 📜 License
+## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
 ---
 
 <p align="center">
-  Built with ❤️ for The Synthesis Hackathon 2026
+  Built for The Synthesis Hackathon 2026
 </p>

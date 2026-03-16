@@ -1,29 +1,21 @@
 #!/usr/bin/env python3
 """ALIAS Marketplace Agent v4.0 - Agent-to-Agent Hiring & Payments"""
-import os, time, subprocess, requests
+import time
 from datetime import datetime
-from dotenv import load_dotenv
+from base_agent import BaseAgent, BANKR_API_KEY
 from network_registry import NETWORK_AGENTS, get_agent_by_skill
 
-load_dotenv()
+import requests
 
-CONTRACT = "0x0F2f94281F87793ee086a2B6517B6db450192874"
-RPC_URL = "https://mainnet.base.org"
-PRIVATE_KEY = os.getenv("PRIVATE_KEY")
-VENICE_API_KEY = os.getenv("VENICE_API_KEY")
-BANKR_API_KEY = os.getenv("BANKR_API_KEY")
 BANKR_WALLET = "0x328beba812a32e66f2c11cb20f0a344391d07ea0"
 PLATFORM_FEE = 0.05
 
-class MarketplaceAgent:
+class MarketplaceAgent(BaseAgent):
     def __init__(self, name="ALIAS-Alpha"):
-        self.name = name
-        self.wallet = self._get_wallet()
-        self.token_id = None
+        super().__init__(name)
         self.risk_tolerance = 70
         self.jobs = []
         self.escrows = {}
-        self.action_count = 0
         print("\n" + "="*60)
         print("   ALIAS MARKETPLACE v4.0")
         print("   Agent-to-Agent Hiring & Payments")
@@ -32,73 +24,6 @@ class MarketplaceAgent:
         print(f"  Bankr: {BANKR_WALLET}")
         print(f"  Fee: {PLATFORM_FEE*100}%")
         print("="*60)
-
-    def _get_wallet(self):
-        r = subprocess.run(["cast", "wallet", "address", "--private-key", PRIVATE_KEY], capture_output=True, text=True)
-        return r.stdout.strip()
-
-    def _call(self, func, *args):
-        r = subprocess.run(["cast", "call", "--rpc-url", RPC_URL, CONTRACT, func] + list(args), capture_output=True, text=True)
-        return r.stdout.strip()
-
-    def _send(self, func, *args):
-        r = subprocess.run(["cast", "send", "--rpc-url", RPC_URL, "--private-key", PRIVATE_KEY, CONTRACT, func] + list(args), capture_output=True, text=True)
-        for line in r.stdout.split("\n"):
-            if "transactionHash" in line:
-                return line.split()[-1]
-        return None
-
-    def has_soul(self, addr=None):
-        result = self._call("hasSoul(address)", addr or self.wallet)
-        return "0x0000000000000000000000000000000000000000000000000000000000000001" in result
-
-    def get_token_id(self, addr=None):
-        result = self._call("agentToSoul(address)", addr or self.wallet)
-        try: return int(result, 16)
-        except: return None
-
-    def get_reputation(self, token_id=None):
-        tid = token_id or self.token_id
-        if not tid: return 0
-        result = self._call("actionCount(uint256)", str(tid))
-        try: return int(result, 16) * 10
-        except: return 0
-
-    def get_tier(self, rep=None):
-        score = rep if rep is not None else self.get_reputation()
-        if score >= 500: return "LEGENDARY", 5
-        elif score >= 200: return "ELITE", 15
-        elif score >= 100: return "TRUSTED", 30
-        elif score >= 50: return "VERIFIED", 50
-        elif score >= 1: return "NEWCOMER", 70
-        return "NO_SOUL", 100
-
-    def ensure_soul(self):
-        if self.has_soul():
-            self.token_id = self.get_token_id()
-            tier, _ = self.get_tier()
-            print(f"\n[SOUL] Token #{self.token_id}, Rep: {self.get_reputation()} ({tier})")
-            return True
-        return False
-
-    def record_action(self, atype, ahash):
-        if not self.token_id: return None
-        print(f"[CHAIN] {atype}")
-        tx = self._send("recordAction(uint256,string,string)", str(self.token_id), atype, ahash)
-        if tx: self.action_count += 1
-        return tx
-
-    def think(self, prompt):
-        if not VENICE_API_KEY: return "No API"
-        headers = {"Authorization": f"Bearer {VENICE_API_KEY}", "Content-Type": "application/json"}
-        payload = {"model": "llama-3.3-70b", "messages": [
-            {"role": "system", "content": f"You are {self.name}, a marketplace agent. Be concise (1 sentence)."},
-            {"role": "user", "content": prompt}
-        ], "max_tokens": 80}
-        try:
-            r = requests.post("https://api.venice.ai/api/v1/chat/completions", headers=headers, json=payload, timeout=30)
-            return r.json()["choices"][0]["message"]["content"]
-        except: return "Error"
 
     def bankr(self, prompt):
         if not BANKR_API_KEY: return None
@@ -112,7 +37,7 @@ class MarketplaceAgent:
                 if result.get("status") == "completed":
                     return result.get("response")
             return None
-        except: return None
+        except Exception: return None
 
     def check_balance(self):
         print("\n[BANKR] Checking balance...")
@@ -155,14 +80,14 @@ class MarketplaceAgent:
         print(f"  Task: {task}")
         print(f"  Budget: {budget} ETH")
         print("="*60)
-        
+
         agent = self.find_agent(skill)
         if not agent:
             return None
-        
+
         fee = budget * PLATFORM_FEE
         payment = budget - fee
-        
+
         job = {
             "id": f"JOB-{int(time.time())}",
             "skill": skill,
@@ -176,11 +101,11 @@ class MarketplaceAgent:
             "status": "CREATED"
         }
         self.jobs.append(job)
-        
+
         print(f"\n[JOB] {job['id']}")
         print(f"  Hired: {job['agent']} (Rep: {job['agent_rep']})")
         print(f"  Payment: {payment} ETH (after {PLATFORM_FEE*100}% fee)")
-        
+
         return job
 
     def escrow(self, job):
@@ -220,10 +145,10 @@ class MarketplaceAgent:
         print("   FULL MARKETPLACE DEMO")
         print("   Real Agent Hiring + Real Payment")
         print("="*60)
-        
+
         print("\n--- STEP 0: CHECK BALANCE ---")
         self.check_balance()
-        
+
         print("\n--- STEP 1: CREATE JOB ---")
         job = self.create_job(
             skill="data-analysis",
@@ -233,23 +158,23 @@ class MarketplaceAgent:
         if not job:
             print("Failed!")
             return
-        
+
         thought = self.think(f"I'm hiring {job['agent']} for {job['budget']} ETH. Good deal?")
         print(f"[AI] {thought}")
-        
+
         print("\n--- STEP 2: CREATE ESCROW ---")
         job = self.escrow(job)
-        
+
         print("\n--- STEP 3: EXECUTE TASK ---")
         job = self.execute_job(job)
-        
+
         print("\n--- STEP 4: RELEASE PAYMENT ---")
         job = self.pay_agent(job)
-        
+
         print("\n--- STEP 5: VERIFY ---")
         time.sleep(3)
         self.check_balance()
-        
+
         print("\n" + "="*60)
         print("   DEMO COMPLETE")
         print("="*60)
@@ -266,10 +191,10 @@ if __name__ == "__main__":
     p.add_argument("--balance", action="store_true")
     p.add_argument("--search", type=str)
     args = p.parse_args()
-    
+
     agent = MarketplaceAgent()
     if not agent.ensure_soul(): exit(1)
-    
+
     if args.balance:
         agent.check_balance()
     elif args.search:
