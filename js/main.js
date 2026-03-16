@@ -24,7 +24,8 @@ const CONFIG = {
     CHAIN_ID: 8453,
     ENS_API: "https://api.ensdata.net",
     BASESCAN_URL: "https://basescan.org",
-    VERIFICATION_REGISTRY: "0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715"
+    VERIFICATION_REGISTRY: "0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715",
+    API_URL: "http://89.167.68.215:5000"
 };
 
 // Agent operator wallets (where tips/payments go) - keyed by token ID
@@ -1275,12 +1276,40 @@ async function hireAgent(agent) {
         typeInTerminal("[HIRE] " + escapeHtml(agent.name) + " hired successfully!", "success");
         typeInTerminal("[TX] " + tx.hash, "system");
 
+        // Execute job via Venice AI
+        typeInTerminal("[WORK] " + escapeHtml(agent.name) + " is working on your job...", "warning");
+        try {
+            var jobResponse = await fetch(CONFIG.API_URL + "/job/execute", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    agent_name: agent.name,
+                    skills: agent.skills,
+                    tier: agent.tier,
+                    job: jobDesc,
+                    escrow_id: escrowId
+                })
+            });
+            var jobResult = await jobResponse.json();
+            if (jobResult.status === "completed") {
+                typeInTerminal("[WORK] ✓ Job completed by " + escapeHtml(agent.name) + "!", "success");
+                typeInTerminal("[RESULT] " + escapeHtml(jobResult.result), "system");
+                activeEscrows[escrowId].status = "COMPLETED";
+                activeEscrows[escrowId].result = jobResult.result;
+            } else {
+                typeInTerminal("[WORK] Job execution error: " + escapeHtml(jobResult.error || "unknown"), "warning");
+            }
+        } catch (aiError) {
+            typeInTerminal("[WORK] Could not reach AI service - job queued for later", "warning");
+        }
+
         alert(
             "✅ Successfully hired " + agent.name + "!\n\n" +
             "Job: " + jobDesc + "\n" +
             "Budget: " + budget + " ETH\n" +
             "Agent Payment: " + agentPayment.toFixed(6) + " ETH\n" +
-            "Escrow ID: " + escrowId
+            "Escrow ID: " + escrowId + "\n" +
+            "Status: " + (activeEscrows[escrowId].status === "COMPLETED" ? "Job completed! Check terminal for results." : "Job in progress...")
         );
 
     } catch (error) {

@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from functools import wraps
 from time import time as _time
 from alias import AliasSoulAgent
@@ -23,6 +24,7 @@ def rate_limit(max_per_minute=30):
     return decorator
 
 app = Flask(__name__)
+CORS(app, origins=["https://jess9400.github.io", "http://localhost:*"])
 agent = AliasSoulAgent()
 
 @app.route('/')
@@ -68,6 +70,61 @@ def chat():
 @rate_limit(max_per_minute=20)
 def quick_ask(question):
     return jsonify(agent.chat(question))
+
+@app.route('/job/execute', methods=['POST'])
+@rate_limit(max_per_minute=10)
+def execute_job():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Missing request body"}), 400
+
+    agent_name = data.get('agent_name', 'Agent')
+    agent_skills = data.get('skills', [])
+    agent_tier = data.get('tier', 'NEWCOMER')
+    job_desc = data.get('job', '')
+    escrow_id = data.get('escrow_id', '')
+
+    if not job_desc or len(job_desc) > 2000:
+        return jsonify({"error": "Invalid job description"}), 400
+
+    skills_str = ", ".join(agent_skills[:10]) if agent_skills else "general"
+
+    system_prompt = (
+        f"You are {agent_name}, a specialized AI agent on the ALIAS network. "
+        f"Your tier is {agent_tier}. Your skills: {skills_str}. "
+        f"A client has hired you via the ALIAS marketplace (Job ID: {escrow_id}). "
+        f"Complete the following job professionally. Be thorough but concise (max 3 paragraphs). "
+        f"Format your response as a deliverable report."
+    )
+
+    try:
+        headers = {"Authorization": f"Bearer {agent.venice_api_key}", "Content-Type": "application/json"}
+        payload = {
+            "model": "llama-3.3-70b",
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Job: {job_desc}"}
+            ],
+            "max_tokens": 800
+        }
+        r = __import__('requests').post(
+            "https://api.venice.ai/api/v1/chat/completions",
+            headers=headers, json=payload, timeout=60
+        )
+        r.raise_for_status()
+        result = r.json()["choices"][0]["message"]["content"]
+
+        return jsonify({
+            "status": "completed",
+            "agent": agent_name,
+            "job": job_desc,
+            "escrow_id": escrow_id,
+            "result": result,
+            "provider": "venice",
+            "model": "llama-3.3-70b"
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/health')
 def health():
