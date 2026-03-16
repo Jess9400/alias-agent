@@ -25,7 +25,8 @@ const CONFIG = {
     ENS_API: "https://api.ensdata.net",
     BASESCAN_URL: "https://basescan.org",
     VERIFICATION_REGISTRY: "0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715",
-    API_URL: "https://89-167-68-215.sslip.io"
+    API_URL: "https://89-167-68-215.sslip.io",
+    PLATFORM_WALLET: "0x7F66dFcD8e9e4e7Ec435D0631C5d723fFaDdb211"
 };
 
 // Agent operator wallets (where tips/payments go) - keyed by token ID
@@ -1539,17 +1540,31 @@ async function hireAgent(agent) {
         typeInTerminal("[HIRE] Job: " + escapeHtml(jobDesc.slice(0, 50)) + "...", "system");
         typeInTerminal("[HIRE] Agent: " + escapeHtml(agent.name) + " | Skills: " + escapeHtml(skillList), "system");
         typeInTerminal("[ESCROW] Budget: " + budget + " ETH (Rate: " + rate + " ETH/hr)", "warning");
-        typeInTerminal("[ESCROW] Platform fee (5%): " + fee.toFixed(6) + " ETH", "warning");
+        typeInTerminal("[ESCROW] Platform fee (5%): " + fee.toFixed(6) + " ETH → gas + AI costs", "warning");
         typeInTerminal("[ESCROW] Agent payment: " + agentPayment.toFixed(6) + " ETH", "warning");
 
+        // Send agent payment (95%)
         var tx = await signer.sendTransaction({
             to: agent.fullAddress,
-            value: ethers.parseEther(budget)
+            value: ethers.parseEther(agentPayment.toFixed(18))
         });
 
-        typeInTerminal("[ESCROW] TX submitted: " + tx.hash.slice(0, 15) + "...", "warning");
+        typeInTerminal("[ESCROW] Agent TX submitted: " + tx.hash.slice(0, 15) + "...", "warning");
 
         var receipt = await tx.wait();
+
+        // Send platform fee (5%) to cover gas + Venice AI costs
+        typeInTerminal("[ESCROW] Sending platform fee...", "warning");
+        try {
+            var feeTx = await signer.sendTransaction({
+                to: CONFIG.PLATFORM_WALLET,
+                value: ethers.parseEther(fee.toFixed(18))
+            });
+            await feeTx.wait();
+            typeInTerminal("[ESCROW] ✓ Platform fee sent (gas + AI)", "success");
+        } catch (feeErr) {
+            typeInTerminal("[ESCROW] Platform fee skipped: " + (feeErr.reason || "insufficient funds"), "warning");
+        }
 
         var escrowId = "ESC-" + Date.now();
         var jobData = {
