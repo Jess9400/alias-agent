@@ -1103,28 +1103,35 @@ function connectWalletEnhanced() {
     // Clear disconnected flag since user is explicitly connecting
     localStorage.removeItem("alias_disconnected");
 
-    // Request accounts (triggers wallet popup)
-    provider.request({ method: "eth_requestAccounts" })
-    .then(function(accounts) {
-        setConnectedWallet(accounts[0]);
-        // Then switch to Base
-        return provider.request({
-            method: "wallet_switchEthereumChain",
-            params: [{ chainId: "0x2105" }]
-        }).catch(function(switchError) {
-            if (switchError.code === 4902) {
-                return provider.request({
-                    method: "wallet_addEthereumChain",
-                    params: [{
-                        chainId: "0x2105",
-                        chainName: "Base",
-                        nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-                        rpcUrls: ["https://mainnet.base.org"],
-                        blockExplorerUrls: ["https://basescan.org"]
-                    }]
-                });
-            }
-        });
+    // Use wallet_requestPermissions to force MetaMask account picker popup
+    // (eth_requestAccounts silently returns cached account without showing UI)
+    provider.request({
+        method: "wallet_requestPermissions",
+        params: [{ eth_accounts: {} }]
+    }).then(function() {
+        return provider.request({ method: "eth_accounts" });
+    }).then(function(accounts) {
+        if (accounts && accounts.length > 0) {
+            setConnectedWallet(accounts[0]);
+            // Switch to Base
+            return provider.request({
+                method: "wallet_switchEthereumChain",
+                params: [{ chainId: "0x2105" }]
+            }).catch(function(switchError) {
+                if (switchError.code === 4902) {
+                    return provider.request({
+                        method: "wallet_addEthereumChain",
+                        params: [{
+                            chainId: "0x2105",
+                            chainName: "Base",
+                            nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+                            rpcUrls: ["https://mainnet.base.org"],
+                            blockExplorerUrls: ["https://basescan.org"]
+                        }]
+                    });
+                }
+            });
+        }
     }).catch(function(err) {
         console.error("Wallet connection error:", err);
         typeInTerminal("[ERROR] Connection failed", "warning");
