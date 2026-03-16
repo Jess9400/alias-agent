@@ -1044,17 +1044,9 @@ function populateSkillsWithSearch() {
 var connectedWallet = null;
 var showingMyAgents = false;
 
-// Get a safe reference to the wallet provider (avoids MetaMask proxy bugs)
-function getProvider() {
-    if (typeof window.ethereum === "undefined") return null;
-    // Use bound request to avoid MetaMask SES proxy recursion
-    return { request: window.ethereum.request.bind(window.ethereum) };
-}
-
 // Store wallet on connect
-function connectWalletEnhanced() {
-    var provider = getProvider();
-    if (!provider) {
+async function connectWalletEnhanced() {
+    if (!window.ethereum) {
         showToast("Please install MetaMask to connect your wallet!", "error");
         return;
     }
@@ -1068,37 +1060,36 @@ function connectWalletEnhanced() {
     // Clear disconnected flag since user is explicitly connecting
     localStorage.removeItem("alias_disconnected");
 
-    // Request accounts first (triggers MetaMask popup)
-    provider.request({ method: "eth_requestAccounts" })
-    .then(function(accounts) {
+    try {
+        // Use ethers.js BrowserProvider to avoid MetaMask SES proxy issues
+        var browserProvider = new ethers.BrowserProvider(window.ethereum);
+        var accounts = await browserProvider.send("eth_requestAccounts", []);
+
         if (!accounts || accounts.length === 0) {
             showToast("No accounts returned from wallet", "error");
             return;
         }
         setConnectedWallet(accounts[0]);
-        // Then switch to Base (non-blocking)
-        provider.request({
-            method: "wallet_switchEthereumChain",
-            params: [{ chainId: "0x2105" }]
-        }).catch(function(switchError) {
+
+        // Switch to Base (non-blocking)
+        try {
+            await browserProvider.send("wallet_switchEthereumChain", [{ chainId: "0x2105" }]);
+        } catch (switchError) {
             if (switchError.code === 4902) {
-                return provider.request({
-                    method: "wallet_addEthereumChain",
-                    params: [{
-                        chainId: "0x2105",
-                        chainName: "Base",
-                        nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-                        rpcUrls: ["https://mainnet.base.org"],
-                        blockExplorerUrls: ["https://basescan.org"]
-                    }]
-                });
+                await browserProvider.send("wallet_addEthereumChain", [{
+                    chainId: "0x2105",
+                    chainName: "Base",
+                    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+                    rpcUrls: ["https://mainnet.base.org"],
+                    blockExplorerUrls: ["https://basescan.org"]
+                }]);
             }
-        });
-    }).catch(function(err) {
+        }
+    } catch (err) {
         console.error("Wallet connection error:", err);
         typeInTerminal("[ERROR] Connection failed: " + (err.message || "unknown"), "warning");
         showToast("Connection failed. Try again.", "error");
-    });
+    }
 }
 
 function setConnectedWallet(account) {
@@ -1145,22 +1136,22 @@ function disconnectWallet() {
 
 // Auto-reconnect on page load if MetaMask is already connected
 function autoReconnectWallet() {
-    var provider = getProvider();
-    if (!provider) return;
+    if (!window.ethereum) return;
 
     // Don't auto-reconnect if user explicitly disconnected
     if (localStorage.getItem("alias_disconnected") === "true") return;
 
-    // Delay to let MetaMask fully initialize
-    setTimeout(function() {
+    // Delay to let MetaMask fully initialize, use ethers.js to avoid proxy issues
+    setTimeout(async function() {
         try {
-            provider.request({ method: "eth_accounts" })
-                .then(function(accounts) {
-                    if (accounts && accounts.length > 0) {
-                        setConnectedWallet(accounts[0]);
-                    }
-                }).catch(function() {});
-        } catch (e) {}
+            var browserProvider = new ethers.BrowserProvider(window.ethereum);
+            var accounts = await browserProvider.send("eth_accounts", []);
+            if (accounts && accounts.length > 0) {
+                setConnectedWallet(accounts[0]);
+            }
+        } catch (e) {
+            console.log("Auto-reconnect skipped:", e.message);
+        }
     }, 1000);
 
     // Listen for account/chain changes
