@@ -1044,9 +1044,9 @@ function populateSkillsWithSearch() {
 var connectedWallet = null;
 var showingMyAgents = false;
 
-// Store wallet on connect - uses raw JSON-RPC to avoid MetaMask SES proxy crash
+// Store wallet on connect
 function connectWalletEnhanced() {
-    if (!window.ethereum) {
+    if (typeof window.ethereum === "undefined") {
         showToast("Please install MetaMask to connect your wallet!", "error");
         return;
     }
@@ -1060,50 +1060,32 @@ function connectWalletEnhanced() {
     // Clear disconnected flag since user is explicitly connecting
     localStorage.removeItem("alias_disconnected");
 
-    // Send raw JSON-RPC request to avoid MetaMask proxy getter issues
-    var payload = JSON.stringify({ jsonrpc: "2.0", method: "eth_requestAccounts", params: [], id: Date.now() });
-
-    try {
-        // Use the underlying provider's sendAsync/send if available
-        var cb = function(err, response) {
-            if (err) {
-                console.error("Wallet connection error:", err);
-                showToast("Connection failed. Try again.", "error");
-                return;
-            }
-            if (response && response.result && response.result.length > 0) {
-                setConnectedWallet(response.result[0]);
-                // Switch to Base
-                var switchPayload = JSON.stringify({ jsonrpc: "2.0", method: "wallet_switchEthereumChain", params: [{ chainId: "0x2105" }], id: Date.now() });
-                try {
-                    if (window.ethereum.sendAsync) {
-                        window.ethereum.sendAsync(JSON.parse(switchPayload), function() {});
-                    } else if (window.ethereum.send) {
-                        window.ethereum.send(JSON.parse(switchPayload), function() {});
-                    }
-                } catch (e) {}
-            }
-        };
-
-        if (window.ethereum.sendAsync) {
-            window.ethereum.sendAsync(JSON.parse(payload), cb);
-        } else if (window.ethereum.send) {
-            window.ethereum.send(JSON.parse(payload), cb);
-        } else {
-            // Fallback: try request() as last resort
-            window.ethereum.request({ method: "eth_requestAccounts" })
-                .then(function(accounts) {
-                    if (accounts && accounts.length > 0) setConnectedWallet(accounts[0]);
-                })
-                .catch(function(err) {
-                    console.error("Wallet connection error:", err);
-                    showToast("Connection failed. Try again.", "error");
+    // Request accounts (triggers MetaMask popup)
+    window.ethereum.request({ method: "eth_requestAccounts" })
+    .then(function(accounts) {
+        setConnectedWallet(accounts[0]);
+        // Then switch to Base
+        return window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: "0x2105" }]
+        }).catch(function(switchError) {
+            if (switchError.code === 4902) {
+                return window.ethereum.request({
+                    method: "wallet_addEthereumChain",
+                    params: [{
+                        chainId: "0x2105",
+                        chainName: "Base",
+                        nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+                        rpcUrls: ["https://mainnet.base.org"],
+                        blockExplorerUrls: ["https://basescan.org"]
+                    }]
                 });
-        }
-    } catch (err) {
+            }
+        });
+    }).catch(function(err) {
         console.error("Wallet connection error:", err);
-        showToast("Connection failed. Try again.", "error");
-    }
+        typeInTerminal("[ERROR] Connection failed", "warning");
+    });
 }
 
 function setConnectedWallet(account) {
@@ -1148,12 +1130,10 @@ function disconnectWallet() {
     }
 }
 
-// Auto-reconnect on page load - restore from localStorage only (no MetaMask calls)
+// Auto-reconnect on page load - restore from localStorage only
 function autoReconnectWallet() {
-    // Don't auto-reconnect if user explicitly disconnected
     if (localStorage.getItem("alias_disconnected") === "true") return;
 
-    // Restore wallet from localStorage without touching MetaMask
     var savedWallet = localStorage.getItem("alias_wallet");
     if (savedWallet) {
         connectedWallet = savedWallet;
@@ -1163,24 +1143,6 @@ function autoReconnectWallet() {
         typeInTerminal("[WALLET] Restored: " + savedWallet, "success");
         loadJobHistory();
     }
-
-    // Listen for account/chain changes (delayed to avoid SES proxy crash)
-    setTimeout(function() {
-        try {
-            if (window.ethereum && window.ethereum.on) {
-                window.ethereum.on("accountsChanged", function(accounts) {
-                    if (accounts.length === 0) {
-                        disconnectWallet();
-                    } else {
-                        setConnectedWallet(accounts[0]);
-                    }
-                });
-                window.ethereum.on("chainChanged", function() {
-                    window.location.reload();
-                });
-            }
-        } catch (e) {}
-    }, 2000);
 }
 
 // =============================================================================
