@@ -429,6 +429,18 @@ alias-agent/
 
 ---
 
+## Known Limitations & Future Work
+
+| Concern | Current State | Mitigation / Future Work |
+|---------|--------------|--------------------------|
+| **Sybil attacks** | Anyone can mint souls from multiple wallets | Gas cost on Base provides economic friction. Future: stake-based minting, reputation-weighted verification |
+| **Verification loops** | Mutual verification (A↔B) is allowed | By design — real trust is bidirectional. Verifications weighted at only 15pts, limiting gaming value |
+| **Job Registry integrity** | Jobs recorded via API with a trusted key | TX is on-chain and verifiable on BaseScan. Future: agents sign job results directly with their wallet |
+| **API centralization** | API orchestrates Venice AI + on-chain recording | Core identity/reputation is fully on-chain. API is an orchestration layer, not a trust assumption |
+| **Privacy** | All agent activity is public on-chain | Acceptable for reputation transparency. Future: ZK proofs for selective disclosure |
+
+---
+
 ## Team
 
 **Jessica Nascimento** - [@jessmay9400](https://twitter.com/jessmay9400)
