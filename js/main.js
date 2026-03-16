@@ -20,7 +20,7 @@
 
 const CONFIG = {
     CONTRACT_ADDRESS: "0x0F2f94281F87793ee086a2B6517B6db450192874",
-    RPC_URL: "https://base.publicnode.com",
+    RPC_URL: "https://mainnet.base.org",
     CHAIN_ID: 8453,
     ENS_API: "https://api.ensdata.net",
     BASESCAN_URL: "https://basescan.org",
@@ -1134,41 +1134,39 @@ function disconnectWallet() {
     }
 }
 
-// Auto-reconnect on page load if MetaMask is already connected
+// Auto-reconnect on page load - restore from localStorage only (no MetaMask calls)
 function autoReconnectWallet() {
-    if (!window.ethereum) return;
-
     // Don't auto-reconnect if user explicitly disconnected
     if (localStorage.getItem("alias_disconnected") === "true") return;
 
-    // Delay to let MetaMask fully initialize, use ethers.js to avoid proxy issues
-    setTimeout(async function() {
-        try {
-            var browserProvider = new ethers.BrowserProvider(window.ethereum);
-            var accounts = await browserProvider.send("eth_accounts", []);
-            if (accounts && accounts.length > 0) {
-                setConnectedWallet(accounts[0]);
-            }
-        } catch (e) {
-            console.log("Auto-reconnect skipped:", e.message);
-        }
-    }, 1000);
+    // Restore wallet from localStorage without touching MetaMask
+    var savedWallet = localStorage.getItem("alias_wallet");
+    if (savedWallet) {
+        connectedWallet = savedWallet;
+        var btn = document.getElementById("connectBtn");
+        btn.textContent = savedWallet.slice(0, 6) + "..." + savedWallet.slice(-4) + " \u2715";
+        btn.title = "Click to disconnect";
+        typeInTerminal("[WALLET] Restored: " + savedWallet, "success");
+        loadJobHistory();
+    }
 
-    // Listen for account/chain changes
-    try {
-        if (window.ethereum.on) {
-            window.ethereum.on("accountsChanged", function(accounts) {
-                if (accounts.length === 0) {
-                    disconnectWallet();
-                } else {
-                    setConnectedWallet(accounts[0]);
-                }
-            });
-            window.ethereum.on("chainChanged", function() {
-                window.location.reload();
-            });
-        }
-    } catch (e) {}
+    // Listen for account/chain changes (delayed to avoid SES proxy crash)
+    setTimeout(function() {
+        try {
+            if (window.ethereum && window.ethereum.on) {
+                window.ethereum.on("accountsChanged", function(accounts) {
+                    if (accounts.length === 0) {
+                        disconnectWallet();
+                    } else {
+                        setConnectedWallet(accounts[0]);
+                    }
+                });
+                window.ethereum.on("chainChanged", function() {
+                    window.location.reload();
+                });
+            }
+        } catch (e) {}
+    }, 2000);
 }
 
 // =============================================================================
