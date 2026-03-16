@@ -1044,9 +1044,17 @@ function populateSkillsWithSearch() {
 var connectedWallet = null;
 var showingMyAgents = false;
 
+// Get a safe reference to the wallet provider (avoids MetaMask proxy bugs)
+function getProvider() {
+    if (typeof window.ethereum === "undefined") return null;
+    // Use bound request to avoid MetaMask SES proxy recursion
+    return { request: window.ethereum.request.bind(window.ethereum) };
+}
+
 // Store wallet on connect
 function connectWalletEnhanced() {
-    if (typeof window.ethereum === "undefined") {
+    var provider = getProvider();
+    if (!provider) {
         showToast("Please install MetaMask to connect your wallet!", "error");
         return;
     }
@@ -1061,20 +1069,20 @@ function connectWalletEnhanced() {
     localStorage.removeItem("alias_disconnected");
 
     // Request accounts first (triggers MetaMask popup)
-    window.ethereum.request({ method: "eth_requestAccounts" })
+    provider.request({ method: "eth_requestAccounts" })
     .then(function(accounts) {
         if (!accounts || accounts.length === 0) {
             showToast("No accounts returned from wallet", "error");
             return;
         }
         setConnectedWallet(accounts[0]);
-        // Then switch to Base (non-blocking - connection works even if chain switch fails)
-        window.ethereum.request({
+        // Then switch to Base (non-blocking)
+        provider.request({
             method: "wallet_switchEthereumChain",
             params: [{ chainId: "0x2105" }]
         }).catch(function(switchError) {
             if (switchError.code === 4902) {
-                return window.ethereum.request({
+                return provider.request({
                     method: "wallet_addEthereumChain",
                     params: [{
                         chainId: "0x2105",
@@ -1085,8 +1093,6 @@ function connectWalletEnhanced() {
                     }]
                 });
             }
-            // Don't fail the whole connection if chain switch is rejected
-            console.log("Chain switch skipped:", switchError.message);
         });
     }).catch(function(err) {
         console.error("Wallet connection error:", err);
@@ -1139,37 +1145,38 @@ function disconnectWallet() {
 
 // Auto-reconnect on page load if MetaMask is already connected
 function autoReconnectWallet() {
-    if (typeof window.ethereum === "undefined") return;
+    var provider = getProvider();
+    if (!provider) return;
 
-    // Don't auto-reconnect if user explicitly disconnected via the X button
+    // Don't auto-reconnect if user explicitly disconnected
     if (localStorage.getItem("alias_disconnected") === "true") return;
 
-    // Delay to let MetaMask fully initialize (avoids call stack overflow)
+    // Delay to let MetaMask fully initialize
     setTimeout(function() {
         try {
-            window.ethereum.request({ method: "eth_accounts" })
+            provider.request({ method: "eth_accounts" })
                 .then(function(accounts) {
                     if (accounts && accounts.length > 0) {
                         setConnectedWallet(accounts[0]);
                     }
                 }).catch(function() {});
-        } catch (e) {
-            console.log("Auto-reconnect skipped");
-        }
-    }, 500);
+        } catch (e) {}
+    }, 1000);
 
     // Listen for account/chain changes
     try {
-        window.ethereum.on("accountsChanged", function(accounts) {
-            if (accounts.length === 0) {
-                disconnectWallet();
-            } else {
-                setConnectedWallet(accounts[0]);
-            }
-        });
-        window.ethereum.on("chainChanged", function() {
-            window.location.reload();
-        });
+        if (window.ethereum.on) {
+            window.ethereum.on("accountsChanged", function(accounts) {
+                if (accounts.length === 0) {
+                    disconnectWallet();
+                } else {
+                    setConnectedWallet(accounts[0]);
+                }
+            });
+            window.ethereum.on("chainChanged", function() {
+                window.location.reload();
+            });
+        }
     } catch (e) {}
 }
 
