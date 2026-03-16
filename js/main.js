@@ -1051,22 +1051,39 @@ var connectedWallet = null;
 var showingMyAgents = false;
 
 // EIP-6963: Modern wallet discovery (bypasses MetaMask's buggy proxy)
-var walletProvider = null;
+var rawWalletProvider = null;
 
 window.addEventListener("eip6963:announceProvider", function(event) {
     // Prefer MetaMask but accept any provider
-    if (!walletProvider || (event.detail.info && event.detail.info.rdns === "io.metamask")) {
-        walletProvider = event.detail.provider;
-        console.log("Wallet provider found:", event.detail.info ? event.detail.info.name : "unknown");
+    if (!rawWalletProvider || (event.detail.info && event.detail.info.rdns === "io.metamask")) {
+        rawWalletProvider = event.detail.provider;
+        console.log("EIP-6963 provider found:", event.detail.info ? event.detail.info.name : "unknown");
     }
 });
 window.dispatchEvent(new Event("eip6963:requestProvider"));
 
-// Fallback: get a working provider reference
+// Create a safe wrapper that only exposes request() - avoids MetaMask SES proxy
+// traps on selectedAddress getter that cause infinite recursion
+function createSafeProvider(raw) {
+    return {
+        request: function(args) { return raw.request(args); },
+        on: function(evt, fn) { if (raw.on) raw.on(evt, fn); },
+        removeListener: function(evt, fn) { if (raw.removeListener) raw.removeListener(evt, fn); },
+        removeAllListeners: function(evt) { if (raw.removeAllListeners) raw.removeAllListeners(evt); },
+        isMetaMask: true
+    };
+}
+
+// Get a safe provider reference (wrapped to avoid SES proxy bug)
+var _safeProvider = null;
 function getWalletProvider() {
-    if (walletProvider) return walletProvider;
-    if (typeof window.ethereum !== "undefined") return window.ethereum;
-    return null;
+    var raw = rawWalletProvider || (typeof window.ethereum !== "undefined" ? window.ethereum : null);
+    if (!raw) return null;
+    if (!_safeProvider || _safeProvider._raw !== raw) {
+        _safeProvider = createSafeProvider(raw);
+        _safeProvider._raw = raw;
+    }
+    return _safeProvider;
 }
 
 // Store wallet on connect
