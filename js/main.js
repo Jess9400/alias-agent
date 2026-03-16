@@ -898,8 +898,9 @@ function runFullDemo() {
 // =============================================================================
 
 function connectWallet() {
-    if (typeof window.ethereum !== "undefined") {
-        window.ethereum.request({ method: "eth_requestAccounts" })
+    var wp = getWalletProvider();
+    if (wp) {
+        wp.request({ method: "eth_requestAccounts" })
             .then(function(accounts) {
                 var address = accounts[0];
                 document.getElementById("connectBtn").textContent = address.slice(0, 6) + "..." + address.slice(-4);
@@ -1049,9 +1050,29 @@ function populateSkillsWithSearch() {
 var connectedWallet = null;
 var showingMyAgents = false;
 
+// EIP-6963: Modern wallet discovery (bypasses MetaMask's buggy proxy)
+var walletProvider = null;
+
+window.addEventListener("eip6963:announceProvider", function(event) {
+    // Prefer MetaMask but accept any provider
+    if (!walletProvider || (event.detail.info && event.detail.info.rdns === "io.metamask")) {
+        walletProvider = event.detail.provider;
+        console.log("Wallet provider found:", event.detail.info ? event.detail.info.name : "unknown");
+    }
+});
+window.dispatchEvent(new Event("eip6963:requestProvider"));
+
+// Fallback: get a working provider reference
+function getWalletProvider() {
+    if (walletProvider) return walletProvider;
+    if (typeof window.ethereum !== "undefined") return window.ethereum;
+    return null;
+}
+
 // Store wallet on connect
 function connectWalletEnhanced() {
-    if (typeof window.ethereum === "undefined") {
+    var provider = getWalletProvider();
+    if (!provider) {
         showToast("Please install MetaMask to connect your wallet!", "error");
         return;
     }
@@ -1065,17 +1086,17 @@ function connectWalletEnhanced() {
     // Clear disconnected flag since user is explicitly connecting
     localStorage.removeItem("alias_disconnected");
 
-    // Request accounts (triggers MetaMask popup)
-    window.ethereum.request({ method: "eth_requestAccounts" })
+    // Request accounts (triggers wallet popup)
+    provider.request({ method: "eth_requestAccounts" })
     .then(function(accounts) {
         setConnectedWallet(accounts[0]);
         // Then switch to Base
-        return window.ethereum.request({
+        return provider.request({
             method: "wallet_switchEthereumChain",
             params: [{ chainId: "0x2105" }]
         }).catch(function(switchError) {
             if (switchError.code === 4902) {
-                return window.ethereum.request({
+                return provider.request({
                     method: "wallet_addEthereumChain",
                     params: [{
                         chainId: "0x2105",
@@ -1521,7 +1542,7 @@ async function mintSoul() {
     status.style.color = "var(--primary)";
     
     try {
-        var provider = new ethers.BrowserProvider(window.ethereum);
+        var provider = new ethers.BrowserProvider(getWalletProvider());
         var signer = await provider.getSigner();
         var contract = new ethers.Contract(CONFIG.CONTRACT_ADDRESS, SOUL_ABI, signer);
         
@@ -1568,7 +1589,7 @@ async function signVerification(agent) {
     if (!message) return;
     
     try {
-        var provider = new ethers.BrowserProvider(window.ethereum);
+        var provider = new ethers.BrowserProvider(getWalletProvider());
         var signer = await provider.getSigner();
         var contract = new ethers.Contract(CONFIG.VERIFICATION_REGISTRY, VERIFICATION_ABI, signer);
         
@@ -1633,7 +1654,7 @@ async function tipAgent(agent, amount) {
     if (!tipAmount || isNaN(parseFloat(tipAmount))) return;
     
     try {
-        var provider = new ethers.BrowserProvider(window.ethereum);
+        var provider = new ethers.BrowserProvider(getWalletProvider());
         var signer = await provider.getSigner();
         
         typeInTerminal("[BANKR] Preparing tip transaction...", "warning");
@@ -1712,7 +1733,7 @@ async function hireAgent(agent) {
     if (!budget || isNaN(parseFloat(budget))) return;
 
     try {
-        var provider = new ethers.BrowserProvider(window.ethereum);
+        var provider = new ethers.BrowserProvider(getWalletProvider());
         var signer = await provider.getSigner();
 
         // Calculate fee (5%)
