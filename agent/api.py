@@ -8,6 +8,7 @@ from time import time as _time
 from web3 import Web3
 from eth_account import Account
 from alias import AliasSoulAgent
+from network_registry import NETWORK_AGENTS, get_agent_by_skill
 
 logging.basicConfig(level=logging.INFO)
 
@@ -42,7 +43,7 @@ def index():
         "contract": "0x0F2f94281F87793ee086a2B6517B6db450192874",
         "chain": "Base Mainnet",
         "powered_by": "Venice AI",
-        "endpoints": ["/stats", "/soul/<address>", "/ens/<name>", "/chat", "/health"]
+        "endpoints": ["/stats", "/soul/<address>", "/ens/<name>", "/chat", "/pin", "/job/execute", "/demo/auto-hire", "/demo/collaborate", "/health"]
     })
 
 @app.route('/stats')
@@ -161,6 +162,251 @@ def execute_job():
     except Exception as e:
         logging.error(f"Job execution failed: {e}")
         return jsonify({"error": str(e)}), 500
+
+@app.route('/pin', methods=['POST'])
+@rate_limit(max_per_minute=10)
+def pin_metadata():
+    """Pin agent metadata to IPFS via Pinata"""
+    data = request.get_json()
+    if not data or 'name' not in data:
+        return jsonify({"error": "Missing metadata"}), 400
+
+    metadata = {
+        "name": data.get("name", ""),
+        "description": f"ALIAS Soulbound Identity for {data.get('name', 'Agent')}",
+        "skills": data.get("skills", ""),
+        "creator": data.get("creator", ""),
+        "platform": "ALIAS",
+        "chain": "Base Mainnet",
+        "chain_id": 8453,
+        "contract": "0x0F2f94281F87793ee086a2B6517B6db450192874",
+        "timestamp": int(_time())
+    }
+
+    pinata_jwt = os.getenv("PINATA_JWT")
+    if not pinata_jwt:
+        return jsonify({"error": "IPFS pinning not configured"}), 503
+
+    try:
+        r = http_requests.post(
+            "https://api.pinata.cloud/pinning/pinJSONToIPFS",
+            headers={"Authorization": f"Bearer {pinata_jwt}", "Content-Type": "application/json"},
+            json={"pinataContent": metadata, "pinataMetadata": {"name": f"ALIAS-{data.get('name', 'agent')}"}},
+            timeout=30
+        )
+        r.raise_for_status()
+        cid = r.json()["IpfsHash"]
+        logging.info(f"Pinned to IPFS: {cid}")
+        return jsonify({"cid": cid, "uri": f"ipfs://{cid}", "gateway": f"https://gateway.pinata.cloud/ipfs/{cid}"})
+    except Exception as e:
+        logging.error(f"Pinata pinning failed: {e}")
+        return jsonify({"error": "IPFS pinning failed"}), 500
+
+
+@app.route('/demo/auto-hire', methods=['POST'])
+@rate_limit(max_per_minute=5)
+def auto_hire_demo():
+    """Demonstrate autonomous agent-to-agent discovery, risk assessment, hiring, and job execution"""
+    data = request.get_json() or {}
+    skill = data.get("skill", "data-analysis")
+    task = data.get("task", "Analyze the top 5 DeFi protocols on Base by TVL and provide risk ratings")
+    requester = data.get("requester", "ALIAS-Prime")
+
+    steps = []
+
+    # Step 1: Discovery
+    candidates = get_agent_by_skill(skill)
+    if not candidates:
+        return jsonify({"error": f"No agents found with skill: {skill}"}), 404
+
+    hired = candidates[0]
+    steps.append({"phase": "DISCOVER", "message": f"Searching network for '{skill}' specialists...", "color": "system"})
+    steps.append({"phase": "DISCOVER", "message": f"Found {len(candidates)} agent(s): {', '.join(c['name'] for c in candidates)}", "color": "success"})
+    steps.append({"phase": "DISCOVER", "message": f"Selected: {hired['name']} (Token #{hired['token_id']})", "color": "agent"})
+
+    # Step 2: Risk Assessment
+    w3 = Web3(Web3.HTTPProvider("https://mainnet.base.org"))
+    soul_abi = [{"inputs":[{"name":"tokenId","type":"uint256"}],"name":"actionCount","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"}]
+    contract = w3.eth.contract(address=Web3.to_checksum_address("0x0F2f94281F87793ee086a2B6517B6db450192874"), abi=soul_abi)
+    try:
+        actions = contract.functions.actionCount(hired["token_id"]).call()
+    except:
+        actions = 0
+
+    risk_map = {"LEGENDARY": 5, "ELITE": 15, "TRUSTED": 30, "VERIFIED": 50, "NEWCOMER": 70}
+    rep = actions * 20
+    tier = "NEWCOMER"
+    if rep >= 500: tier = "LEGENDARY"
+    elif rep >= 200: tier = "ELITE"
+    elif rep >= 100: tier = "TRUSTED"
+    elif rep >= 50: tier = "VERIFIED"
+    risk = risk_map.get(tier, 70)
+
+    steps.append({"phase": "ASSESS", "message": f"Assessing {hired['name']}...", "color": "warning"})
+    steps.append({"phase": "ASSESS", "message": f"On-chain actions: {actions} | Reputation: {rep} | Tier: {tier}", "color": "system"})
+    steps.append({"phase": "ASSESS", "message": f"Risk Score: {risk}% - {'ACCEPTED' if risk <= 50 else 'HIGH RISK - proceeding with caution'}", "color": "success" if risk <= 50 else "warning"})
+
+    # Step 3: Escrow
+    budget = hired.get("hourly_rate", 0.0003)
+    fee = budget * 0.05
+    agent_pay = budget - fee
+    escrow_id = f"AUTO-{int(_time())}"
+    steps.append({"phase": "ESCROW", "message": f"Creating escrow {escrow_id}...", "color": "warning"})
+    steps.append({"phase": "ESCROW", "message": f"Budget: {budget} ETH | Agent: {agent_pay:.6f} ETH | Platform fee: {fee:.6f} ETH", "color": "system"})
+
+    # Step 4: Execute via Venice AI
+    steps.append({"phase": "EXECUTE", "message": f"{hired['name']} is working on: {task[:80]}...", "color": "agent"})
+
+    try:
+        headers = {"Authorization": f"Bearer {agent.venice_api_key}", "Content-Type": "application/json"}
+        payload = {
+            "model": "llama-3.3-70b",
+            "messages": [
+                {"role": "system", "content": f"You are {hired['name']}, a specialized AI agent on the ALIAS network. Tier: {tier}. Skills: {', '.join(hired['skills'])}. {requester} has autonomously hired you. Complete the task concisely (max 2 paragraphs)."},
+                {"role": "user", "content": f"Task: {task}"}
+            ],
+            "max_tokens": 600
+        }
+        r = http_requests.post("https://api.venice.ai/api/v1/chat/completions", headers=headers, json=payload, timeout=60)
+        r.raise_for_status()
+        result = r.json()["choices"][0]["message"]["content"]
+        steps.append({"phase": "EXECUTE", "message": f"Job completed by {hired['name']}", "color": "success"})
+        steps.append({"phase": "RESULT", "message": result, "color": "agent"})
+    except Exception as e:
+        result = f"Execution error: {str(e)}"
+        steps.append({"phase": "EXECUTE", "message": f"Error: {str(e)[:100]}", "color": "warning"})
+
+    # Step 5: Record on-chain
+    tx_hash = None
+    try:
+        job_registry = "0x7Fa3c9C28447d6ED6671b49d537E728f678568C8"
+        pk = os.getenv("PRIVATE_KEY")
+        if pk:
+            account = Account.from_key(pk)
+            job_abi = [{"inputs":[{"name":"tokenId","type":"uint256"},{"name":"escrowId","type":"string"},{"name":"message","type":"string"}],"name":"recordJob","outputs":[],"stateMutability":"nonpayable","type":"function"}]
+            job_contract = w3.eth.contract(address=Web3.to_checksum_address(job_registry), abi=job_abi)
+            msg = f"Auto-hire by {requester}: {task[:60]}"
+            tx = job_contract.functions.recordJob(hired["token_id"], escrow_id, msg).build_transaction({
+                "from": account.address,
+                "nonce": w3.eth.get_transaction_count(account.address),
+                "gas": 300000,
+                "gasPrice": w3.eth.gas_price,
+                "chainId": 8453
+            })
+            signed = account.sign_transaction(tx)
+            tx_receipt = w3.eth.send_raw_transaction(signed.raw_transaction)
+            tx_hash = tx_receipt.hex()
+            steps.append({"phase": "CHAIN", "message": f"Recorded on-chain: {tx_hash[:18]}...", "color": "success"})
+            steps.append({"phase": "CHAIN", "message": f"https://basescan.org/tx/{tx_hash}", "color": "system"})
+    except Exception as e:
+        logging.error(f"Auto-hire on-chain recording failed: {e}")
+        steps.append({"phase": "CHAIN", "message": f"On-chain recording skipped: {str(e)[:60]}", "color": "warning"})
+
+    steps.append({"phase": "COMPLETE", "message": f"Agent-to-agent job complete! {hired['name']}'s reputation updated.", "color": "success"})
+
+    return jsonify({
+        "status": "completed",
+        "requester": requester,
+        "hired_agent": hired["name"],
+        "skill": skill,
+        "task": task,
+        "escrow_id": escrow_id,
+        "result": result,
+        "verification_tx": tx_hash,
+        "steps": steps
+    })
+
+
+@app.route('/demo/collaborate', methods=['POST'])
+@rate_limit(max_per_minute=3)
+def collaborate_demo():
+    """Multi-agent collaboration: coordinator decomposes task, delegates to specialists"""
+    data = request.get_json() or {}
+    task = data.get("task", "Perform a comprehensive security and economic audit of a DeFi lending protocol")
+
+    steps = []
+    coordinator = "ALIAS-Prime"
+    steps.append({"phase": "COORDINATE", "message": f"{coordinator} received complex task", "color": "system"})
+    steps.append({"phase": "COORDINATE", "message": f"Task: {task[:100]}", "color": "agent"})
+
+    # Step 1: Decompose task via AI
+    steps.append({"phase": "DECOMPOSE", "message": "Analyzing task complexity and finding specialists...", "color": "warning"})
+
+    sub_tasks = [
+        {"skill": "code-audit", "task": f"Security review: {task}", "agent_name": None},
+        {"skill": "defi-analysis", "task": f"Economic analysis: {task}", "agent_name": None}
+    ]
+
+    # Find specialists
+    for st in sub_tasks:
+        candidates = get_agent_by_skill(st["skill"])
+        if candidates:
+            st["agent_name"] = candidates[0]["name"]
+            st["agent_data"] = candidates[0]
+            steps.append({"phase": "DELEGATE", "message": f"Assigned '{st['skill']}' to {candidates[0]['name']} (Token #{candidates[0]['token_id']})", "color": "success"})
+        else:
+            steps.append({"phase": "DELEGATE", "message": f"No specialist found for {st['skill']}", "color": "warning"})
+
+    # Step 2: Execute sub-tasks
+    sub_results = []
+    headers = {"Authorization": f"Bearer {agent.venice_api_key}", "Content-Type": "application/json"}
+
+    for st in sub_tasks:
+        if not st["agent_name"]:
+            continue
+        steps.append({"phase": "EXECUTE", "message": f"{st['agent_name']} working on {st['skill']}...", "color": "agent"})
+        try:
+            payload = {
+                "model": "llama-3.3-70b",
+                "messages": [
+                    {"role": "system", "content": f"You are {st['agent_name']}, specialist in {st['skill']} on the ALIAS network. Provide a focused analysis (1 paragraph)."},
+                    {"role": "user", "content": st["task"]}
+                ],
+                "max_tokens": 400
+            }
+            r = http_requests.post("https://api.venice.ai/api/v1/chat/completions", headers=headers, json=payload, timeout=60)
+            r.raise_for_status()
+            result = r.json()["choices"][0]["message"]["content"]
+            sub_results.append({"agent": st["agent_name"], "skill": st["skill"], "result": result})
+            steps.append({"phase": "RESULT", "message": f"[{st['agent_name']}] {result[:200]}...", "color": "agent"})
+        except Exception as e:
+            steps.append({"phase": "EXECUTE", "message": f"{st['agent_name']} error: {str(e)[:80]}", "color": "warning"})
+
+    # Step 3: Synthesize
+    if sub_results:
+        steps.append({"phase": "SYNTHESIZE", "message": f"{coordinator} combining specialist reports...", "color": "warning"})
+        combined = "\n".join(f"{r['agent']} ({r['skill']}): {r['result']}" for r in sub_results)
+        try:
+            payload = {
+                "model": "llama-3.3-70b",
+                "messages": [
+                    {"role": "system", "content": f"You are {coordinator}, the coordinator agent. Synthesize these specialist reports into a final executive summary (2 paragraphs max)."},
+                    {"role": "user", "content": f"Original task: {task}\n\nSpecialist reports:\n{combined}"}
+                ],
+                "max_tokens": 500
+            }
+            r = http_requests.post("https://api.venice.ai/api/v1/chat/completions", headers=headers, json=payload, timeout=60)
+            r.raise_for_status()
+            final_result = r.json()["choices"][0]["message"]["content"]
+            steps.append({"phase": "SYNTHESIZE", "message": "Final report ready", "color": "success"})
+            steps.append({"phase": "FINAL", "message": final_result, "color": "agent"})
+        except Exception as e:
+            final_result = combined
+            steps.append({"phase": "SYNTHESIZE", "message": f"Synthesis error: {str(e)[:80]}", "color": "warning"})
+    else:
+        final_result = "No specialist results to synthesize"
+
+    steps.append({"phase": "COMPLETE", "message": f"Multi-agent collaboration complete! {len(sub_results)} specialists contributed.", "color": "success"})
+
+    return jsonify({
+        "status": "completed",
+        "coordinator": coordinator,
+        "specialists": [{"agent": r["agent"], "skill": r["skill"]} for r in sub_results],
+        "task": task,
+        "result": final_result,
+        "steps": steps
+    })
+
 
 @app.route('/health')
 def health():

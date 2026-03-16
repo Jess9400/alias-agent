@@ -299,7 +299,8 @@ async function loadAgentsFromChain() {
                         actions: actions,
                         verifications: verifications,
                         jobCount: jobCount,
-                        createdAt: Number(soul.createdAt)
+                        createdAt: Number(soul.createdAt),
+                        metadataURI: soul.metadataURI || ""
                     });
 
                     // Collect skills
@@ -454,6 +455,20 @@ function showSearchResult(data, isSuccess) {
         box.appendChild(skillsDiv);
     }
     
+    if (data.metadataURI && data.metadataURI.startsWith("ipfs://")) {
+        var ipfsDiv = document.createElement('div');
+        ipfsDiv.style.cssText = 'margin-top:8px';
+        var ipfsLink = document.createElement('a');
+        var cid = data.metadataURI.replace("ipfs://", "");
+        ipfsLink.href = "https://gateway.pinata.cloud/ipfs/" + cid;
+        ipfsLink.target = '_blank';
+        ipfsLink.rel = 'noopener noreferrer';
+        ipfsLink.style.cssText = 'color:var(--secondary);font-size:0.85rem;text-decoration:none;';
+        ipfsLink.textContent = 'IPFS Metadata: ' + cid.slice(0, 12) + '...';
+        ipfsDiv.appendChild(ipfsLink);
+        box.appendChild(ipfsDiv);
+    }
+
     if (data.link) {
         var linkDiv = document.createElement('div');
         linkDiv.style.cssText = 'margin-top:15px';
@@ -760,7 +775,7 @@ function selectAgent(name) {
 
     clearTerminal();
     typeInTerminal("[SELECT] " + agent.name, "system");
-    showSearchResult({ title: "\u2713 AGENT SELECTED", name: agent.name, address: agent.address, rep: agent.rep, tier: agent.tier, skills: agent.skills, tokenId: agent.tokenId, message: "Loading activity..." }, true);
+    showSearchResult({ title: "\u2713 AGENT SELECTED", name: agent.name, address: agent.address, rep: agent.rep, tier: agent.tier, skills: agent.skills, tokenId: agent.tokenId, metadataURI: agent.metadataURI, message: "Loading activity..." }, true);
     showToast("Selected: " + agent.name + " (" + agent.tier + ")", "info", 3000);
     showAgentActivity(agent);
 
@@ -1049,6 +1064,8 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("verifyBtn").addEventListener("click", function() { if (selectedAgent) { signVerification(selectedAgent); } else { showToast("Please select an agent first!", "warning"); } });
     document.getElementById("chainBtn").addEventListener("click", runChainDemo);
     document.getElementById("demoBtn").addEventListener("click", runFullDemo);
+    document.getElementById("autoHireBtn").addEventListener("click", runAutoHireDemo);
+    document.getElementById("collabBtn").addEventListener("click", runCollabDemo);
     document.getElementById("jobsBtn").addEventListener("click", showJobHistory);
     
     document.getElementById("searchInput").addEventListener("keypress", function(e) {
@@ -1820,14 +1837,35 @@ async function mintSoul() {
     
     status.textContent = "Preparing transaction...";
     status.style.color = "var(--primary)";
-    
+
     try {
+        // Pin metadata to IPFS via Pinata if not already an IPFS URI
+        if (!metadata.startsWith("ipfs://")) {
+            status.textContent = "Pinning metadata to IPFS...";
+            try {
+                var pinRes = await fetch(CONFIG.API_URL + "/pin", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name: name, skills: skills, creator: connectedWallet })
+                });
+                var pinData = await pinRes.json();
+                if (pinData.uri) {
+                    metadata = pinData.uri;
+                    document.getElementById("mintMetadata").value = metadata;
+                    typeInTerminal("[IPFS] Metadata pinned: " + pinData.cid, "success");
+                }
+            } catch (pinErr) {
+                console.log("IPFS pinning skipped:", pinErr);
+                typeInTerminal("[IPFS] Pinning skipped, using raw metadata", "warning");
+            }
+        }
+
         var provider = new ethers.BrowserProvider(getWalletProvider());
         var signer = await provider.getSigner();
         var contract = new ethers.Contract(CONFIG.CONTRACT_ADDRESS, SOUL_ABI, signer);
-        
+
         status.textContent = "Please confirm in MetaMask...";
-        
+
         var tx = await contract.registerSoul(agentAddr, name, metadata, skills);
         
         status.textContent = "Transaction submitted! Waiting for confirmation...";
@@ -2415,5 +2453,101 @@ function renderActivityFeed(container, events) {
         row.appendChild(time);
 
         container.appendChild(row);
+    });
+}
+
+// =============================================================================
+// AGENT-TO-AGENT AUTONOMOUS DEMO
+// =============================================================================
+
+function runAutoHireDemo() {
+    clearTerminal();
+    hideSearchResult();
+    typeInTerminal("[SYSTEM] === AUTONOMOUS AGENT-TO-AGENT DEMO ===", "system");
+    typeInTerminal("[INFO] Initiating agent discovery and hiring...", "warning");
+
+    showJobLoading("Running autonomous agent-to-agent demo...");
+    updateJobLoadingText("ALIAS-Prime is discovering specialists...");
+
+    fetch(CONFIG.API_URL + "/demo/auto-hire", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            skill: "data-analysis",
+            task: "Analyze the top 5 DeFi protocols on Base by TVL, assess risk, and recommend allocation strategy",
+            requester: "ALIAS-Prime"
+        })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        hideJobLoading();
+        if (data.error) {
+            typeInTerminal("[ERROR] " + data.error, "warning");
+            return;
+        }
+        // Animate steps in terminal
+        var steps = data.steps || [];
+        steps.forEach(function(step, i) {
+            setTimeout(function() {
+                var prefix = "[" + step.phase + "]";
+                typeInTerminal(prefix + " " + step.message, step.color || "system");
+            }, i * 500);
+        });
+        // Show completion toast after all steps
+        setTimeout(function() {
+            showToast("Agent-to-agent demo complete! " + (data.hired_agent || "") + " delivered results.", "success", 5000);
+            if (data.verification_tx) {
+                typeInTerminal("[TX] https://basescan.org/tx/" + data.verification_tx, "success");
+            }
+        }, steps.length * 500 + 200);
+    })
+    .catch(function(err) {
+        hideJobLoading();
+        console.error("Auto-hire demo error:", err);
+        typeInTerminal("[ERROR] Demo failed: " + err.message, "warning");
+        showToast("Demo failed - API may be unavailable", "error");
+    });
+}
+
+function runCollabDemo() {
+    clearTerminal();
+    hideSearchResult();
+    typeInTerminal("[SYSTEM] === MULTI-AGENT COLLABORATION DEMO ===", "system");
+    typeInTerminal("[INFO] Coordinator dispatching complex task to specialists...", "warning");
+
+    showJobLoading("Running multi-agent collaboration...");
+    updateJobLoadingText("ALIAS-Prime decomposing task for specialists...");
+
+    fetch(CONFIG.API_URL + "/demo/collaborate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            task: "Perform a comprehensive security and economic audit of a DeFi lending protocol on Base"
+        })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        hideJobLoading();
+        if (data.error) {
+            typeInTerminal("[ERROR] " + data.error, "warning");
+            return;
+        }
+        var steps = data.steps || [];
+        steps.forEach(function(step, i) {
+            setTimeout(function() {
+                var prefix = "[" + step.phase + "]";
+                typeInTerminal(prefix + " " + step.message, step.color || "system");
+            }, i * 600);
+        });
+        setTimeout(function() {
+            var specialists = (data.specialists || []).map(function(s) { return s.agent; }).join(" + ");
+            showToast("Collaboration complete! " + specialists + " contributed.", "success", 5000);
+        }, steps.length * 600 + 200);
+    })
+    .catch(function(err) {
+        hideJobLoading();
+        console.error("Collab demo error:", err);
+        typeInTerminal("[ERROR] Collaboration failed: " + err.message, "warning");
+        showToast("Collaboration failed - API may be unavailable", "error");
     });
 }
