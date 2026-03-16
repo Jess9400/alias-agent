@@ -902,27 +902,28 @@ function connectWalletEnhanced() {
     // Clear disconnected flag since user is explicitly connecting
     localStorage.removeItem("alias_disconnected");
 
-    // First ensure we're on Base
-    window.ethereum.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: "0x2105" }]
-    }).catch(function(switchError) {
-        if (switchError.code === 4902) {
-            return window.ethereum.request({
-                method: "wallet_addEthereumChain",
-                params: [{
-                    chainId: "0x2105",
-                    chainName: "Base",
-                    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-                    rpcUrls: ["https://mainnet.base.org"],
-                    blockExplorerUrls: ["https://basescan.org"]
-                }]
-            });
-        }
-    }).then(function() {
-        return window.ethereum.request({ method: "eth_requestAccounts" });
-    }).then(function(accounts) {
+    // Request accounts first (triggers MetaMask popup)
+    window.ethereum.request({ method: "eth_requestAccounts" })
+    .then(function(accounts) {
         setConnectedWallet(accounts[0]);
+        // Then switch to Base
+        return window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: "0x2105" }]
+        }).catch(function(switchError) {
+            if (switchError.code === 4902) {
+                return window.ethereum.request({
+                    method: "wallet_addEthereumChain",
+                    params: [{
+                        chainId: "0x2105",
+                        chainName: "Base",
+                        nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+                        rpcUrls: ["https://mainnet.base.org"],
+                        blockExplorerUrls: ["https://basescan.org"]
+                    }]
+                });
+            }
+        });
     }).catch(function() {
         typeInTerminal("[ERROR] Connection failed", "warning");
     });
