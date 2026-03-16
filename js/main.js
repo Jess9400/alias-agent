@@ -226,12 +226,17 @@ const JOB_REGISTRY_ABI = [
 ];
 
 
+// Create a provider that skips network detection (avoids SES lockdown issues)
+function getStaticProvider() {
+    return new ethers.JsonRpcProvider(CONFIG.RPC_URL, 8453, { staticNetwork: true });
+}
+
 async function loadAgentsFromChain() {
     var list = document.getElementById("agentList");
     list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim)"><span class="loading-spinner"></span> Loading from blockchain...</div>';
-    
+
     try {
-        var provider = new ethers.JsonRpcProvider(CONFIG.RPC_URL);
+        var provider = getStaticProvider();
         var contract = new ethers.Contract(CONFIG.CONTRACT_ADDRESS, SOUL_ABI, provider);
         
         var totalSouls = await contract.totalSouls();
@@ -509,7 +514,7 @@ function loadStats() {
     showStatsSkeleton();
 
     // Load all stats from actual on-chain data
-    var provider = new ethers.JsonRpcProvider(CONFIG.RPC_URL);
+    var provider = getStaticProvider();
     var contract = new ethers.Contract(CONFIG.CONTRACT_ADDRESS, SOUL_ABI, provider);
     var verifyContract = new ethers.Contract(CONFIG.VERIFICATION_REGISTRY, VERIFICATION_ABI, provider);
     var jobContract = new ethers.Contract(CONFIG.JOB_REGISTRY, JOB_REGISTRY_ABI, provider);
@@ -1917,7 +1922,7 @@ async function fetchAgentActivity(agent) {
     if (!agent || !agent.tokenId) return null;
     
     try {
-        var provider = new ethers.JsonRpcProvider(CONFIG.RPC_URL);
+        var provider = getStaticProvider();
         var contract = new ethers.Contract(CONFIG.CONTRACT_ADDRESS, SOUL_ABI, provider);
         
         var actionCount = await contract.actionCount(agent.tokenId);
@@ -1938,7 +1943,7 @@ async function showAgentActivity(agent) {
     // Fetch verification count from new registry
     var verifyCount = 0;
     try {
-        var provider = new ethers.JsonRpcProvider(CONFIG.RPC_URL);
+        var provider = getStaticProvider();
         var verifyContract = new ethers.Contract(CONFIG.VERIFICATION_REGISTRY, VERIFICATION_ABI, provider);
         verifyCount = Number(await verifyContract.getVerificationCount(agent.tokenId));
     } catch (e) {
