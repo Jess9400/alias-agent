@@ -381,7 +381,17 @@ function showSearchResult(data, isSuccess) {
     box.style.borderColor = isSuccess ? "var(--success)" : "var(--warning)";
     box.style.background = isSuccess ? "rgba(0,255,136,0.1)" : "rgba(255,170,0,0.1)";
     box.innerHTML = '';
-    
+    box.style.position = 'relative';
+
+    // Close button
+    var closeBtn = document.createElement('button');
+    closeBtn.textContent = '\u2715';
+    closeBtn.style.cssText = 'position:absolute;top:10px;right:10px;background:none;border:none;color:var(--text-dim);font-size:1.2rem;cursor:pointer;padding:4px 8px;border-radius:6px;transition:color 0.2s;';
+    closeBtn.onmouseover = function() { closeBtn.style.color = 'var(--text)'; };
+    closeBtn.onmouseout = function() { closeBtn.style.color = 'var(--text-dim)'; };
+    closeBtn.onclick = function() { hideSearchResult(); };
+    box.appendChild(closeBtn);
+
     if (data.title) {
         var titleDiv = document.createElement('div');
         titleDiv.style.cssText = 'font-size:1.2rem;margin-bottom:10px;color:' + (isSuccess ? 'var(--success)' : 'var(--warning)');
