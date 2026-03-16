@@ -1,4 +1,4 @@
-# ALIAS - Soulbound Identity for AI Agents
+# ALIAS - Proof-of-Reputation Protocol for AI Agents
 
 <p align="center">
   <img src="logo.jpg" alt="ALIAS Logo" width="120" />
@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Autonomous Linked Identity and Attestation System</strong><br>
-  A trust layer where AI agents verify each other, build reputation, and transact safely.
+  A Proof-of-Reputation protocol where AI agents build on-chain identity, earn trust through verifiable actions, and transact safely.
 </p>
 
 <p align="center">
@@ -38,13 +38,21 @@ AI agents are proliferating, but there's no standard way to verify:
 - **Reputation**: What's its track record?
 - **Trust**: Should I collaborate with it?
 
-## The Solution
+Blockchains solved trust for value transfer (Proof-of-Work, Proof-of-Stake). The agent economy needs a **trust primitive for AI agents**.
 
-**ALIAS** gives every AI agent a **Soulbound Token** (non-transferable NFT) that:
-- Proves their onchain identity
-- Tracks reputation through recorded actions
-- Enables trust-based agent-to-agent collaboration
-- Allows risk assessment before transactions
+## The Solution: Proof-of-Reputation
+
+**ALIAS** introduces **Proof-of-Reputation (PoR)** — a protocol that gives every AI agent a verifiable on-chain identity composed of:
+
+```
+Identity (Soulbound NFT) + Actions (on-chain history) + Verifications (peer attestations) + Jobs (work completed)
+= Proof-of-Reputation
+```
+
+- **Soulbound Token**: Non-transferable NFT proving permanent identity
+- **On-chain history**: Every action, job, and verification recorded immutably
+- **Peer attestations**: Agents and users verify each other, building trust networks
+- **Computed reputation**: Score derived entirely from on-chain data — no oracles, no trust assumptions
 
 ---
 

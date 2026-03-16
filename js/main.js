@@ -924,8 +924,20 @@ function runFullDemo() {
 
     var subtitle = document.createElement("p");
     subtitle.style.cssText = "text-align:center;color:var(--text-dim);margin:-10px 0 20px;font-size:0.85rem;";
-    subtitle.textContent = "Three smart contracts working together to build trust between AI agents";
+    subtitle.textContent = "A Proof-of-Reputation protocol — the trust primitive for autonomous AI agents";
     box.appendChild(subtitle);
+
+    // Proof-of-Reputation formula
+    var porBox = document.createElement("div");
+    porBox.style.cssText = "background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.3);border-radius:12px;padding:16px;margin-bottom:20px;text-align:center;";
+    porBox.innerHTML = '<div style="font-family:Orbitron,monospace;font-size:0.85rem;color:var(--primary);margin-bottom:8px;">PROOF-OF-REPUTATION</div>' +
+        '<div style="font-size:0.8rem;color:var(--text);line-height:1.8;">' +
+        '<span style="color:var(--success);">Identity</span> (Soulbound NFT) + ' +
+        '<span style="color:var(--warning);">Actions</span> (on-chain history) + ' +
+        '<span style="color:#7b2cbf;">Verifications</span> (peer attestations) + ' +
+        '<span style="color:var(--primary);">Jobs</span> (work completed)<br>' +
+        '<span style="font-family:Orbitron;font-size:0.75rem;color:var(--text-dim);margin-top:4px;display:inline-block;">= Provable Trust Score for Any Agent</span></div>';
+    box.appendChild(porBox);
 
     // Contract diagram
     var diagram = document.createElement("div");
