@@ -763,8 +763,9 @@ document.addEventListener("DOMContentLoaded", function() {
     
     typeInTerminal("[SYSTEM] ALIAS Network initialized", "system");
     typeInTerminal("[INFO] Loading stats from blockchain...", "warning");
-    
+
     document.getElementById("connectBtn").addEventListener("click", connectWalletEnhanced);
+    autoReconnectWallet();
     document.getElementById("searchBtn").addEventListener("click", searchAgent);
     document.getElementById("verifyBtn").addEventListener("click", function() { if (selectedAgent) { signVerification(selectedAgent); } else { alert("Please select an agent first!"); } });
     document.getElementById("chainBtn").addEventListener("click", runChainDemo);
@@ -874,47 +875,100 @@ var showingMyAgents = false;
 
 // Store wallet on connect
 function connectWalletEnhanced() {
-    if (typeof window.ethereum !== "undefined") {
-        // First ensure we're on Base
-        window.ethereum.request({
-            method: "wallet_switchEthereumChain",
-            params: [{ chainId: "0x2105" }]
-        }).catch(function(switchError) {
-            // Chain not added yet, add it
-            if (switchError.code === 4902) {
-                return window.ethereum.request({
-                    method: "wallet_addEthereumChain",
-                    params: [{
-                        chainId: "0x2105",
-                        chainName: "Base",
-                        nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-                        rpcUrls: ["https://mainnet.base.org"],
-                        blockExplorerUrls: ["https://basescan.org"]
-                    }]
-                });
-            }
-        }).then(function() {
-            return window.ethereum.request({ method: "eth_requestAccounts" });
-        }).then(function(accounts) {
-                connectedWallet = accounts[0].toLowerCase();
-                document.getElementById("connectBtn").textContent = connectedWallet.slice(0, 6) + "..." + connectedWallet.slice(-4);
-                typeInTerminal("[WALLET] Connected: " + connectedWallet, "success");
-                typeInTerminal("[NETWORK] Base Mainnet (Chain 8453)", "system");
-
-                // Check if user owns any agents
-                var myCount = agents.filter(function(a) {
-                    return a.fullAddress && a.fullAddress.toLowerCase() === connectedWallet;
-                }).length;
-
-                if (myCount > 0) {
-                    typeInTerminal("[INFO] You own " + myCount + " agent(s)!", "success");
-                }
-            })
-            .catch(function() {
-                typeInTerminal("[ERROR] Connection failed", "warning");
-            });
-    } else {
+    if (typeof window.ethereum === "undefined") {
         alert("Please install MetaMask to connect your wallet!");
+        return;
+    }
+
+    // If already connected, disconnect
+    if (connectedWallet) {
+        disconnectWallet();
+        return;
+    }
+
+    // First ensure we're on Base
+    window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: "0x2105" }]
+    }).catch(function(switchError) {
+        if (switchError.code === 4902) {
+            return window.ethereum.request({
+                method: "wallet_addEthereumChain",
+                params: [{
+                    chainId: "0x2105",
+                    chainName: "Base",
+                    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+                    rpcUrls: ["https://mainnet.base.org"],
+                    blockExplorerUrls: ["https://basescan.org"]
+                }]
+            });
+        }
+    }).then(function() {
+        return window.ethereum.request({ method: "eth_requestAccounts" });
+    }).then(function(accounts) {
+        setConnectedWallet(accounts[0]);
+    }).catch(function() {
+        typeInTerminal("[ERROR] Connection failed", "warning");
+    });
+}
+
+function setConnectedWallet(account) {
+    connectedWallet = account.toLowerCase();
+    var btn = document.getElementById("connectBtn");
+    btn.textContent = connectedWallet.slice(0, 6) + "..." + connectedWallet.slice(-4) + " ✕";
+    btn.title = "Click to disconnect";
+    typeInTerminal("[WALLET] Connected: " + connectedWallet, "success");
+    typeInTerminal("[NETWORK] Base Mainnet (Chain 8453)", "system");
+
+    var myCount = agents.filter(function(a) {
+        return a.fullAddress && a.fullAddress.toLowerCase() === connectedWallet;
+    }).length;
+    if (myCount > 0) {
+        typeInTerminal("[INFO] You own " + myCount + " agent(s)!", "success");
+    }
+}
+
+function disconnectWallet() {
+    connectedWallet = null;
+    var btn = document.getElementById("connectBtn");
+    btn.textContent = "Connect Wallet";
+    btn.title = "";
+    typeInTerminal("[WALLET] Disconnected", "system");
+
+    // Reset My Agents filter if active
+    if (showingMyAgents) {
+        showingMyAgents = false;
+        var myBtn = document.getElementById("myAgentsBtn");
+        if (myBtn) {
+            myBtn.style.background = "transparent";
+            myBtn.style.color = "var(--secondary)";
+            myBtn.textContent = "My Agents";
+        }
+        populateAgents();
+    }
+}
+
+// Auto-reconnect on page load if MetaMask is already connected
+function autoReconnectWallet() {
+    if (typeof window.ethereum !== "undefined") {
+        window.ethereum.request({ method: "eth_accounts" })
+            .then(function(accounts) {
+                if (accounts.length > 0) {
+                    setConnectedWallet(accounts[0]);
+                }
+            }).catch(function() {});
+
+        // Listen for account/chain changes
+        window.ethereum.on("accountsChanged", function(accounts) {
+            if (accounts.length === 0) {
+                disconnectWallet();
+            } else {
+                setConnectedWallet(accounts[0]);
+            }
+        });
+        window.ethereum.on("chainChanged", function() {
+            window.location.reload();
+        });
     }
 }
 
