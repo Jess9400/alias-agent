@@ -898,20 +898,7 @@ function runFullDemo() {
 // =============================================================================
 
 function connectWallet() {
-    var wp = getWalletProvider();
-    if (wp) {
-        wp.request({ method: "eth_requestAccounts" })
-            .then(function(accounts) {
-                var address = accounts[0];
-                document.getElementById("connectBtn").textContent = address.slice(0, 6) + "..." + address.slice(-4);
-                typeInTerminal("[WALLET] Connected: " + address, "success");
-            })
-            .catch(function() {
-                typeInTerminal("[ERROR] Connection failed", "warning");
-            });
-    } else {
-        showToast("Please install MetaMask to connect your wallet!", "error");
-    }
+    connectWalletEnhanced();
 }
 
 // =============================================================================
@@ -1050,14 +1037,16 @@ function populateSkillsWithSearch() {
 var connectedWallet = null;
 var showingMyAgents = false;
 
-// EIP-6963: Modern wallet discovery (bypasses MetaMask's buggy proxy)
-var rawWalletProvider = null;
+// EIP-6963: Discover all available wallets
+var discoveredWallets = [];
+var activeProvider = null;
 
 window.addEventListener("eip6963:announceProvider", function(event) {
-    // Prefer MetaMask but accept any provider
-    if (!rawWalletProvider || (event.detail.info && event.detail.info.rdns === "io.metamask")) {
-        rawWalletProvider = event.detail.provider;
-        console.log("EIP-6963 provider found:", event.detail.info ? event.detail.info.name : "unknown");
+    var info = event.detail.info || {};
+    var exists = discoveredWallets.some(function(w) { return w.info.rdns === info.rdns; });
+    if (!exists) {
+        discoveredWallets.push({ info: info, provider: event.detail.provider });
+        console.log("Wallet discovered:", info.name || "unknown", info.rdns || "");
     }
 });
 window.dispatchEvent(new Event("eip6963:requestProvider"));
@@ -1070,49 +1059,147 @@ function createSafeProvider(raw) {
         on: function(evt, fn) { if (raw.on) raw.on(evt, fn); },
         removeListener: function(evt, fn) { if (raw.removeListener) raw.removeListener(evt, fn); },
         removeAllListeners: function(evt) { if (raw.removeAllListeners) raw.removeAllListeners(evt); },
-        isMetaMask: true
+        _raw: raw
     };
 }
 
-// Get a safe provider reference (wrapped to avoid SES proxy bug)
-var _safeProvider = null;
+// Get the active safe provider (set after wallet selection)
 function getWalletProvider() {
-    var raw = rawWalletProvider || (typeof window.ethereum !== "undefined" ? window.ethereum : null);
-    if (!raw) return null;
-    if (!_safeProvider || _safeProvider._raw !== raw) {
-        _safeProvider = createSafeProvider(raw);
-        _safeProvider._raw = raw;
-    }
-    return _safeProvider;
+    return activeProvider;
 }
 
-// Store wallet on connect
-function connectWalletEnhanced() {
-    var provider = getWalletProvider();
-    if (!provider) {
-        showToast("Please install MetaMask to connect your wallet!", "error");
-        return;
-    }
+// Set active provider from a raw provider
+function setActiveProvider(raw) {
+    activeProvider = createSafeProvider(raw);
+}
 
+// Show wallet picker if multiple wallets, or connect directly if only one
+function connectWalletEnhanced() {
     // If already connected, disconnect
     if (connectedWallet) {
         disconnectWallet();
         return;
     }
 
-    // Clear disconnected flag since user is explicitly connecting
+    // Re-discover wallets (some inject late)
+    window.dispatchEvent(new Event("eip6963:requestProvider"));
+
+    // Build wallet list: EIP-6963 wallets + fallback to window.ethereum
+    var wallets = discoveredWallets.slice();
+    if (wallets.length === 0 && typeof window.ethereum !== "undefined") {
+        wallets.push({
+            info: { name: window.ethereum.isMetaMask ? "MetaMask" : "Browser Wallet", icon: "" },
+            provider: window.ethereum
+        });
+    }
+
+    if (wallets.length === 0) {
+        showToast("No wallet found! Please install MetaMask or Coinbase Wallet.", "error");
+        return;
+    }
+
+    if (wallets.length === 1) {
+        // Only one wallet - connect directly
+        connectWithProvider(wallets[0].provider);
+    } else {
+        // Multiple wallets - show picker
+        showWalletPicker(wallets);
+    }
+}
+
+// Show wallet selection modal
+function showWalletPicker(wallets) {
+    // Remove existing picker if any
+    var old = document.getElementById("walletPickerOverlay");
+    if (old) old.remove();
+
+    var overlay = document.createElement("div");
+    overlay.id = "walletPickerOverlay";
+    overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:10000;display:flex;align-items:center;justify-content:center;";
+
+    var box = document.createElement("div");
+    box.style.cssText = "background:#1a1a2e;border:1px solid #00d4ff;border-radius:12px;padding:24px;min-width:280px;max-width:360px;";
+
+    var title = document.createElement("h3");
+    title.textContent = "Select Wallet";
+    title.style.cssText = "color:#00d4ff;margin:0 0 16px 0;text-align:center;font-size:16px;";
+    box.appendChild(title);
+
+    wallets.forEach(function(w) {
+        var btn = document.createElement("button");
+        btn.style.cssText = "display:flex;align-items:center;gap:12px;width:100%;padding:12px 16px;margin-bottom:8px;background:#0d0d1a;border:1px solid #333;border-radius:8px;color:#fff;cursor:pointer;font-size:14px;transition:border-color 0.2s;";
+        btn.onmouseover = function() { btn.style.borderColor = "#00d4ff"; };
+        btn.onmouseout = function() { btn.style.borderColor = "#333"; };
+
+        if (w.info.icon) {
+            var img = document.createElement("img");
+            img.src = w.info.icon;
+            img.style.cssText = "width:28px;height:28px;border-radius:6px;";
+            btn.appendChild(img);
+        }
+
+        var label = document.createElement("span");
+        label.textContent = w.info.name || "Wallet";
+        btn.appendChild(label);
+
+        btn.onclick = function() {
+            overlay.remove();
+            connectWithProvider(w.provider);
+        };
+        box.appendChild(btn);
+    });
+
+    // Cancel button
+    var cancel = document.createElement("button");
+    cancel.textContent = "Cancel";
+    cancel.style.cssText = "width:100%;padding:10px;margin-top:8px;background:transparent;border:1px solid #555;border-radius:8px;color:#888;cursor:pointer;font-size:13px;";
+    cancel.onclick = function() { overlay.remove(); };
+    box.appendChild(cancel);
+
+    overlay.appendChild(box);
+    overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+    document.body.appendChild(overlay);
+}
+
+// Connect using a specific provider
+function connectWithProvider(rawProvider) {
+    setActiveProvider(rawProvider);
+    var provider = getWalletProvider();
+
     localStorage.removeItem("alias_disconnected");
 
-    // Use wallet_requestPermissions to force MetaMask account picker popup
-    // (eth_requestAccounts silently returns cached account without showing UI)
+    // Use wallet_requestPermissions to force account picker (allows switching accounts)
     provider.request({
         method: "wallet_requestPermissions",
         params: [{ eth_accounts: {} }]
-    }).then(function() {
-        return provider.request({ method: "eth_accounts" });
-    }).then(function(accounts) {
-        if (accounts && accounts.length > 0) {
-            setConnectedWallet(accounts[0]);
+    }).then(function(permissions) {
+        // Extract selected account from permissions caveats
+        var account = null;
+        if (permissions && permissions.length > 0) {
+            for (var i = 0; i < permissions.length; i++) {
+                var perm = permissions[i];
+                if (perm.caveats && perm.caveats.length > 0) {
+                    for (var j = 0; j < perm.caveats.length; j++) {
+                        var caveat = perm.caveats[j];
+                        if (caveat.value && caveat.value.length > 0) {
+                            account = caveat.value[0];
+                            break;
+                        }
+                    }
+                }
+                if (account) break;
+            }
+        }
+        // Fallback to eth_accounts if caveat extraction failed
+        if (!account) {
+            return provider.request({ method: "eth_accounts" }).then(function(accounts) {
+                return accounts && accounts.length > 0 ? accounts[0] : null;
+            });
+        }
+        return account;
+    }).then(function(account) {
+        if (account) {
+            setConnectedWallet(account);
             // Switch to Base
             return provider.request({
                 method: "wallet_switchEthereumChain",
@@ -1160,6 +1247,7 @@ function setConnectedWallet(account) {
 
 function disconnectWallet() {
     connectedWallet = null;
+    activeProvider = null;
     localStorage.setItem("alias_disconnected", "true");
     localStorage.removeItem("alias_wallet");
     var btn = document.getElementById("connectBtn");
@@ -1192,6 +1280,13 @@ function autoReconnectWallet() {
         btn.title = "Click to disconnect";
         typeInTerminal("[WALLET] Restored: " + savedWallet, "success");
         loadJobHistory();
+
+        // Set up provider silently for transactions (use first discovered or window.ethereum)
+        setTimeout(function() {
+            var raw = discoveredWallets.length > 0 ? discoveredWallets[0].provider :
+                      (typeof window.ethereum !== "undefined" ? window.ethereum : null);
+            if (raw) setActiveProvider(raw);
+        }, 500);
     }
 }
 
