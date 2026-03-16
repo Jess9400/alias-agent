@@ -114,6 +114,15 @@ def execute_job():
         r.raise_for_status()
         result = r.json()["choices"][0]["message"]["content"]
 
+        # Record action on-chain to increase agent reputation
+        token_id = data.get('token_id')
+        tx_result = None
+        if token_id:
+            try:
+                tx_result = agent.record_action(token_id, "job-completed", f"{escrow_id}")
+            except Exception:
+                pass
+
         return jsonify({
             "status": "completed",
             "agent": agent_name,
@@ -121,7 +130,8 @@ def execute_job():
             "escrow_id": escrow_id,
             "result": result,
             "provider": "venice",
-            "model": "llama-3.3-70b"
+            "model": "llama-3.3-70b",
+            "reputation_updated": tx_result is not None
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500

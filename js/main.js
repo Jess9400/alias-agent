@@ -1028,6 +1028,7 @@ function retryJob(escrowId) {
             agent_name: job.agent,
             skills: job.skills || [],
             tier: job.tier || "VERIFIED",
+            token_id: job.tokenId,
             job: job.job,
             escrow_id: escrowId
         })
@@ -1422,6 +1423,7 @@ async function hireAgent(agent) {
             agentAddress: agent.fullAddress,
             skills: agent.skills,
             tier: agent.tier,
+            tokenId: agent.tokenId,
             job: jobDesc,
             budget: budget,
             rate: rate,
@@ -1446,6 +1448,7 @@ async function hireAgent(agent) {
                     agent_name: agent.name,
                     skills: agent.skills,
                     tier: agent.tier,
+                    token_id: agent.tokenId,
                     job: jobDesc,
                     escrow_id: escrowId
                 })
