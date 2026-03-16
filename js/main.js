@@ -1142,39 +1142,35 @@ function autoReconnectWallet() {
     if (typeof window.ethereum === "undefined") return;
 
     // Don't auto-reconnect if user explicitly disconnected via the X button
-    if (localStorage.getItem("alias_disconnected") === "true") {
-        console.log("Auto-reconnect skipped: user disconnected previously");
-        return;
-    }
+    if (localStorage.getItem("alias_disconnected") === "true") return;
 
-    // Check if we have a saved wallet address
-    var savedWallet = localStorage.getItem("alias_wallet");
-
-    // Only use eth_accounts (passive check, no popup)
-    window.ethereum.request({ method: "eth_accounts" })
-        .then(function(accounts) {
-            if (accounts.length > 0) {
-                setConnectedWallet(accounts[0]);
-            } else if (savedWallet) {
-                // MetaMask lost permissions (e.g. after hard refresh on some browsers)
-                // Clear saved wallet since we can't reconnect passively
-                console.log("Saved wallet found but no active accounts - waiting for manual connect");
-                localStorage.removeItem("alias_wallet");
-            }
-        }).catch(function(err) {
-            console.log("Auto-reconnect check failed:", err);
-        });
-
-    window.ethereum.on("accountsChanged", function(accounts) {
-        if (accounts.length === 0) {
-            disconnectWallet();
-        } else {
-            setConnectedWallet(accounts[0]);
+    // Delay to let MetaMask fully initialize (avoids call stack overflow)
+    setTimeout(function() {
+        try {
+            window.ethereum.request({ method: "eth_accounts" })
+                .then(function(accounts) {
+                    if (accounts && accounts.length > 0) {
+                        setConnectedWallet(accounts[0]);
+                    }
+                }).catch(function() {});
+        } catch (e) {
+            console.log("Auto-reconnect skipped");
         }
-    });
-    window.ethereum.on("chainChanged", function() {
-        window.location.reload();
-    });
+    }, 500);
+
+    // Listen for account/chain changes
+    try {
+        window.ethereum.on("accountsChanged", function(accounts) {
+            if (accounts.length === 0) {
+                disconnectWallet();
+            } else {
+                setConnectedWallet(accounts[0]);
+            }
+        });
+        window.ethereum.on("chainChanged", function() {
+            window.location.reload();
+        });
+    } catch (e) {}
 }
 
 // =============================================================================
