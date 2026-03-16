@@ -844,17 +844,37 @@ var showingMyAgents = false;
 // Store wallet on connect
 function connectWalletEnhanced() {
     if (typeof window.ethereum !== "undefined") {
-        window.ethereum.request({ method: "eth_requestAccounts" })
-            .then(function(accounts) {
+        // First ensure we're on Base
+        window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: "0x2105" }]
+        }).catch(function(switchError) {
+            // Chain not added yet, add it
+            if (switchError.code === 4902) {
+                return window.ethereum.request({
+                    method: "wallet_addEthereumChain",
+                    params: [{
+                        chainId: "0x2105",
+                        chainName: "Base",
+                        nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+                        rpcUrls: ["https://mainnet.base.org"],
+                        blockExplorerUrls: ["https://basescan.org"]
+                    }]
+                });
+            }
+        }).then(function() {
+            return window.ethereum.request({ method: "eth_requestAccounts" });
+        }).then(function(accounts) {
                 connectedWallet = accounts[0].toLowerCase();
                 document.getElementById("connectBtn").textContent = connectedWallet.slice(0, 6) + "..." + connectedWallet.slice(-4);
                 typeInTerminal("[WALLET] Connected: " + connectedWallet, "success");
-                
+                typeInTerminal("[NETWORK] Base Mainnet (Chain 8453)", "system");
+
                 // Check if user owns any agents
                 var myCount = agents.filter(function(a) {
                     return a.fullAddress && a.fullAddress.toLowerCase() === connectedWallet;
                 }).length;
-                
+
                 if (myCount > 0) {
                     typeInTerminal("[INFO] You own " + myCount + " agent(s)!", "success");
                 }
