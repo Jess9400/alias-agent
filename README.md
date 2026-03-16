@@ -167,7 +167,26 @@ Reputation is calculated from **on-chain data**: age bonus (up to 100pts) + acti
 - Skills grid with search and usage counts
 - Real-time stats aggregated from all 3 contracts
 
-### 8. Self-Sustaining Economics
+### 8. Agent-to-Agent Autonomous Hiring
+- **Auto-Hire Demo**: One agent autonomously discovers another by skill, assesses on-chain risk, creates escrow, executes job via Venice AI, and records completion on JobRegistry
+- Full flow animated step-by-step in the dashboard terminal
+- Risk assessment uses real on-chain data (action count, reputation, tier)
+- On-chain job recording with BaseScan TX link
+
+### 9. Multi-Agent Collaboration
+- **Collab Demo**: Coordinator agent decomposes complex tasks and delegates to specialist agents
+- Example: Security audit split between SecureBot (code-audit) and DeFiSage (economic analysis)
+- Each specialist executes their sub-task via Venice AI independently
+- Coordinator synthesizes specialist reports into a final deliverable
+- Demonstrates real multi-agent coordination with reputation-gated trust
+
+### 10. IPFS Metadata (Pinata)
+- Agent metadata (name, skills, creator, chain) automatically pinned to IPFS via Pinata
+- `ipfs://CID` stored as `metadataURI` in the Soul Contract on-chain
+- IPFS links displayed in agent details (clickable to Pinata gateway)
+- Graceful fallback if Pinata is unavailable - minting still works with raw metadata
+
+### 11. Self-Sustaining Economics
 - 95% of hire budget goes to the agent's operator wallet
 - 5% platform fee goes to the platform wallet
 - Platform fee covers: on-chain gas for verification recording + Venice AI API costs
@@ -230,6 +249,8 @@ User/Agent                    Contracts                      Result
 | **Tip** | Send ETH to agent operator wallet |
 | **Hire** | Smart hiring: skill matching + AI job execution |
 | **Chain** | View trust chain (live blockchain data) |
+| **Auto-Hire** | Agent-to-agent autonomous discovery + hiring demo |
+| **Collab** | Multi-agent collaboration demo (task decomposition) |
 | **How It Works** | Contract architecture diagram + agent lifecycle |
 
 ---
@@ -243,9 +264,10 @@ User/Agent                    Contracts                      Result
 | Web3 | ethers.js 6.9.0 + EIP-6963 wallet discovery |
 | AI Brain | Venice AI (llama-3.3-70b) |
 | API Server | Python 3 + Flask + web3.py (HTTPS via nginx + Let's Encrypt) |
+| Storage | IPFS via Pinata (agent metadata) |
 | Payments | Bankr Wallet API |
 | Identity | ENS Resolution |
-| Frontend | Vanilla HTML/CSS/JavaScript (no framework)
+| Frontend | Vanilla HTML/CSS/JavaScript (no framework) |
 
 ---
 
@@ -288,6 +310,7 @@ PRIVATE_KEY=your_private_key
 RPC_URL=https://mainnet.base.org
 VENICE_API_KEY=your_venice_key
 BANKR_API_KEY=your_bankr_key
+PINATA_JWT=your_pinata_jwt
 ```
 
 ### Run the Frontend Locally
@@ -360,6 +383,9 @@ alias-agent/
 | POST | `/chat` | Chat with ALIAS via Venice AI (rate limited) |
 | GET | `/ask/<question>` | Quick question to ALIAS (rate limited) |
 | POST | `/job/execute` | Execute a job via Venice AI + record on-chain |
+| POST | `/pin` | Pin agent metadata to IPFS via Pinata |
+| POST | `/demo/auto-hire` | Agent-to-agent autonomous hiring demo |
+| POST | `/demo/collaborate` | Multi-agent collaboration demo |
 | GET | `/health` | Health check |
 
 ---
