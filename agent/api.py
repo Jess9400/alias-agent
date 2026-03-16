@@ -1,6 +1,8 @@
 import os
 import logging
 import requests as http_requests
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from functools import wraps
