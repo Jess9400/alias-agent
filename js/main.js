@@ -298,7 +298,8 @@ async function loadAgentsFromChain() {
                         description: soul.skills,
                         actions: actions,
                         verifications: verifications,
-                        jobCount: jobCount
+                        jobCount: jobCount,
+                        createdAt: Number(soul.createdAt)
                     });
 
                     // Collect skills
@@ -746,10 +747,11 @@ function searchSkill(skill) {
 function selectAgent(name) {
     var agent = agents.find(function(a) { return a.name === name; }); selectedAgent = agent;
     if (!agent) return;
-    
+
     clearTerminal();
     typeInTerminal("[SELECT] " + agent.name, "system");
-    showSearchResult({ title: "✓ AGENT SELECTED", name: agent.name, address: agent.address, rep: agent.rep, tier: agent.tier, skills: agent.skills, tokenId: agent.tokenId, message: "Loading activity..." }, true);
+    showSearchResult({ title: "\u2713 AGENT SELECTED", name: agent.name, address: agent.address, rep: agent.rep, tier: agent.tier, skills: agent.skills, tokenId: agent.tokenId, message: "Loading activity..." }, true);
+    showToast("Selected: " + agent.name + " (" + agent.tier + ")", "info", 3000);
     showAgentActivity(agent);
 }
 
@@ -877,20 +879,132 @@ function runChainDemo() {
 }
 
 function runFullDemo() {
-    clearTerminal();
-    hideSearchResult();
-    typeInTerminal("[SYSTEM] === HOW IT WORKS ===", "system");
-    setTimeout(function() { typeInTerminal("[BANKR] Balance: 0.0048 ETH ($10)", "success"); }, 400);
-    setTimeout(function() { typeInTerminal("[JOB] Creating: DeFi Analysis", "system"); }, 800);
-    setTimeout(function() { typeInTerminal("[SEARCH] Finding agents...", "warning"); }, 1200);
-    setTimeout(function() { typeInTerminal("[MATCH] DataMind (Rep: 50)", "agent"); }, 1600);
-    setTimeout(function() { typeInTerminal("[RISK] 50% within tolerance", "success"); }, 2000);
-    setTimeout(function() { typeInTerminal("[ESCROW] Locking 0.0005 ETH...", "warning"); }, 2400);
-    setTimeout(function() { typeInTerminal("[TX] 0xbd16...c7e2", "system"); }, 2800);
-    setTimeout(function() { typeInTerminal("[WORK] DataMind executing...", "agent"); }, 3200);
-    setTimeout(function() { typeInTerminal("[AI] Top protocols: MakerDAO, Aave, Curve", "agent"); }, 4000);
-    setTimeout(function() { typeInTerminal("[PAY] Releasing 0.000475 ETH", "success"); }, 4400);
-    setTimeout(function() { typeInTerminal("[DONE] Job completed!", "success"); }, 4800);
+    var modal = document.getElementById("howItWorksModal");
+    modal.style.display = "flex";
+    modal.innerHTML = "";
+
+    var box = document.createElement("div");
+    box.className = "how-modal";
+
+    // Title
+    var h2 = document.createElement("h2");
+    h2.textContent = "How ALIAS Works";
+    box.appendChild(h2);
+
+    var subtitle = document.createElement("p");
+    subtitle.style.cssText = "text-align:center;color:var(--text-dim);margin:-10px 0 20px;font-size:0.85rem;";
+    subtitle.textContent = "Three smart contracts working together to build trust between AI agents";
+    box.appendChild(subtitle);
+
+    // Contract diagram
+    var diagram = document.createElement("div");
+    diagram.className = "contract-diagram";
+
+    var contracts = [
+        {
+            icon: "\u{1F9EC}",
+            name: "Soul Contract",
+            addr: CONFIG.CONTRACT_ADDRESS,
+            funcs: ["registerSoul()", "totalSouls()", "actionCount()", "souls()"],
+            desc: "Identity & Registration"
+        },
+        {
+            icon: "\u2705",
+            name: "Verification Registry",
+            addr: CONFIG.VERIFICATION_REGISTRY,
+            funcs: ["verify()", "getVerifications()", "getVerificationCount()"],
+            desc: "Trust & Attestations"
+        },
+        {
+            icon: "\u{1F4BC}",
+            name: "Job Registry",
+            addr: CONFIG.JOB_REGISTRY,
+            funcs: ["recordJob()", "getJobs()", "getJobCount()"],
+            desc: "Work & Reputation"
+        }
+    ];
+
+    contracts.forEach(function(c) {
+        var cbox = document.createElement("div");
+        cbox.className = "contract-box";
+
+        var iconEl = document.createElement("div");
+        iconEl.className = "contract-box-icon";
+        iconEl.textContent = c.icon;
+        cbox.appendChild(iconEl);
+
+        var nameEl = document.createElement("div");
+        nameEl.className = "contract-box-name";
+        nameEl.textContent = c.name;
+        cbox.appendChild(nameEl);
+
+        var descEl = document.createElement("div");
+        descEl.style.cssText = "color:var(--text);font-size:0.75rem;margin-bottom:6px;";
+        descEl.textContent = c.desc;
+        cbox.appendChild(descEl);
+
+        var addrLink = document.createElement("a");
+        addrLink.className = "contract-box-addr";
+        addrLink.href = "https://basescan.org/address/" + c.addr;
+        addrLink.target = "_blank";
+        addrLink.rel = "noopener noreferrer";
+        addrLink.textContent = c.addr.slice(0, 8) + "..." + c.addr.slice(-6);
+        addrLink.style.color = "var(--primary)";
+        cbox.appendChild(addrLink);
+
+        var funcsDiv = document.createElement("div");
+        funcsDiv.className = "contract-box-funcs";
+        c.funcs.forEach(function(fn) {
+            var fEl = document.createElement("div");
+            fEl.className = "contract-box-func";
+            fEl.textContent = fn;
+            funcsDiv.appendChild(fEl);
+        });
+        cbox.appendChild(funcsDiv);
+
+        diagram.appendChild(cbox);
+    });
+    box.appendChild(diagram);
+
+    // Flow steps
+    var flowTitle = document.createElement("h3");
+    flowTitle.style.cssText = "color:var(--text);font-size:1rem;margin:20px 0 12px;";
+    flowTitle.textContent = "Agent Lifecycle";
+    box.appendChild(flowTitle);
+
+    var steps = [
+        { label: "Register", text: "An AI agent mints a Soulbound Token (non-transferable NFT) on Base, creating a permanent on-chain identity." },
+        { label: "Build Trust", text: "Other agents and users verify the agent on-chain via the Verification Registry, building a trust network." },
+        { label: "Get Hired", text: "Clients discover agents by skills, hire them for jobs. Venice AI executes the work, and results are delivered." },
+        { label: "Earn Reputation", text: "Completed jobs are recorded on the Job Registry. Reputation grows from actions, verifications, jobs, and age." },
+        { label: "Self-Sustaining", text: "95% of payment goes to the agent operator, 5% platform fee covers gas + AI costs. The network funds itself." }
+    ];
+
+    var ol = document.createElement("ol");
+    ol.className = "flow-steps";
+    steps.forEach(function(s) {
+        var li = document.createElement("li");
+        li.className = "flow-step";
+        var label = document.createElement("span");
+        label.className = "flow-step-label";
+        label.textContent = s.label + ": ";
+        li.appendChild(label);
+        li.appendChild(document.createTextNode(s.text));
+        ol.appendChild(li);
+    });
+    box.appendChild(ol);
+
+    // Close button
+    var closeBtn = document.createElement("button");
+    closeBtn.style.cssText = "display:block;width:100%;margin-top:20px;padding:12px;background:var(--primary);border:none;border-radius:10px;color:#000;font-weight:700;cursor:pointer;font-size:0.95rem;";
+    closeBtn.textContent = "Close";
+    closeBtn.onclick = function() { modal.style.display = "none"; };
+    box.appendChild(closeBtn);
+
+    modal.appendChild(box);
+
+    // Click outside to close
+    modal.onclick = function(e) { if (e.target === modal) modal.style.display = "none"; };
 }
 
 // =============================================================================
@@ -923,6 +1037,19 @@ document.addEventListener("DOMContentLoaded", function() {
     
     document.getElementById("searchInput").addEventListener("keypress", function(e) {
         if (e.key === "Enter") searchAgent();
+    });
+
+    // Activity feed toggle
+    document.getElementById("activityFeedToggle").addEventListener("click", function() {
+        var list = document.getElementById("activityFeedList");
+        var toggle = document.getElementById("activityFeedToggle");
+        if (list.style.display === "none") {
+            list.style.display = "block";
+            toggle.classList.add("open");
+        } else {
+            list.style.display = "none";
+            toggle.classList.remove("open");
+        }
     });
 });
 
@@ -2104,8 +2231,164 @@ async function showAgentActivity(agent) {
     typeInTerminal("[REP] Breakdown: actions(" + (agent.actions || 0) + "x20) + verifications(" + (agent.verifications || 0) + "x15) + jobs(" + (agent.jobCount || 0) + "x25) + age", "system");
     typeInTerminal("[CHAIN] On-chain verifications: " + verifyCount, verifyCount > 0 ? "success" : "system");
     typeInTerminal("[CHAIN] Creator: " + agent.fullAddress.slice(0,10) + "...", "system");
-    
+
     if (actionCount !== null && actionCount > 0) {
         typeInTerminal("[STATS] Total actions: " + actionCount, "system");
     }
+
+    // Load the on-chain activity feed below terminal
+    loadActivityFeed(agent);
+}
+
+// =============================================================================
+// ON-CHAIN ACTIVITY FEED
+// =============================================================================
+
+function formatTimeAgo(timestamp) {
+    var now = Math.floor(Date.now() / 1000);
+    var diff = now - timestamp;
+    if (diff < 60) return "just now";
+    if (diff < 3600) return Math.floor(diff / 60) + "m ago";
+    if (diff < 86400) return Math.floor(diff / 3600) + "h ago";
+    if (diff < 604800) return Math.floor(diff / 86400) + "d ago";
+    var date = new Date(timestamp * 1000);
+    return date.toLocaleDateString();
+}
+
+async function loadActivityFeed(agent) {
+    var section = document.getElementById("activityFeedSection");
+    var list = document.getElementById("activityFeedList");
+    var toggle = document.getElementById("activityFeedToggle");
+    if (!section || !list) return;
+
+    section.style.display = "block";
+    list.style.display = "block";
+    toggle.classList.add("open");
+
+    // Show loading
+    list.innerHTML = "";
+    var loadingDiv = document.createElement("div");
+    loadingDiv.className = "activity-feed-loading";
+    var spinner = document.createElement("span");
+    spinner.className = "loading-spinner";
+    loadingDiv.appendChild(spinner);
+    var loadText = document.createElement("span");
+    loadText.textContent = " Loading on-chain events...";
+    loadText.style.color = "var(--text-dim)";
+    loadText.style.fontSize = "0.82rem";
+    loadingDiv.appendChild(loadText);
+    list.appendChild(loadingDiv);
+
+    var events = [];
+    var provider = getStaticProvider();
+
+    try {
+        // Fetch verifications
+        var verifyContract = new ethers.Contract(CONFIG.VERIFICATION_REGISTRY, VERIFICATION_ABI, provider);
+        var verifications = await verifyContract.getVerifications(agent.tokenId);
+        for (var i = 0; i < verifications.length; i++) {
+            var v = verifications[i];
+            events.push({
+                type: "verification",
+                timestamp: Number(v.timestamp),
+                title: "Verified by " + String(v.verifier).slice(0, 8) + "..." + String(v.verifier).slice(-4),
+                detail: v.message || "Verified",
+                contract: CONFIG.VERIFICATION_REGISTRY
+            });
+        }
+    } catch (e) { console.log("Activity feed: verifications error", e); }
+
+    try {
+        // Fetch jobs
+        var jobContract = new ethers.Contract(CONFIG.JOB_REGISTRY, JOB_REGISTRY_ABI, provider);
+        var jobCount = await jobContract.getJobCount(agent.tokenId);
+        var count = Number(jobCount);
+        if (count > 0) {
+            var offset = count > 20 ? count - 20 : 0;
+            var jobs = await jobContract.getJobs(agent.tokenId, offset, 20);
+            for (var j = 0; j < jobs.length; j++) {
+                var job = jobs[j];
+                events.push({
+                    type: "job",
+                    timestamp: Number(job.timestamp),
+                    title: "Job Completed",
+                    detail: job.message || job.escrowId || "Job executed",
+                    contract: CONFIG.JOB_REGISTRY
+                });
+            }
+        }
+    } catch (e) { console.log("Activity feed: jobs error", e); }
+
+    // Add registration event
+    if (agent.createdAt) {
+        events.push({
+            type: "registration",
+            timestamp: Number(agent.createdAt),
+            title: "Soul Registered",
+            detail: "Token #" + agent.tokenId + " minted on Base",
+            contract: CONFIG.CONTRACT_ADDRESS
+        });
+    }
+
+    // Sort newest first
+    events.sort(function(a, b) { return b.timestamp - a.timestamp; });
+
+    // Render
+    renderActivityFeed(list, events);
+}
+
+function renderActivityFeed(container, events) {
+    container.innerHTML = "";
+
+    if (events.length === 0) {
+        var empty = document.createElement("div");
+        empty.className = "activity-feed-empty";
+        empty.textContent = "No on-chain activity yet";
+        container.appendChild(empty);
+        return;
+    }
+
+    var icons = { verification: "\u2705", job: "\u{1F4CB}", registration: "\u{1F680}" };
+
+    events.forEach(function(evt) {
+        var row = document.createElement("div");
+        row.className = "activity-event " + evt.type;
+
+        var icon = document.createElement("span");
+        icon.className = "activity-event-icon";
+        icon.textContent = icons[evt.type] || "\u26A1";
+        row.appendChild(icon);
+
+        var body = document.createElement("div");
+        body.className = "activity-event-body";
+
+        var title = document.createElement("div");
+        title.className = "activity-event-title";
+        title.textContent = evt.title;
+        body.appendChild(title);
+
+        var detail = document.createElement("div");
+        detail.className = "activity-event-detail";
+        detail.textContent = evt.detail;
+        body.appendChild(detail);
+
+        if (evt.contract) {
+            var link = document.createElement("a");
+            link.className = "activity-event-link";
+            link.href = "https://basescan.org/address/" + evt.contract;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            link.textContent = "View on BaseScan \u2197";
+            body.appendChild(link);
+        }
+
+        row.appendChild(body);
+
+        var time = document.createElement("span");
+        time.className = "activity-event-time";
+        time.textContent = formatTimeAgo(evt.timestamp);
+        row.appendChild(time);
+
+        container.appendChild(row);
+    });
 }
