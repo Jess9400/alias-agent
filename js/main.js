@@ -899,6 +899,9 @@ function connectWalletEnhanced() {
         return;
     }
 
+    // Clear disconnected flag since user is explicitly connecting
+    localStorage.removeItem("alias_disconnected");
+
     // First ensure we're on Base
     window.ethereum.request({
         method: "wallet_switchEthereumChain",
@@ -947,11 +950,20 @@ function setConnectedWallet(account) {
 
 function disconnectWallet() {
     connectedWallet = null;
+    localStorage.setItem("alias_disconnected", "true");
     localStorage.removeItem("alias_wallet");
     var btn = document.getElementById("connectBtn");
     btn.textContent = "Connect Wallet";
     btn.title = "";
     typeInTerminal("[WALLET] Disconnected", "system");
+
+    // Revoke MetaMask permission if supported
+    if (window.ethereum && window.ethereum.request) {
+        window.ethereum.request({
+            method: "wallet_revokePermissions",
+            params: [{ eth_accounts: {} }]
+        }).catch(function() {});
+    }
 
     if (showingMyAgents) {
         showingMyAgents = false;
@@ -969,22 +981,14 @@ function disconnectWallet() {
 function autoReconnectWallet() {
     if (typeof window.ethereum === "undefined") return;
 
-    // Try eth_accounts first, then fall back to localStorage
+    // Don't auto-reconnect if user explicitly disconnected
+    if (localStorage.getItem("alias_disconnected") === "true") return;
+
+    // Only use eth_accounts (passive check, no popup)
     window.ethereum.request({ method: "eth_accounts" })
         .then(function(accounts) {
             if (accounts.length > 0) {
                 setConnectedWallet(accounts[0]);
-            } else {
-                // MetaMask didn't return accounts, try requesting if previously connected
-                var saved = localStorage.getItem("alias_wallet");
-                if (saved) {
-                    window.ethereum.request({ method: "eth_requestAccounts" })
-                        .then(function(accs) {
-                            if (accs.length > 0) setConnectedWallet(accs[0]);
-                        }).catch(function() {
-                            localStorage.removeItem("alias_wallet");
-                        });
-                }
             }
         }).catch(function() {});
 
