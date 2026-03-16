@@ -42,6 +42,21 @@ const AGENT_WALLETS = {
     11: "0x07a0afcb49a764007439671Ec5148947EfC62E39"
 };
 
+// Agent hourly rates in ETH - keyed by token ID
+const AGENT_RATES = {
+    1: 0.0001,
+    2: 0.0005,
+    3: 0.0003,
+    4: 0.0008,
+    5: 0.0002,
+    6: 0.0006,
+    7: 0.0004,
+    8: 0.0001,
+    9: 0.0005,
+    10: 0.0003,
+    11: 0.0004
+};
+
 const SELECTORS = {
     hasSoul: "0xbdd75202",
     agentToSoul: "0xf7c3328c",
@@ -1171,64 +1186,183 @@ async function hireAgent(agent) {
         alert("Please connect your wallet first!");
         return;
     }
-    
+
     if (!agent || !agent.fullAddress) {
         alert("No agent selected!");
         return;
     }
-    
-    var jobDesc = prompt("Describe the job for " + agent.name + ":");
+
+    var rate = AGENT_RATES[agent.tokenId] || 0.0003;
+    var skills = agent.skills || [];
+
+    // Show hire modal with agent info
+    var skillList = skills.join(", ") || "general";
+    var jobDesc = prompt(
+        "Hire " + agent.name + " (" + agent.tier + ")\n\n" +
+        "Skills: " + skillList + "\n" +
+        "Rate: " + rate + " ETH/hr\n" +
+        "Suggested jobs: " + getSuggestedJobs(skills) + "\n\n" +
+        "Describe the job:"
+    );
     if (!jobDesc) return;
-    
-    var budget = prompt("Enter budget in ETH (e.g., 0.005):");
+
+    // Check if job matches agent skills
+    var jobLower = jobDesc.toLowerCase();
+    var skillMatch = skills.some(function(s) {
+        var keywords = getSkillKeywords(s);
+        return keywords.some(function(k) { return jobLower.indexOf(k) !== -1; });
+    });
+
+    if (!skillMatch && skills.length > 0) {
+        var proceed = confirm(
+            "⚠️ This job may not match " + agent.name + "'s skills (" + skillList + ").\n\n" +
+            "Consider hiring an agent specialized in this area.\n\nProceed anyway?"
+        );
+        if (!proceed) return;
+    }
+
+    // Suggest budget based on hourly rate (estimate 1-4 hours)
+    var suggested1h = rate;
+    var suggested4h = (rate * 4).toFixed(6);
+    var budget = prompt(
+        "Set budget for: " + jobDesc.slice(0, 50) + "\n\n" +
+        "Agent rate: " + rate + " ETH/hr\n" +
+        "Suggested:\n" +
+        "  Quick task (1hr): " + suggested1h + " ETH\n" +
+        "  Standard (4hr): " + suggested4h + " ETH\n\n" +
+        "Enter budget in ETH:"
+    );
     if (!budget || isNaN(parseFloat(budget))) return;
-    
+
     try {
         var provider = new ethers.BrowserProvider(window.ethereum);
         var signer = await provider.getSigner();
-        
+
         // Calculate fee (5%)
         var totalBudget = parseFloat(budget);
         var fee = totalBudget * 0.05;
         var agentPayment = totalBudget - fee;
-        
-        typeInTerminal("[HIRE] Creating job: " + jobDesc.slice(0, 30) + "...", "system");
-        typeInTerminal("[ESCROW] Budget: " + budget + " ETH", "warning");
+
+        typeInTerminal("[HIRE] Job: " + escapeHtml(jobDesc.slice(0, 50)) + "...", "system");
+        typeInTerminal("[HIRE] Agent: " + escapeHtml(agent.name) + " | Skills: " + escapeHtml(skillList), "system");
+        typeInTerminal("[ESCROW] Budget: " + budget + " ETH (Rate: " + rate + " ETH/hr)", "warning");
         typeInTerminal("[ESCROW] Platform fee (5%): " + fee.toFixed(6) + " ETH", "warning");
         typeInTerminal("[ESCROW] Agent payment: " + agentPayment.toFixed(6) + " ETH", "warning");
-        
-        // For demo: send directly to agent (in production, would use escrow contract)
+
         var tx = await signer.sendTransaction({
             to: agent.fullAddress,
             value: ethers.parseEther(budget)
         });
-        
+
         typeInTerminal("[ESCROW] TX submitted: " + tx.hash.slice(0, 15) + "...", "warning");
-        
+
         var receipt = await tx.wait();
-        
-        // Store escrow record
+
         var escrowId = "ESC-" + Date.now();
         activeEscrows[escrowId] = {
             agent: agent.name,
             agentAddress: agent.fullAddress,
             job: jobDesc,
             budget: budget,
+            rate: rate,
+            skillMatch: skillMatch,
             status: "PAID",
             txHash: tx.hash,
             timestamp: new Date().toISOString()
         };
-        
+
         typeInTerminal("[ESCROW] ✓ Job funded! ID: " + escrowId, "success");
-        typeInTerminal("[HIRE] " + agent.name + " has been hired!", "success");
+        typeInTerminal("[HIRE] " + escapeHtml(agent.name) + " hired successfully!", "success");
         typeInTerminal("[TX] " + tx.hash, "system");
-        
-        alert("Successfully hired " + agent.name + "!\n\nJob: " + jobDesc + "\nBudget: " + budget + " ETH\nEscrow ID: " + escrowId);
-        
+
+        alert(
+            "✅ Successfully hired " + agent.name + "!\n\n" +
+            "Job: " + jobDesc + "\n" +
+            "Budget: " + budget + " ETH\n" +
+            "Agent Payment: " + agentPayment.toFixed(6) + " ETH\n" +
+            "Escrow ID: " + escrowId
+        );
+
     } catch (error) {
         console.error("Hire error:", error);
         typeInTerminal("[ERROR] Hire failed: " + (error.reason || error.message), "warning");
     }
+}
+
+function getSuggestedJobs(skills) {
+    var suggestions = {
+        "data-analysis": "market analysis, trend reports",
+        "forecasting": "price predictions, growth models",
+        "reporting": "weekly reports, dashboards",
+        "code-audit": "smart contract audit, security review",
+        "vulnerability-detection": "penetration testing, bug hunting",
+        "security-review": "codebase security assessment",
+        "writing": "blog posts, documentation",
+        "marketing": "social media campaigns, copywriting",
+        "documentation": "API docs, technical guides",
+        "defi-analysis": "protocol analysis, TVL tracking",
+        "yield-farming": "yield optimization strategies",
+        "protocol-review": "DeFi protocol due diligence",
+        "research": "deep research, competitive analysis",
+        "due-diligence": "project evaluation, risk assessment",
+        "report-writing": "research papers, investment memos",
+        "trading": "trade execution, market analysis",
+        "market-analysis": "market trends, sentiment analysis",
+        "portfolio-management": "portfolio rebalancing, allocation",
+        "contract-review": "legal contract review",
+        "compliance": "regulatory compliance checks",
+        "legal-research": "legal precedent research",
+        "coding": "feature development, bug fixes",
+        "debugging": "issue diagnosis, troubleshooting",
+        "code-review": "PR review, code quality checks",
+        "general": "general tasks, coordination",
+        "coordination": "team coordination, planning",
+        "collaboration": "multi-agent tasks",
+        "autonomous": "automated workflows",
+        "verification": "identity verification",
+        "risk-assessment": "risk scoring, trust evaluation"
+    };
+    var result = [];
+    skills.forEach(function(s) {
+        if (suggestions[s]) result.push(suggestions[s]);
+    });
+    return result.slice(0, 3).join("; ") || "general tasks";
+}
+
+function getSkillKeywords(skill) {
+    var keywords = {
+        "data-analysis": ["data", "analysis", "analytics", "metrics", "statistics"],
+        "forecasting": ["forecast", "predict", "projection", "trend"],
+        "reporting": ["report", "dashboard", "summary", "weekly", "monthly"],
+        "code-audit": ["audit", "code", "smart contract", "solidity"],
+        "vulnerability-detection": ["vulnerability", "bug", "exploit", "penetration"],
+        "security-review": ["security", "review", "assessment", "risk"],
+        "writing": ["write", "blog", "article", "content", "copy"],
+        "marketing": ["market", "campaign", "social", "brand", "promote"],
+        "documentation": ["document", "docs", "api", "guide", "readme"],
+        "defi-analysis": ["defi", "protocol", "tvl", "liquidity", "pool"],
+        "yield-farming": ["yield", "farm", "apy", "staking", "reward"],
+        "protocol-review": ["protocol", "review", "evaluate", "assess"],
+        "research": ["research", "investigate", "study", "explore", "deep dive"],
+        "due-diligence": ["due diligence", "evaluate", "vet", "background"],
+        "report-writing": ["report", "paper", "memo", "writeup"],
+        "trading": ["trade", "swap", "buy", "sell", "execute"],
+        "market-analysis": ["market", "trend", "sentiment", "price"],
+        "portfolio-management": ["portfolio", "rebalance", "allocat", "diversif"],
+        "contract-review": ["contract", "legal", "terms", "agreement"],
+        "compliance": ["compliance", "regulat", "kyc", "aml"],
+        "legal-research": ["legal", "law", "precedent", "jurisdiction"],
+        "coding": ["code", "develop", "build", "implement", "feature"],
+        "debugging": ["debug", "fix", "bug", "issue", "error"],
+        "code-review": ["review", "pr", "pull request", "quality"],
+        "general": ["help", "assist", "task", "work"],
+        "coordination": ["coordinate", "plan", "organize", "manage"],
+        "collaboration": ["collaborate", "together", "team", "multi"],
+        "autonomous": ["automate", "workflow", "schedule", "monitor"],
+        "verification": ["verify", "identity", "check", "validate"],
+        "risk-assessment": ["risk", "assess", "score", "trust", "evaluate"]
+    };
+    return keywords[skill] || [skill];
 }
 
 // Add payment buttons to search result when agent is selected
