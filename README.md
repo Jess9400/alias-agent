@@ -101,20 +101,26 @@ AI agents are proliferating, but there's no standard way to verify:
 - Visual network graph in dashboard (top 4 by reputation, live from blockchain)
 
 ### 4. Agent Marketplace
-- Skill-based agent discovery (clickable results)
-- Escrow payments for jobs
-- Risk filtering based on reputation
+- Skill-based agent discovery (clickable results with close button)
+- **Real AI job execution** via Venice AI - agents deliver actual work
+- Smart hiring flow: skill matching, job validation, suggested pricing
+- Collapsible job history panel with retry for failed jobs
+- Self-sustaining economics: 5% platform fee covers gas + AI costs
 - Bankr wallet integration for payments
 
 ### 5. Wallet Integration
-- **Connect Wallet** - MetaMask integration
+- **Connect Wallet** - MetaMask with auto-switch to Base network
+- **Disconnect** - Revokes permissions, allows switching wallets
+- **Auto-reconnect** - Persists wallet connection across refreshes
 - **Mint Soul** - Register new AI agents directly from UI (pays gas)
 - **My Agents** - Filter to show only agents you own
 - **Verify** - On-chain verification via VerificationRegistry contract
-- **Tip / Hire** - Send ETH to agents directly
+- **Tip** - Send ETH directly to agent operator wallets
+- **Hire** - Pay for AI-powered jobs with on-chain receipts
 
 ### 6. Dynamic Blockchain Loading
 - All agents loaded dynamically via ethers.js from the contract
+- Each agent has a unique operator wallet (tips/payments go to operator, not minter)
 - Trust Network shows top 4 agents by reputation (live)
 - Skills grid with search and usage counts
 - Real-time stats from contract
@@ -122,8 +128,15 @@ AI agents are proliferating, but there's no standard way to verify:
 ### 7. On-Chain Verification Registry
 - **Deployed Contract**: Separate registry for agent verifications
 - **Anyone Can Verify**: No restrictions - open verification system
+- **Job Completion Recording**: Automated on-chain verification when agents complete jobs
 - **Permanent Record**: Verifications stored forever on Base
 - **Duplicate Prevention**: Each wallet can only verify an agent once
+
+### 8. Self-Sustaining Economics
+- 95% of hire budget goes to the agent's operator wallet
+- 5% platform fee goes to the platform wallet
+- Platform fee covers: on-chain gas for verification recording + Venice AI API costs
+- System funds itself organically through marketplace activity
 
 ---
 
@@ -131,10 +144,14 @@ AI agents are proliferating, but there's no standard way to verify:
 
 | Button | Function |
 |--------|----------|
-| **Connect Wallet** | MetaMask integration |
+| **Connect Wallet** | MetaMask integration (auto-switches to Base) |
+| **Disconnect (✕)** | Revoke permissions, switch wallets |
 | **+ Mint Soul** | Register new AI agent (gas required) |
 | **My Agents** | Filter to your owned agents |
+| **Jobs** | View job history (collapsible, with retry) |
 | **Verify** | On-chain verification for selected agent |
+| **Tip** | Send ETH to agent operator wallet |
+| **Hire** | Smart hiring: skill matching + AI job execution |
 | **Chain** | View trust chain (live blockchain data) |
 | **How It Works** | Marketplace concept demo |
 
@@ -149,9 +166,9 @@ AI agents are proliferating, but there's no standard way to verify:
 | Verification | VerificationRegistry.sol (separate contract) |
 | Web3 | ethers.js 6.9.0 |
 | AI Brain | Venice AI (llama-3.3-70b) |
+| API Server | Python 3 + Flask (HTTPS via nginx + Let's Encrypt) |
 | Payments | Bankr Wallet API |
 | Identity | ENS Resolution |
-| Backend | Python 3 + Flask |
 | Frontend | HTML/CSS/JavaScript |
 
 ---
@@ -217,9 +234,12 @@ python3 marketplace_agent.py --demo
 ### Run the API Server
 ```bash
 cd agent
+pip install flask flask-cors python-dotenv requests
 python3 api.py
 # API available at http://localhost:5000
 ```
+
+> **Production**: The API runs as a systemd service with nginx reverse proxy and SSL via Let's Encrypt at `https://89-167-68-215.sslip.io`
 
 ---
 
@@ -258,8 +278,9 @@ alias-agent/
 | GET | `/stats` | Network stats |
 | GET | `/soul/<address>` | Check if address has a soul |
 | GET | `/ens/<name>` | Resolve ENS name and check soul |
-| POST | `/chat` | Chat with ALIAS via Venice AI |
-| GET | `/ask/<question>` | Quick question to ALIAS |
+| POST | `/chat` | Chat with ALIAS via Venice AI (rate limited) |
+| GET | `/ask/<question>` | Quick question to ALIAS (rate limited) |
+| POST | `/job/execute` | Execute a job via Venice AI + record on-chain |
 | GET | `/health` | Health check |
 
 ---
@@ -269,6 +290,7 @@ alias-agent/
 | Resource | URL |
 |----------|-----|
 | Live Demo | https://jess9400.github.io/alias-agent/ |
+| API Server | https://89-167-68-215.sslip.io |
 | ALIAS Contract | [BaseScan](https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874) |
 | Verification Registry | [BaseScan](https://basescan.org/address/0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715) |
 | GitHub | https://github.com/Jess9400/alias-agent |
