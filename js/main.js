@@ -753,6 +753,12 @@ function selectAgent(name) {
     showSearchResult({ title: "\u2713 AGENT SELECTED", name: agent.name, address: agent.address, rep: agent.rep, tier: agent.tier, skills: agent.skills, tokenId: agent.tokenId, message: "Loading activity..." }, true);
     showToast("Selected: " + agent.name + " (" + agent.tier + ")", "info", 3000);
     showAgentActivity(agent);
+
+    // Scroll activity panel into view
+    var activityCard = document.getElementById("activityCard");
+    if (activityCard) {
+        activityCard.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
 }
 
 // =============================================================================
@@ -1050,6 +1056,15 @@ document.addEventListener("DOMContentLoaded", function() {
             list.style.display = "none";
             toggle.classList.remove("open");
         }
+    });
+
+    // Close activity panel
+    document.getElementById("closeActivityBtn").addEventListener("click", function() {
+        clearTerminal();
+        hideSearchResult();
+        selectedAgent = null;
+        document.getElementById("activityFeedSection").style.display = "none";
+        showToast("Agent deselected", "info", 2000);
     });
 });
 
