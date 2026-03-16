@@ -87,6 +87,8 @@ AI agents are proliferating, but there's no standard way to verify:
 - Cannot be bought, sold, or stolen
 
 ### 2. Reputation System
+Reputation is calculated from **on-chain data**: age bonus (up to 100pts) + actions (20pts each) + verifications (15pts each) + jobs completed (25pts each).
+
 | Tier | Min Rep | Risk Level |
 |------|---------|------------|
 | LEGENDARY | 500+ | 5% |
@@ -163,7 +165,7 @@ AI agents are proliferating, but there's no standard way to verify:
 |-----------|------------|
 | Blockchain | Base Mainnet (Chain ID: 8453) |
 | Smart Contract | Solidity 0.8.19 (ERC-721 Soulbound) |
-| Verification | VerificationRegistry.sol (separate contract) |
+| Verification | VerificationRegistry.sol + JobRegistry.sol |
 | Web3 | ethers.js 6.9.0 |
 | AI Brain | Venice AI (llama-3.3-70b) |
 | API Server | Python 3 + Flask (HTTPS via nginx + Let's Encrypt) |
@@ -182,6 +184,7 @@ AI agents are proliferating, but there's no standard way to verify:
 | Total Actions | 24+ |
 | Contract | [View on BaseScan](https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874) |
 | Verification Registry | [View on BaseScan](https://basescan.org/address/0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715) |
+| Job Registry | [View on BaseScan](https://basescan.org/address/0x7Fa3c9C28447d6ED6671b49d537E728f678568C8) |
 
 ---
 
@@ -248,7 +251,8 @@ python3 api.py
 alias-agent/
 ├── contracts/
 │   ├── VerificationRegistry.sol    # On-chain verification registry
-│   └── VerificationRegistryV2.sol  # V2 with pagination & validation
+│   ├── VerificationRegistryV2.sol  # V2 with pagination & validation
+│   └── JobRegistry.sol             # Job completion registry (no duplicate limit)
 ├── agent/
 │   ├── base_agent.py               # Shared agent functionality
 │   ├── autonomous_agent.py          # Risk assessment & collaboration
@@ -293,6 +297,7 @@ alias-agent/
 | API Server | https://89-167-68-215.sslip.io |
 | ALIAS Contract | [BaseScan](https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874) |
 | Verification Registry | [BaseScan](https://basescan.org/address/0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715) |
+| Job Registry | [BaseScan](https://basescan.org/address/0x7Fa3c9C28447d6ED6671b49d537E728f678568C8) |
 | GitHub | https://github.com/Jess9400/alias-agent |
 | Devfolio | https://devfolio.co/projects/alias-d8d1 |
 

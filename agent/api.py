@@ -1,8 +1,15 @@
+import os
+import logging
+import requests as http_requests
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from functools import wraps
 from time import time as _time
+from web3 import Web3
+from eth_account import Account
 from alias import AliasSoulAgent
+
+logging.basicConfig(level=logging.INFO)
 
 # Simple in-memory rate limiter
 _rate_limits = {}
@@ -107,31 +114,38 @@ def execute_job():
             ],
             "max_tokens": 800
         }
-        r = __import__('requests').post(
+        r = http_requests.post(
             "https://api.venice.ai/api/v1/chat/completions",
             headers=headers, json=payload, timeout=60
         )
         r.raise_for_status()
         result = r.json()["choices"][0]["message"]["content"]
 
-        # Record verification on-chain via VerificationRegistry
+        # Record job completion on-chain via JobRegistry (allows multiple per agent)
         token_id = data.get('token_id')
-        tx_result = None
+        tx_hash = None
         if token_id:
             try:
-                import subprocess, os
-                verification_registry = "0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715"
+                job_registry = "0x7Fa3c9C28447d6ED6671b49d537E728f678568C8"
                 pk = os.getenv("PRIVATE_KEY")
+                w3 = Web3(Web3.HTTPProvider("https://mainnet.base.org"))
+                account = Account.from_key(pk)
+                job_abi = [{"inputs":[{"name":"tokenId","type":"uint256"},{"name":"escrowId","type":"string"},{"name":"message","type":"string"}],"name":"recordJob","outputs":[],"stateMutability":"nonpayable","type":"function"}]
+                contract = w3.eth.contract(address=Web3.to_checksum_address(job_registry), abi=job_abi)
                 msg = f"Job completed: {job_desc[:80]}"
-                r2 = subprocess.run([
-                    "cast", "send", "--rpc-url", "https://mainnet.base.org",
-                    "--private-key", pk,
-                    verification_registry,
-                    "verify(uint256,string)", str(token_id), msg
-                ], capture_output=True, text=True)
-                tx_result = "transactionHash" in r2.stdout if r2.returncode == 0 else False
-            except Exception:
-                pass
+                tx = contract.functions.recordJob(int(token_id), escrow_id, msg).build_transaction({
+                    "from": account.address,
+                    "nonce": w3.eth.get_transaction_count(account.address),
+                    "gas": 200000,
+                    "gasPrice": w3.eth.gas_price,
+                    "chainId": 8453
+                })
+                signed = account.sign_transaction(tx)
+                tx_receipt = w3.eth.send_raw_transaction(signed.raw_transaction)
+                tx_hash = tx_receipt.hex()
+                logging.info(f"Job recorded on-chain TX: {tx_hash}")
+            except Exception as e:
+                logging.error(f"On-chain job recording failed: {e}")
 
         return jsonify({
             "status": "completed",
@@ -141,9 +155,11 @@ def execute_job():
             "result": result,
             "provider": "venice",
             "model": "llama-3.3-70b",
-            "reputation_updated": tx_result is not None
+            "reputation_updated": tx_hash is not None,
+            "verification_tx": tx_hash
         })
     except Exception as e:
+        logging.error(f"Job execution failed: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/health')

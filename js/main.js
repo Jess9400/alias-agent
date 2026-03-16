@@ -26,7 +26,8 @@ const CONFIG = {
     BASESCAN_URL: "https://basescan.org",
     VERIFICATION_REGISTRY: "0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715",
     API_URL: "https://89-167-68-215.sslip.io",
-    PLATFORM_WALLET: "0x7F66dFcD8e9e4e7Ec435D0631C5d723fFaDdb211"
+    PLATFORM_WALLET: "0x7F66dFcD8e9e4e7Ec435D0631C5d723fFaDdb211",
+    JOB_REGISTRY: "0x7Fa3c9C28447d6ED6671b49d537E728f678568C8"
 };
 
 // Agent operator wallets (where tips/payments go) - keyed by token ID
@@ -106,6 +107,82 @@ function isValidENS(name) {
 }
 
 // =============================================================================
+// TOAST NOTIFICATIONS
+// =============================================================================
+
+function showToast(message, type, duration) {
+    type = type || 'info';
+    duration = duration || 5000;
+    var container = document.getElementById('toastContainer');
+    if (!container) return;
+
+    var toast = document.createElement('div');
+    toast.className = 'toast ' + type;
+
+    var msgSpan = document.createElement('span');
+    msgSpan.textContent = message;
+    toast.appendChild(msgSpan);
+
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'toast-close';
+    closeBtn.textContent = '\u00d7';
+    closeBtn.onclick = function() { removeToast(toast); };
+    toast.appendChild(closeBtn);
+
+    container.appendChild(toast);
+
+    var timer = setTimeout(function() { removeToast(toast); }, duration);
+    toast.onclick = function() { clearTimeout(timer); removeToast(toast); };
+}
+
+function removeToast(toast) {
+    if (!toast || !toast.parentNode) return;
+    toast.style.animation = 'toastOut 0.3s ease-in forwards';
+    setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
+}
+
+// Loading overlay for long-running jobs
+function showJobLoading(agentName) {
+    var existing = document.getElementById('jobLoadingOverlay');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.className = 'job-loading-overlay';
+    overlay.id = 'jobLoadingOverlay';
+
+    var box = document.createElement('div');
+    box.className = 'job-loading-box';
+
+    var spinner = document.createElement('div');
+    spinner.className = 'job-loading-spinner';
+    box.appendChild(spinner);
+
+    var text = document.createElement('div');
+    text.className = 'job-loading-text';
+    text.id = 'jobLoadingText';
+    text.textContent = agentName + ' is working on your job...';
+    box.appendChild(text);
+
+    var sub = document.createElement('div');
+    sub.className = 'job-loading-sub';
+    sub.textContent = 'AI processing via Venice - this may take 10-30 seconds';
+    box.appendChild(sub);
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+}
+
+function hideJobLoading() {
+    var overlay = document.getElementById('jobLoadingOverlay');
+    if (overlay) overlay.remove();
+}
+
+function updateJobLoadingText(text) {
+    var el = document.getElementById('jobLoadingText');
+    if (el) el.textContent = text;
+}
+
+// =============================================================================
 // AGENT REGISTRY
 // =============================================================================
 
@@ -142,6 +219,12 @@ const VERIFICATION_ABI = [
     "function isVerifiedBy(address verifier, uint256 tokenId) external view returns (bool)"
 ];
 
+const JOB_REGISTRY_ABI = [
+    "function recordJob(uint256 tokenId, string escrowId, string message) external",
+    "function getJobCount(uint256 tokenId) external view returns (uint256)",
+    "function getJobs(uint256 tokenId, uint256 offset, uint256 limit) external view returns (tuple(address recorder, uint256 timestamp, string escrowId, string message)[])"
+];
+
 
 async function loadAgentsFromChain() {
     var list = document.getElementById("agentList");
@@ -158,23 +241,45 @@ async function loadAgentsFromChain() {
         agents = [];
         var newSkills = [];
         
+        var verifyContract = new ethers.Contract(CONFIG.VERIFICATION_REGISTRY, VERIFICATION_ABI, provider);
+        var jobContract = new ethers.Contract(CONFIG.JOB_REGISTRY, JOB_REGISTRY_ABI, provider);
+
         for (var i = 1; i <= count; i++) {
             await new Promise(function(r) { setTimeout(r, 200); });
             try {
                 var soul = await contract.souls(i);
-                
+
                 if (soul.active) {
-                    // Parse skills from description
                     var skillsArray = extractSkills(soul.name, soul.skills);
-                    
-                    // Calculate rep based on age
+
+                    // Fetch on-chain activity data
+                    var actions = 0;
+                    var verifications = 0;
+                    var jobCount = 0;
+                    try {
+                        actions = Number(await contract.actionCount(i));
+                    } catch (e) {}
+                    try {
+                        verifications = Number(await verifyContract.getVerificationCount(i));
+                    } catch (e) {}
+                    try {
+                        jobCount = Number(await jobContract.getJobCount(i));
+                    } catch (e) {}
+
+                    // Calculate reputation: age + actions (20pts) + verifications (15pts) + jobs (25pts)
                     var age = Math.floor(Date.now() / 1000) - Number(soul.createdAt);
-                    var rep = Math.max(0, Math.min(Math.floor(age / 200), 300));
-                    
+                    var ageRep = Math.min(Math.floor(age / 600), 100);
+                    var actionRep = actions * 20;
+                    var verifyRep = verifications * 15;
+                    var jobRep = jobCount * 25;
+                    var rep = Math.max(0, ageRep + actionRep + verifyRep + jobRep);
+
                     var tier = "NEWCOMER";
-                    if (rep >= 200) tier = "ELITE";
+                    if (rep >= 500) tier = "LEGENDARY";
+                    else if (rep >= 200) tier = "ELITE";
+                    else if (rep >= 100) tier = "TRUSTED";
                     else if (rep >= 50) tier = "VERIFIED";
-                    
+
                     var addr = AGENT_WALLETS[i] || soul.creator;
                     agents.push({
                         name: soul.name,
@@ -185,9 +290,12 @@ async function loadAgentsFromChain() {
                         tier: tier,
                         tokenId: i,
                         active: soul.active,
-                        description: soul.skills
+                        description: soul.skills,
+                        actions: actions,
+                        verifications: verifications,
+                        jobCount: jobCount
                     });
-                    
+
                     // Collect skills
                     skillsArray.forEach(function(s) {
                         if (newSkills.indexOf(s) === -1) newSkills.push(s);
@@ -761,7 +869,7 @@ function connectWallet() {
                 typeInTerminal("[ERROR] Connection failed", "warning");
             });
     } else {
-        alert("Please install MetaMask to connect your wallet!");
+        showToast("Please install MetaMask to connect your wallet!", "error");
     }
 }
 
@@ -780,7 +888,7 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("connectBtn").addEventListener("click", connectWalletEnhanced);
     autoReconnectWallet();
     document.getElementById("searchBtn").addEventListener("click", searchAgent);
-    document.getElementById("verifyBtn").addEventListener("click", function() { if (selectedAgent) { signVerification(selectedAgent); } else { alert("Please select an agent first!"); } });
+    document.getElementById("verifyBtn").addEventListener("click", function() { if (selectedAgent) { signVerification(selectedAgent); } else { showToast("Please select an agent first!", "warning"); } });
     document.getElementById("chainBtn").addEventListener("click", runChainDemo);
     document.getElementById("demoBtn").addEventListener("click", runFullDemo);
     document.getElementById("jobsBtn").addEventListener("click", showJobHistory);
@@ -797,30 +905,44 @@ document.addEventListener("DOMContentLoaded", function() {
 function populateTrustNetwork() {
     var container = document.getElementById("trustNetwork");
     if (!container || agents.length === 0) return;
-    
-    // Sort agents by reputation (highest first) and take top 4
+
     var topAgents = agents.slice().sort(function(a, b) {
         return b.rep - a.rep;
     }).slice(0, 4);
-    
-    var html = '';
+
+    container.innerHTML = '';
     var arrows = ['verified', 'trusted', 'hired'];
-    
+
     topAgents.forEach(function(agent, index) {
-        var tierClass = escapeHtml(agent.tier.toLowerCase());
-        html += '<div class="network-node ' + tierClass + '">';
-        html += '<div class="node-name">' + escapeHtml(agent.name) + '</div>';
-        html += '<div class="node-rep">' + escapeHtml(String(agent.rep)) + '</div>';
-        html += '<div class="node-tier tier-' + tierClass + '">' + escapeHtml(agent.tier) + '</div>';
-        html += '</div>';
-        
-        // Add arrow between nodes (not after last one)
+        var tierClass = agent.tier.toLowerCase();
+        var node = document.createElement('div');
+        node.className = 'network-node ' + tierClass;
+
+        var nameDiv = document.createElement('div');
+        nameDiv.className = 'node-name';
+        nameDiv.textContent = agent.name;
+        node.appendChild(nameDiv);
+
+        var repDiv = document.createElement('div');
+        repDiv.className = 'node-rep';
+        repDiv.textContent = agent.rep;
+        node.appendChild(repDiv);
+
+        var tierDiv = document.createElement('div');
+        tierDiv.className = 'node-tier tier-' + tierClass;
+        tierDiv.textContent = agent.tier;
+        node.appendChild(tierDiv);
+
+        container.appendChild(node);
+
         if (index < topAgents.length - 1) {
-            html += '<div class="arrow"><svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>' + arrows[index % arrows.length] + '</div>';
+            var arrowDiv = document.createElement('div');
+            arrowDiv.className = 'arrow';
+            arrowDiv.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>';
+            arrowDiv.appendChild(document.createTextNode(arrows[index % arrows.length]));
+            container.appendChild(arrowDiv);
         }
     });
-    
-    container.innerHTML = html;
 }
 
 function populateSkillsWithSearch() {
@@ -890,7 +1012,7 @@ var showingMyAgents = false;
 // Store wallet on connect
 function connectWalletEnhanced() {
     if (typeof window.ethereum === "undefined") {
-        alert("Please install MetaMask to connect your wallet!");
+        showToast("Please install MetaMask to connect your wallet!", "error");
         return;
     }
 
@@ -1038,6 +1160,7 @@ function retryJob(escrowId) {
 
     typeInTerminal("[RETRY] Re-executing " + escrowId + "...", "warning");
     typeInTerminal("[WORK] " + escapeHtml(job.agent) + " is working on your job...", "warning");
+    showJobLoading(job.agent);
 
     fetch(CONFIG.API_URL + "/job/execute", {
         method: "POST",
@@ -1052,18 +1175,27 @@ function retryJob(escrowId) {
         })
     }).then(function(r) { return r.json(); })
     .then(function(result) {
+        hideJobLoading();
         if (result.status === "completed") {
             typeInTerminal("[WORK] ✓ Job completed by " + escapeHtml(job.agent) + "!", "success");
             typeInTerminal("[RESULT] " + escapeHtml(result.result), "system");
+            if (result.verification_tx) {
+                typeInTerminal("[CHAIN] Verification TX: " + result.verification_tx, "success");
+                job.verificationTx = result.verification_tx;
+            }
             job.status = "COMPLETED";
             job.result = result.result;
             saveJob(escrowId, job);
             showJobHistory();
+            showToast("Job completed by " + job.agent + "!", "success");
         } else {
             typeInTerminal("[ERROR] " + escapeHtml(result.error || "Unknown error"), "warning");
+            showToast("Job retry failed: " + (result.error || "Unknown error"), "error");
         }
     }).catch(function(err) {
+        hideJobLoading();
         typeInTerminal("[ERROR] Could not reach AI service: " + err.message, "warning");
+        showToast("Could not reach AI service", "error");
     });
 }
 
@@ -1175,6 +1307,24 @@ function showJobHistory() {
             details.appendChild(txDiv);
         }
 
+        // Verification TX link
+        if (j.verificationTx) {
+            var verifyTxDiv = document.createElement('div');
+            verifyTxDiv.style.cssText = 'margin-bottom:8px;font-size:0.9em';
+            var verifyLabel = document.createElement('span');
+            verifyLabel.style.cssText = 'color:var(--success);font-weight:bold;margin-right:5px';
+            verifyLabel.textContent = 'On-chain verification:';
+            verifyTxDiv.appendChild(verifyLabel);
+            var verifyLink = document.createElement('a');
+            verifyLink.href = 'https://basescan.org/tx/' + j.verificationTx;
+            verifyLink.target = '_blank';
+            verifyLink.rel = 'noopener noreferrer';
+            verifyLink.style.cssText = 'color:var(--primary);text-decoration:none';
+            verifyLink.textContent = j.verificationTx.slice(0, 18) + '...';
+            verifyTxDiv.appendChild(verifyLink);
+            details.appendChild(verifyTxDiv);
+        }
+
         // Result
         if (j.result) {
             var resultLabel = document.createElement('div');
@@ -1214,7 +1364,7 @@ function showJobHistory() {
 // Toggle My Agents filter
 function toggleMyAgents() {
     if (!connectedWallet) {
-        alert("Please connect your wallet first!");
+        showToast("Please connect your wallet first!", "warning");
         return;
     }
     
@@ -1246,7 +1396,17 @@ function filterMyAgents() {
     typeInTerminal("[FILTER] Found " + myAgents.length + " agent(s) created by you", myAgents.length > 0 ? "success" : "warning");
     
     if (myAgents.length === 0) {
-        list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-dim);">You don\'t own any agents yet.<br><br><button onclick="openMintModal()" style="background:var(--secondary);color:#000;border:none;padding:10px 20px;border-radius:10px;cursor:pointer;">Mint Your First Soul</button></div>';
+        var emptyDiv = document.createElement('div');
+        emptyDiv.style.cssText = 'text-align:center;padding:30px;color:var(--text-dim);';
+        emptyDiv.textContent = "You don't own any agents yet.";
+        emptyDiv.appendChild(document.createElement('br'));
+        emptyDiv.appendChild(document.createElement('br'));
+        var mintBtn = document.createElement('button');
+        mintBtn.style.cssText = 'background:var(--secondary);color:#000;border:none;padding:10px 20px;border-radius:10px;cursor:pointer;';
+        mintBtn.textContent = 'Mint Your First Soul';
+        mintBtn.onclick = function() { openMintModal(); };
+        emptyDiv.appendChild(mintBtn);
+        list.appendChild(emptyDiv);
         return;
     }
     
@@ -1305,7 +1465,7 @@ function filterMyAgents() {
 // Mint Modal Functions
 function openMintModal() {
     if (!connectedWallet) {
-        alert("Please connect your wallet first!");
+        showToast("Please connect your wallet first!", "warning");
         return;
     }
     document.getElementById("mintModal").style.display = "flex";
@@ -1373,12 +1533,12 @@ async function mintSoul() {
 // Verification signing (off-chain)
 async function signVerification(agent) {
     if (!connectedWallet) {
-        alert("Please connect your wallet first!");
+        showToast("Please connect your wallet first!", "warning");
         return;
     }
-    
+
     if (!agent || !agent.tokenId) {
-        alert("No agent selected!");
+        showToast("No agent selected!", "warning");
         return;
     }
     
@@ -1402,15 +1562,16 @@ async function signVerification(agent) {
         typeInTerminal("[CHAIN] ✓ Verification recorded on-chain!", "success");
         typeInTerminal("[TX] " + tx.hash, "system");
         
-        alert("On-chain verification complete!\n\nAgent: " + agent.name + "\nToken: #" + agent.tokenId + "\nMessage: " + message + "\nTX: " + tx.hash.slice(0, 20) + "...");
-        
+        showToast("Verification recorded on-chain for " + agent.name + "!", "success", 7000);
+
     } catch (error) {
         console.error("Verification error:", error);
         if (error.message && error.message.includes("Already verified")) {
             typeInTerminal("[INFO] You have already verified this agent", "warning");
-            alert("You have already verified this agent!");
+            showToast("You have already verified this agent!", "warning");
         } else {
             typeInTerminal("[ERROR] Verification failed: " + (error.reason || error.message || "Unknown"), "warning");
+            showToast("Verification failed: " + (error.reason || error.message || "Unknown"), "error");
         }
     }
 }
@@ -1437,12 +1598,12 @@ var activeEscrows = {};
 
 async function tipAgent(agent, amount) {
     if (!connectedWallet) {
-        alert("Please connect your wallet first!");
+        showToast("Please connect your wallet first!", "warning");
         return;
     }
-    
+
     if (!agent || !agent.fullAddress) {
-        alert("No agent selected!");
+        showToast("No agent selected!", "warning");
         return;
     }
     
@@ -1466,8 +1627,8 @@ async function tipAgent(agent, amount) {
         
         typeInTerminal("[BANKR] ✓ Sent " + tipAmount + " ETH to " + agent.name, "success");
         typeInTerminal("[TX] " + tx.hash, "system");
-        
-        alert("Successfully tipped " + tipAmount + " ETH to " + agent.name + "!");
+
+        showToast("Tipped " + tipAmount + " ETH to " + agent.name + "!", "success", 7000);
         
     } catch (error) {
         console.error("Tip error:", error);
@@ -1477,12 +1638,12 @@ async function tipAgent(agent, amount) {
 
 async function hireAgent(agent) {
     if (!connectedWallet) {
-        alert("Please connect your wallet first!");
+        showToast("Please connect your wallet first!", "warning");
         return;
     }
 
     if (!agent || !agent.fullAddress) {
-        alert("No agent selected!");
+        showToast("No agent selected!", "warning");
         return;
     }
 
@@ -1587,7 +1748,8 @@ async function hireAgent(agent) {
         typeInTerminal("[HIRE] " + escapeHtml(agent.name) + " hired successfully!", "success");
         typeInTerminal("[TX] " + tx.hash, "system");
 
-        // Execute job via Venice AI
+        // Execute job via Venice AI with loading spinner
+        showJobLoading(agent.name);
         typeInTerminal("[WORK] " + escapeHtml(agent.name) + " is working on your job...", "warning");
         try {
             var jobResponse = await fetch(CONFIG.API_URL + "/job/execute", {
@@ -1603,29 +1765,30 @@ async function hireAgent(agent) {
                 })
             });
             var jobResult = await jobResponse.json();
+            hideJobLoading();
             if (jobResult.status === "completed") {
                 typeInTerminal("[WORK] ✓ Job completed by " + escapeHtml(agent.name) + "!", "success");
                 typeInTerminal("[RESULT] " + escapeHtml(jobResult.result), "system");
+                if (jobResult.verification_tx) {
+                    typeInTerminal("[CHAIN] Verification TX: " + jobResult.verification_tx, "success");
+                    typeInTerminal("[LINK] https://basescan.org/tx/" + jobResult.verification_tx, "system");
+                    jobData.verificationTx = jobResult.verification_tx;
+                }
                 jobData.status = "COMPLETED";
                 jobData.result = jobResult.result;
                 saveJob(escrowId, jobData);
+                showToast("Job completed by " + agent.name + "! Check terminal for results.", "success", 8000);
             } else {
                 typeInTerminal("[WORK] Job error: " + escapeHtml(jobResult.error || "unknown"), "warning");
                 typeInTerminal("[INFO] Job saved. Use Jobs button to retry later.", "system");
+                showToast("Job error - saved for retry. Use Jobs button.", "warning");
             }
         } catch (aiError) {
+            hideJobLoading();
             typeInTerminal("[WORK] Could not reach AI service", "warning");
             typeInTerminal("[INFO] Job saved. Use Jobs button to retry later.", "system");
+            showToast("Could not reach AI service. Job saved for retry.", "error");
         }
-
-        alert(
-            "✅ Successfully hired " + agent.name + "!\n\n" +
-            "Job: " + jobDesc + "\n" +
-            "Budget: " + budget + " ETH\n" +
-            "Agent Payment: " + agentPayment.toFixed(6) + " ETH\n" +
-            "Escrow ID: " + escrowId + "\n" +
-            "Status: " + (jobData.status === "COMPLETED" ? "Job completed! Check terminal for results." : "Job saved — use Jobs button to retry.")
-        );
 
     } catch (error) {
         console.error("Hire error:", error);
@@ -1750,11 +1913,11 @@ async function fetchAgentActivity(agent) {
 
 async function showAgentActivity(agent) {
     if (!agent) return;
-    
+
     typeInTerminal("[ACTIVITY] Fetching on-chain data for " + agent.name + "...", "system");
-    
+
     var actionCount = await fetchAgentActivity(agent);
-    
+
     // Fetch verification count from new registry
     var verifyCount = 0;
     try {
@@ -1764,9 +1927,10 @@ async function showAgentActivity(agent) {
     } catch (e) {
         console.log("Could not fetch verifications:", e);
     }
-    
+
     typeInTerminal("[CHAIN] Token #" + agent.tokenId, "success");
     typeInTerminal("[CHAIN] Reputation: " + agent.rep + " (" + agent.tier + ")", "success");
+    typeInTerminal("[REP] Breakdown: actions(" + (agent.actions || 0) + "x20) + verifications(" + (agent.verifications || 0) + "x15) + jobs(" + (agent.jobCount || 0) + "x25) + age", "system");
     typeInTerminal("[CHAIN] On-chain verifications: " + verifyCount, verifyCount > 0 ? "success" : "system");
     typeInTerminal("[CHAIN] Creator: " + agent.fullAddress.slice(0,10) + "...", "system");
     
