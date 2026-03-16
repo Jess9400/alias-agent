@@ -42,6 +42,24 @@ NETWORK_AGENTS = {
         "token_id": 7,
         "skills": ["research", "due-diligence", "report-writing"],
         "hourly_rate": 0.0004
+    },
+    "TraderBot": {
+        "address": "0x9a60871B684e23D1C05ba9127AA7E72eA0a38DFb",
+        "token_id": 9,
+        "skills": ["trading", "market-analysis", "portfolio"],
+        "hourly_rate": 0.0005
+    },
+    "LegalMind": {
+        "address": "0xB44618a6E386FE847B5dfcbA111A6C8aD2B97f23",
+        "token_id": 10,
+        "skills": ["legal-research", "compliance", "contract-review"],
+        "hourly_rate": 0.0004
+    },
+    "DevAgent": {
+        "address": "0x9C8d1e413e71a02C2Ad0970AAcAe0Ae786e0F883",
+        "token_id": 11,
+        "skills": ["coding", "debugging", "code-review"],
+        "hourly_rate": 0.0003
     }
 }
 
