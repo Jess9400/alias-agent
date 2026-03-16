@@ -25,7 +25,7 @@ const CONFIG = {
     ENS_API: "https://api.ensdata.net",
     BASESCAN_URL: "https://basescan.org",
     VERIFICATION_REGISTRY: "0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715",
-    API_URL: "http://89.167.68.215:5000"
+    API_URL: "https://89-167-68-215.sslip.io"
 };
 
 // Agent operator wallets (where tips/payments go) - keyed by token ID
