@@ -1100,7 +1100,7 @@ function connectWalletEnhanced() {
 
     if (wallets.length === 1) {
         // Only one wallet - connect directly
-        connectWithProvider(wallets[0].provider);
+        connectWithProvider(wallets[0].provider, wallets[0].info.rdns);
     } else {
         // Multiple wallets - show picker
         showWalletPicker(wallets);
@@ -1144,7 +1144,7 @@ function showWalletPicker(wallets) {
 
         btn.onclick = function() {
             overlay.remove();
-            connectWithProvider(w.provider);
+            connectWithProvider(w.provider, w.info.rdns);
         };
         box.appendChild(btn);
     });
@@ -1162,42 +1162,51 @@ function showWalletPicker(wallets) {
 }
 
 // Connect using a specific provider
-function connectWithProvider(rawProvider) {
+function connectWithProvider(rawProvider, walletRdns) {
     setActiveProvider(rawProvider);
     var provider = getWalletProvider();
+    var isMetaMask = walletRdns === "io.metamask" || rawProvider.isMetaMask;
 
     localStorage.removeItem("alias_disconnected");
 
-    // Use wallet_requestPermissions to force account picker (allows switching accounts)
-    provider.request({
-        method: "wallet_requestPermissions",
-        params: [{ eth_accounts: {} }]
-    }).then(function(permissions) {
-        // Extract selected account from permissions caveats
-        var account = null;
-        if (permissions && permissions.length > 0) {
-            for (var i = 0; i < permissions.length; i++) {
-                var perm = permissions[i];
-                if (perm.caveats && perm.caveats.length > 0) {
-                    for (var j = 0; j < perm.caveats.length; j++) {
-                        var caveat = perm.caveats[j];
-                        if (caveat.value && caveat.value.length > 0) {
-                            account = caveat.value[0];
-                            break;
+    // MetaMask: use wallet_requestPermissions to force account picker
+    // Other wallets: use standard eth_requestAccounts
+    var accountPromise;
+    if (isMetaMask) {
+        accountPromise = provider.request({
+            method: "wallet_requestPermissions",
+            params: [{ eth_accounts: {} }]
+        }).then(function(permissions) {
+            var account = null;
+            if (permissions && permissions.length > 0) {
+                for (var i = 0; i < permissions.length; i++) {
+                    var perm = permissions[i];
+                    if (perm.caveats && perm.caveats.length > 0) {
+                        for (var j = 0; j < perm.caveats.length; j++) {
+                            var caveat = perm.caveats[j];
+                            if (caveat.value && caveat.value.length > 0) {
+                                account = caveat.value[0];
+                                break;
+                            }
                         }
                     }
+                    if (account) break;
                 }
-                if (account) break;
             }
-        }
-        // Fallback to eth_accounts if caveat extraction failed
-        if (!account) {
-            return provider.request({ method: "eth_accounts" }).then(function(accounts) {
-                return accounts && accounts.length > 0 ? accounts[0] : null;
-            });
-        }
-        return account;
-    }).then(function(account) {
+            if (!account) {
+                return provider.request({ method: "eth_accounts" }).then(function(accts) {
+                    return accts && accts.length > 0 ? accts[0] : null;
+                });
+            }
+            return account;
+        });
+    } else {
+        accountPromise = provider.request({ method: "eth_requestAccounts" }).then(function(accounts) {
+            return accounts && accounts.length > 0 ? accounts[0] : null;
+        });
+    }
+
+    accountPromise.then(function(account) {
         if (account) {
             setConnectedWallet(account);
             // Switch to Base
