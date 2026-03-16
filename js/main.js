@@ -770,6 +770,7 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("verifyBtn").addEventListener("click", function() { if (selectedAgent) { signVerification(selectedAgent); } else { alert("Please select an agent first!"); } });
     document.getElementById("chainBtn").addEventListener("click", runChainDemo);
     document.getElementById("demoBtn").addEventListener("click", runFullDemo);
+    document.getElementById("jobsBtn").addEventListener("click", showJobHistory);
     
     document.getElementById("searchInput").addEventListener("keypress", function(e) {
         if (e.key === "Enter") searchAgent();
@@ -914,11 +915,15 @@ function connectWalletEnhanced() {
 
 function setConnectedWallet(account) {
     connectedWallet = account.toLowerCase();
+    localStorage.setItem("alias_wallet", connectedWallet);
     var btn = document.getElementById("connectBtn");
     btn.textContent = connectedWallet.slice(0, 6) + "..." + connectedWallet.slice(-4) + " ✕";
     btn.title = "Click to disconnect";
     typeInTerminal("[WALLET] Connected: " + connectedWallet, "success");
     typeInTerminal("[NETWORK] Base Mainnet (Chain 8453)", "system");
+
+    // Load saved jobs
+    loadJobHistory();
 
     var myCount = agents.filter(function(a) {
         return a.fullAddress && a.fullAddress.toLowerCase() === connectedWallet;
@@ -930,12 +935,12 @@ function setConnectedWallet(account) {
 
 function disconnectWallet() {
     connectedWallet = null;
+    localStorage.removeItem("alias_wallet");
     var btn = document.getElementById("connectBtn");
     btn.textContent = "Connect Wallet";
     btn.title = "";
     typeInTerminal("[WALLET] Disconnected", "system");
 
-    // Reset My Agents filter if active
     if (showingMyAgents) {
         showingMyAgents = false;
         var myBtn = document.getElementById("myAgentsBtn");
@@ -950,26 +955,124 @@ function disconnectWallet() {
 
 // Auto-reconnect on page load if MetaMask is already connected
 function autoReconnectWallet() {
-    if (typeof window.ethereum !== "undefined") {
-        window.ethereum.request({ method: "eth_accounts" })
-            .then(function(accounts) {
-                if (accounts.length > 0) {
-                    setConnectedWallet(accounts[0]);
-                }
-            }).catch(function() {});
+    if (typeof window.ethereum === "undefined") return;
 
-        // Listen for account/chain changes
-        window.ethereum.on("accountsChanged", function(accounts) {
-            if (accounts.length === 0) {
-                disconnectWallet();
-            } else {
+    // Try eth_accounts first, then fall back to localStorage
+    window.ethereum.request({ method: "eth_accounts" })
+        .then(function(accounts) {
+            if (accounts.length > 0) {
                 setConnectedWallet(accounts[0]);
+            } else {
+                // MetaMask didn't return accounts, try requesting if previously connected
+                var saved = localStorage.getItem("alias_wallet");
+                if (saved) {
+                    window.ethereum.request({ method: "eth_requestAccounts" })
+                        .then(function(accs) {
+                            if (accs.length > 0) setConnectedWallet(accs[0]);
+                        }).catch(function() {
+                            localStorage.removeItem("alias_wallet");
+                        });
+                }
             }
-        });
-        window.ethereum.on("chainChanged", function() {
-            window.location.reload();
-        });
+        }).catch(function() {});
+
+    window.ethereum.on("accountsChanged", function(accounts) {
+        if (accounts.length === 0) {
+            disconnectWallet();
+        } else {
+            setConnectedWallet(accounts[0]);
+        }
+    });
+    window.ethereum.on("chainChanged", function() {
+        window.location.reload();
+    });
+}
+
+// =============================================================================
+// JOB HISTORY - Persistent via localStorage
+// =============================================================================
+
+function saveJob(escrowId, jobData) {
+    var jobs = JSON.parse(localStorage.getItem("alias_jobs") || "{}");
+    jobs[escrowId] = jobData;
+    localStorage.setItem("alias_jobs", JSON.stringify(jobs));
+}
+
+function getJobHistory() {
+    return JSON.parse(localStorage.getItem("alias_jobs") || "{}");
+}
+
+function loadJobHistory() {
+    var jobs = getJobHistory();
+    var keys = Object.keys(jobs);
+    if (keys.length > 0) {
+        typeInTerminal("[JOBS] " + keys.length + " previous job(s) found", "system");
     }
+}
+
+function retryJob(escrowId) {
+    var jobs = getJobHistory();
+    var job = jobs[escrowId];
+    if (!job) {
+        typeInTerminal("[ERROR] Job " + escrowId + " not found", "warning");
+        return;
+    }
+
+    typeInTerminal("[RETRY] Re-executing " + escrowId + "...", "warning");
+    typeInTerminal("[WORK] " + escapeHtml(job.agent) + " is working on your job...", "warning");
+
+    fetch(CONFIG.API_URL + "/job/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            agent_name: job.agent,
+            skills: job.skills || [],
+            tier: job.tier || "VERIFIED",
+            job: job.job,
+            escrow_id: escrowId
+        })
+    }).then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.status === "completed") {
+            typeInTerminal("[WORK] ✓ Job completed by " + escapeHtml(job.agent) + "!", "success");
+            typeInTerminal("[RESULT] " + escapeHtml(result.result), "system");
+            job.status = "COMPLETED";
+            job.result = result.result;
+            saveJob(escrowId, job);
+        } else {
+            typeInTerminal("[ERROR] " + escapeHtml(result.error || "Unknown error"), "warning");
+        }
+    }).catch(function(err) {
+        typeInTerminal("[ERROR] Could not reach AI service: " + err.message, "warning");
+    });
+}
+
+function showJobHistory() {
+    var jobs = getJobHistory();
+    var keys = Object.keys(jobs);
+    if (keys.length === 0) {
+        typeInTerminal("[JOBS] No jobs yet. Hire an agent to get started!", "system");
+        return;
+    }
+
+    typeInTerminal("", "system");
+    typeInTerminal("═══════════ JOB HISTORY ═══════════", "system");
+    keys.reverse().forEach(function(id) {
+        var j = jobs[id];
+        var status = j.status === "COMPLETED" ? "✓ COMPLETED" : "⏳ PENDING";
+        typeInTerminal("[" + status + "] " + id, j.status === "COMPLETED" ? "success" : "warning");
+        typeInTerminal("  Agent: " + escapeHtml(j.agent) + " | Job: " + escapeHtml((j.job || "").slice(0, 60)), "system");
+        if (j.result) {
+            typeInTerminal("  Result: " + escapeHtml(j.result.slice(0, 150)) + "...", "system");
+        }
+        if (j.txHash) {
+            typeInTerminal("  TX: " + j.txHash, "system");
+        }
+        if (j.status !== "COMPLETED") {
+            typeInTerminal("  → Type /retry " + id + " or click Hire again to retry", "warning");
+        }
+    });
+    typeInTerminal("═══════════════════════════════════", "system");
 }
 
 // Toggle My Agents filter
@@ -1314,17 +1417,20 @@ async function hireAgent(agent) {
         var receipt = await tx.wait();
 
         var escrowId = "ESC-" + Date.now();
-        activeEscrows[escrowId] = {
+        var jobData = {
             agent: agent.name,
             agentAddress: agent.fullAddress,
+            skills: agent.skills,
+            tier: agent.tier,
             job: jobDesc,
             budget: budget,
             rate: rate,
-            skillMatch: skillMatch,
             status: "PAID",
             txHash: tx.hash,
             timestamp: new Date().toISOString()
         };
+        activeEscrows[escrowId] = jobData;
+        saveJob(escrowId, jobData);
 
         typeInTerminal("[ESCROW] ✓ Job funded! ID: " + escrowId, "success");
         typeInTerminal("[HIRE] " + escapeHtml(agent.name) + " hired successfully!", "success");
@@ -1348,13 +1454,16 @@ async function hireAgent(agent) {
             if (jobResult.status === "completed") {
                 typeInTerminal("[WORK] ✓ Job completed by " + escapeHtml(agent.name) + "!", "success");
                 typeInTerminal("[RESULT] " + escapeHtml(jobResult.result), "system");
-                activeEscrows[escrowId].status = "COMPLETED";
-                activeEscrows[escrowId].result = jobResult.result;
+                jobData.status = "COMPLETED";
+                jobData.result = jobResult.result;
+                saveJob(escrowId, jobData);
             } else {
-                typeInTerminal("[WORK] Job execution error: " + escapeHtml(jobResult.error || "unknown"), "warning");
+                typeInTerminal("[WORK] Job error: " + escapeHtml(jobResult.error || "unknown"), "warning");
+                typeInTerminal("[INFO] Job saved. Use Jobs button to retry later.", "system");
             }
         } catch (aiError) {
-            typeInTerminal("[WORK] Could not reach AI service - job queued for later", "warning");
+            typeInTerminal("[WORK] Could not reach AI service", "warning");
+            typeInTerminal("[INFO] Job saved. Use Jobs button to retry later.", "system");
         }
 
         alert(
@@ -1363,7 +1472,7 @@ async function hireAgent(agent) {
             "Budget: " + budget + " ETH\n" +
             "Agent Payment: " + agentPayment.toFixed(6) + " ETH\n" +
             "Escrow ID: " + escrowId + "\n" +
-            "Status: " + (activeEscrows[escrowId].status === "COMPLETED" ? "Job completed! Check terminal for results." : "Job in progress...")
+            "Status: " + (jobData.status === "COMPLETED" ? "Job completed! Check terminal for results." : "Job saved — use Jobs button to retry.")
         );
 
     } catch (error) {
