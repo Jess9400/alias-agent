@@ -27,6 +27,21 @@ const CONFIG = {
     VERIFICATION_REGISTRY: "0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715"
 };
 
+// Agent operator wallets (where tips/payments go) - keyed by token ID
+const AGENT_WALLETS = {
+    1: "0x6FFa1e00509d8B625c2F061D7dB07893B37199BC",
+    2: "0x07a0afcb49a764007439671Ec5148947EfC62E39",
+    3: "0x9a60871B684e23D1C05ba9127AA7E72eA0a38DFb",
+    4: "0xB44618a6E386FE847B5dfcbA111A6C8aD2B97f23",
+    5: "0x9C8d1e413e71a02C2Ad0970AAcAe0Ae786e0F883",
+    6: "0x5870d20af5d0d8F3010A3804819e9036a6032301",
+    7: "0x9a60871B684e23D1C05ba9127AA7E72eA0a38DFb",
+    8: "0xB44618a6E386FE847B5dfcbA111A6C8aD2B97f23",
+    9: "0x9C8d1e413e71a02C2Ad0970AAcAe0Ae786e0F883",
+    10: "0x5870d20af5d0d8F3010A3804819e9036a6032301",
+    11: "0x07a0afcb49a764007439671Ec5148947EfC62E39"
+};
+
 const SELECTORS = {
     hasSoul: "0xbdd75202",
     agentToSoul: "0xf7c3328c",
@@ -143,7 +158,7 @@ async function loadAgentsFromChain() {
                     if (rep >= 200) tier = "ELITE";
                     else if (rep >= 50) tier = "VERIFIED";
                     
-                    var addr = soul.creator;
+                    var addr = AGENT_WALLETS[i] || soul.creator;
                     agents.push({
                         name: soul.name,
                         address: addr.slice(0, 6) + "..." + addr.slice(-3),
