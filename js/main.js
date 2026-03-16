@@ -563,10 +563,22 @@ function searchSkill(skill) {
         box.style.background = "rgba(0,255,136,0.1)";
         box.innerHTML = '';
         
+        var headerDiv = document.createElement('div');
+        headerDiv.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:10px';
+
         var titleDiv = document.createElement('div');
-        titleDiv.style.cssText = 'color:var(--success);font-size:1.2rem;margin-bottom:10px';
+        titleDiv.style.cssText = 'color:var(--success);font-size:1.2rem';
         titleDiv.textContent = '✓ ' + matches.length + ' AGENT(S) WITH SKILL: ' + sanitizedSkill;
-        box.appendChild(titleDiv);
+        headerDiv.appendChild(titleDiv);
+
+        var closeBtn = document.createElement('button');
+        closeBtn.style.cssText = 'background:none;border:1px solid var(--text-dim);color:var(--text);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;';
+        closeBtn.textContent = '✕';
+        closeBtn.title = 'Close';
+        closeBtn.onclick = function() { box.style.display = 'none'; box.innerHTML = ''; };
+        headerDiv.appendChild(closeBtn);
+
+        box.appendChild(headerDiv);
         
         matches.forEach(function(agent) {
             var agentDiv = document.createElement('div');
@@ -1040,6 +1052,7 @@ function retryJob(escrowId) {
             job.status = "COMPLETED";
             job.result = result.result;
             saveJob(escrowId, job);
+            showJobHistory();
         } else {
             typeInTerminal("[ERROR] " + escapeHtml(result.error || "Unknown error"), "warning");
         }
@@ -1051,29 +1064,99 @@ function retryJob(escrowId) {
 function showJobHistory() {
     var jobs = getJobHistory();
     var keys = Object.keys(jobs);
+
+    // Show in the search result box
+    var box = document.getElementById("searchResult");
+    box.style.display = "block";
+    box.style.borderColor = "var(--primary)";
+    box.style.background = "rgba(0,212,255,0.05)";
+    box.innerHTML = '';
+
+    // Header with close button
+    var headerDiv = document.createElement('div');
+    headerDiv.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:15px';
+
+    var titleDiv = document.createElement('div');
+    titleDiv.style.cssText = 'color:var(--primary);font-size:1.3rem;font-weight:bold';
+    titleDiv.textContent = 'JOB HISTORY (' + keys.length + ')';
+    headerDiv.appendChild(titleDiv);
+
+    var closeBtn = document.createElement('button');
+    closeBtn.style.cssText = 'background:none;border:1px solid var(--text-dim);color:var(--text);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;';
+    closeBtn.textContent = '✕';
+    closeBtn.onclick = function() { box.style.display = 'none'; box.innerHTML = ''; };
+    headerDiv.appendChild(closeBtn);
+    box.appendChild(headerDiv);
+
     if (keys.length === 0) {
-        typeInTerminal("[JOBS] No jobs yet. Hire an agent to get started!", "system");
+        var emptyDiv = document.createElement('div');
+        emptyDiv.style.cssText = 'color:var(--text-dim);padding:20px;text-align:center';
+        emptyDiv.textContent = 'No jobs yet. Hire an agent to get started!';
+        box.appendChild(emptyDiv);
         return;
     }
 
-    typeInTerminal("", "system");
-    typeInTerminal("═══════════ JOB HISTORY ═══════════", "system");
     keys.reverse().forEach(function(id) {
         var j = jobs[id];
-        var status = j.status === "COMPLETED" ? "✓ COMPLETED" : "⏳ PENDING";
-        typeInTerminal("[" + status + "] " + id, j.status === "COMPLETED" ? "success" : "warning");
-        typeInTerminal("  Agent: " + escapeHtml(j.agent) + " | Job: " + escapeHtml((j.job || "").slice(0, 60)), "system");
+        var isCompleted = j.status === "COMPLETED";
+
+        var jobCard = document.createElement('div');
+        jobCard.style.cssText = 'padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;margin-bottom:10px;border-left:3px solid ' + (isCompleted ? 'var(--success)' : 'var(--warning)');
+
+        // Status + ID row
+        var statusRow = document.createElement('div');
+        statusRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:6px';
+        var statusSpan = document.createElement('span');
+        statusSpan.style.cssText = 'font-weight:bold;color:' + (isCompleted ? 'var(--success)' : 'var(--warning)');
+        statusSpan.textContent = (isCompleted ? '✓ COMPLETED' : '⏳ PENDING');
+        statusRow.appendChild(statusSpan);
+        var idSpan = document.createElement('span');
+        idSpan.style.cssText = 'color:var(--text-dim);font-size:0.85em;font-family:monospace';
+        idSpan.textContent = id;
+        statusRow.appendChild(idSpan);
+        jobCard.appendChild(statusRow);
+
+        // Agent + Job
+        var infoDiv = document.createElement('div');
+        infoDiv.style.cssText = 'margin-bottom:6px';
+        infoDiv.textContent = escapeHtml(j.agent) + ' — ' + escapeHtml((j.job || '').slice(0, 80));
+        jobCard.appendChild(infoDiv);
+
+        // Budget + TX
+        if (j.budget) {
+            var budgetDiv = document.createElement('div');
+            budgetDiv.style.cssText = 'color:var(--text-dim);font-size:0.85em;margin-bottom:6px';
+            budgetDiv.textContent = 'Budget: ' + j.budget + ' ETH';
+            if (j.txHash) {
+                var txLink = document.createElement('a');
+                txLink.href = 'https://basescan.org/tx/' + j.txHash;
+                txLink.target = '_blank';
+                txLink.style.cssText = 'color:var(--primary);margin-left:10px;text-decoration:none';
+                txLink.textContent = 'View TX ↗';
+                budgetDiv.appendChild(txLink);
+            }
+            jobCard.appendChild(budgetDiv);
+        }
+
+        // Result
         if (j.result) {
-            typeInTerminal("  Result: " + escapeHtml(j.result.slice(0, 150)) + "...", "system");
+            var resultDiv = document.createElement('div');
+            resultDiv.style.cssText = 'background:rgba(0,0,0,0.3);padding:10px;border-radius:6px;font-size:0.9em;line-height:1.5;max-height:200px;overflow-y:auto;white-space:pre-wrap;margin-bottom:6px';
+            resultDiv.textContent = j.result;
+            jobCard.appendChild(resultDiv);
         }
-        if (j.txHash) {
-            typeInTerminal("  TX: " + j.txHash, "system");
+
+        // Retry button for pending jobs
+        if (!isCompleted) {
+            var retryBtn = document.createElement('button');
+            retryBtn.style.cssText = 'background:var(--warning);color:#000;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-weight:bold;font-size:0.85em;margin-top:4px';
+            retryBtn.textContent = 'Retry Job';
+            retryBtn.onclick = function() { retryJob(id); };
+            jobCard.appendChild(retryBtn);
         }
-        if (j.status !== "COMPLETED") {
-            typeInTerminal("  → Type /retry " + id + " or click Hire again to retry", "warning");
-        }
+
+        box.appendChild(jobCard);
     });
-    typeInTerminal("═══════════════════════════════════", "system");
 }
 
 // Toggle My Agents filter
