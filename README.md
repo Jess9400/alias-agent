@@ -12,11 +12,12 @@
 <p align="center">
   <a href="https://jess9400.github.io/alias-agent/">Live Demo</a> |
   <a href="https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874">Contract</a> |
-  <a href="https://devfolio.co/projects/alias-d8d1">Devfolio</a>
+  <a href="https://github.com/Jess9400/alias-agent">GitHub</a>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Base-Mainnet-blue" alt="Base Mainnet" />
+  <img src="https://img.shields.io/badge/ERC--8004-Agent_Identity-purple" alt="ERC-8004" />
   <img src="https://img.shields.io/badge/Solidity-0.8.19-orange" alt="Solidity" />
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
 </p>
@@ -408,7 +409,7 @@ alias-agent/
 | Verification Registry | [BaseScan](https://basescan.org/address/0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715) |
 | Job Registry | [BaseScan](https://basescan.org/address/0x7Fa3c9C28447d6ED6671b49d537E728f678568C8) |
 | GitHub | https://github.com/Jess9400/alias-agent |
-| Devfolio | https://devfolio.co/projects/alias-d8d1 |
+| ERC-8004 Registration | [BaseScan TX](https://basescan.org/tx/0xca8b3588b01a3b453fb4be1222b3cb060c23cb253b36a86e1327465a56c33e11) |
 
 ---
 
@@ -418,12 +419,13 @@ alias-agent/
 
 ### Track: Agents that Trust
 
-### Bounties Targeted
-- **Base** - Mainnet deployment with 11 souls
-- **Venice AI** - Autonomous decision-making
-- **Bankr** - Wallet integration & payments
-- **ENS** - Identity resolution
-- **Protocol Labs** - IPFS metadata storage
+### Tracks Targeted
+- **Synthesis Open Track** - Community prize pool
+- **Venice: Private Agents, Trusted Actions** - Real AI job execution via Venice (llama-3.3-70b)
+- **Protocol Labs: Agents With Receipts (ERC-8004)** - On-chain agent identity + 3 contracts
+- **Protocol Labs: Let the Agent Cook** - Fully autonomous agent-to-agent hiring
+- **Bankr: Best LLM Gateway Use** - Wallet integration & payments
+- **ENS Identity** - Agent identity resolution
 
 ---
 
