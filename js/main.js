@@ -360,7 +360,7 @@ function extractSkills(name, description) {
  * Show loading skeleton in stats
  */
 function showStatsSkeleton() {
-    ["totalSouls", "networkRep", "totalVerifications"].forEach(function(id) {
+    ["totalSouls", "networkRep", "totalVerifications", "totalVolume"].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) el.innerHTML = '<span class="skeleton-loader"></span>';
     });
@@ -507,25 +507,60 @@ function clearTerminal() {
 
 function loadStats() {
     showStatsSkeleton();
-    
-    fetch(CONFIG.RPC_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jsonrpc: "2.0", method: "eth_call", params: [{ to: CONFIG.CONTRACT_ADDRESS, data: SELECTORS.totalSouls }, "latest"], id: 1 })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-        if (data.result) {
-            var count = parseInt(data.result, 16);
-            document.getElementById("totalSouls").textContent = count;
-            document.getElementById("networkRep").textContent = (count * 70) + "+";
-            document.getElementById("totalVerifications").textContent = Math.floor(count * 1.5);
+
+    // Load all stats from actual on-chain data
+    var provider = new ethers.JsonRpcProvider(CONFIG.RPC_URL);
+    var contract = new ethers.Contract(CONFIG.CONTRACT_ADDRESS, SOUL_ABI, provider);
+    var verifyContract = new ethers.Contract(CONFIG.VERIFICATION_REGISTRY, VERIFICATION_ABI, provider);
+    var jobContract = new ethers.Contract(CONFIG.JOB_REGISTRY, JOB_REGISTRY_ABI, provider);
+
+    contract.totalSouls().then(function(totalSouls) {
+        var count = Number(totalSouls);
+        document.getElementById("totalSouls").textContent = count;
+
+        // Calculate real network rep + total verifications + jobs from chain
+        var totalRep = 0;
+        var totalVerifications = 0;
+        var totalJobs = 0;
+        var loaded = 0;
+
+        for (var i = 1; i <= count; i++) {
+            (function(tokenId) {
+                var agentActions = 0, agentVerifies = 0, agentJobs = 0, agentAge = 0;
+
+                Promise.all([
+                    contract.souls(tokenId).catch(function() { return null; }),
+                    contract.actionCount(tokenId).catch(function() { return 0; }),
+                    verifyContract.getVerificationCount(tokenId).catch(function() { return 0; }),
+                    jobContract.getJobCount(tokenId).catch(function() { return 0; })
+                ]).then(function(results) {
+                    var soul = results[0];
+                    agentActions = Number(results[1]);
+                    agentVerifies = Number(results[2]);
+                    agentJobs = Number(results[3]);
+
+                    if (soul && soul.active) {
+                        agentAge = Math.floor(Date.now() / 1000) - Number(soul.createdAt);
+                        var ageRep = Math.min(Math.floor(agentAge / 600), 100);
+                        totalRep += ageRep + (agentActions * 20) + (agentVerifies * 15) + (agentJobs * 25);
+                    }
+                    totalVerifications += agentVerifies;
+                    totalJobs += agentJobs;
+
+                    loaded++;
+                    if (loaded === count) {
+                        document.getElementById("networkRep").textContent = totalRep;
+                        document.getElementById("totalVerifications").textContent = totalVerifications + totalJobs;
+                        document.getElementById("totalVolume").textContent = totalJobs;
+                    }
+                });
+            })(i);
         }
-    })
-    .catch(function() {
-        document.getElementById("totalSouls").textContent = "8";
-        document.getElementById("networkRep").textContent = "560+";
-        document.getElementById("totalVerifications").textContent = "12";
+    }).catch(function() {
+        document.getElementById("totalSouls").textContent = "--";
+        document.getElementById("networkRep").textContent = "--";
+        document.getElementById("totalVerifications").textContent = "--";
+        document.getElementById("totalVolume").textContent = "--";
     });
 }
 
