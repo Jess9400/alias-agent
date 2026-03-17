@@ -100,13 +100,13 @@
         .arrow svg { width: 24px; height: 16px; fill: var(--success); }
 
         /* Main Grid */
-        .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 30px; }
-        .card { background: var(--bg-card); border: 1px solid rgba(0,212,255,0.2); border-radius: 20px; padding: 20px; transition: border-color 0.3s, box-shadow 0.3s; display: flex; flex-direction: column; }
+        .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 30px; align-items: start; }
+        .card { background: var(--bg-card); border: 1px solid rgba(0,212,255,0.2); border-radius: 20px; padding: 20px; transition: border-color 0.3s, box-shadow 0.3s; }
         .card:hover { border-color: rgba(0,212,255,0.35); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
         .card-title { font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid rgba(0,212,255,0.1); display: flex; align-items: center; gap: 10px; }
 
         /* Agent List */
-        .agent-list { display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto; min-height: 200px; }
+        .agent-list { display: flex; flex-direction: column; gap: 10px; max-height: 320px; overflow-y: auto; }
         .agent-item { background: rgba(0,212,255,0.04); border: 1px solid rgba(0,212,255,0.08); border-left: 3px solid rgba(0,212,255,0.2); border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.3s; }
         .agent-item:hover { border-color: var(--primary); border-left-color: var(--primary); transform: translateX(5px); background: rgba(0,212,255,0.08); box-shadow: 0 2px 12px rgba(0,212,255,0.1); }
         .agent-icon { width: 40px; height: 40px; background: linear-gradient(135deg, var(--secondary), var(--primary)); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -553,6 +553,6 @@
 
     <!-- Main JavaScript -->
     <script src="js/ethers.min.js?v=1"></script>
-    <script src="js/main.js?v=52"></script>
+    <script src="js/main.js?v=53"></script>
 </body>
 </html>
