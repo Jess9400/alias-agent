@@ -2,6 +2,7 @@ import os
 import subprocess
 import requests
 from dotenv import load_dotenv
+from web3 import Web3
 load_dotenv()
 CONTRACT = "0x0F2f94281F87793ee086a2B6517B6db450192874"
 RPC_URL = os.getenv("RPC_URL", "https://mainnet.base.org")
@@ -9,13 +10,25 @@ PRIVATE_KEY = os.getenv("PRIVATE_KEY")
 VENICE_API_KEY = os.getenv("VENICE_API_KEY")
 BANKR_API_KEY = os.getenv("BANKR_API_KEY")
 
+# Minimal ABI for on-chain reads
+SOUL_ABI = [
+    {"inputs":[{"name":"addr","type":"address"}],"name":"hasSoul","outputs":[{"type":"bool"}],"stateMutability":"view","type":"function"},
+    {"inputs":[],"name":"totalSouls","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"name":"tokenId","type":"uint256"},{"name":"actionType","type":"string"},{"name":"actionHash","type":"string"}],"name":"recordAction","outputs":[],"stateMutability":"nonpayable","type":"function"},
+]
+
 class AliasSoulAgent:
     def __init__(self):
         self.contract = CONTRACT
         self.rpc = RPC_URL
         self.venice_api_key = VENICE_API_KEY
         self.bankr_api_key = BANKR_API_KEY
-    
+        self.w3 = Web3(Web3.HTTPProvider(RPC_URL))
+        self.soul_contract = self.w3.eth.contract(
+            address=Web3.to_checksum_address(CONTRACT),
+            abi=SOUL_ABI
+        )
+
     # ============== VENICE AI ==============
     def chat(self, message, model="llama-3.3-70b"):
         if not self.venice_api_key:
@@ -28,7 +41,7 @@ class AliasSoulAgent:
             return {"response": r.json()["choices"][0]["message"]["content"], "model": model, "provider": "venice"}
         except Exception as e:
             return {"error": str(e)}
-    
+
     # ============== BANKR WALLET ==============
     def bankr_prompt(self, prompt):
         if not self.bankr_api_key:
@@ -41,7 +54,7 @@ class AliasSoulAgent:
             return {"jobId": job.get("jobId"), "status": "submitted"}
         except Exception as e:
             return {"error": str(e)}
-    
+
     def bankr_job(self, job_id):
         if not self.bankr_api_key:
             return {"error": "BANKR_API_KEY not set"}
@@ -52,7 +65,7 @@ class AliasSoulAgent:
             return r.json()
         except Exception as e:
             return {"error": str(e)}
-    
+
     def bankr_balances(self):
         import time
         result = self.bankr_prompt("what are my balances?")
@@ -65,28 +78,51 @@ class AliasSoulAgent:
             if job.get("status") == "completed":
                 return {"response": job.get("response"), "wallets": {"evm": "0x328beba812a32e66f2c11cb20f0a344391d07ea0", "solana": "2aVoGt8N15Mm2d9XD74F3MoAG58nS5of72iuQu8dPAKr"}}
         return {"error": "timeout"}
-    
-    # ============== BLOCKCHAIN ==============
+
+    # ============== BLOCKCHAIN (web3.py) ==============
     def has_soul(self, addr):
-        cmd = ["cast", "call", "--rpc-url", self.rpc, self.contract, "hasSoul(address)", addr]
-        r = subprocess.run(cmd, capture_output=True, text=True)
-        return "0x0000000000000000000000000000000000000000000000000000000000000001" in r.stdout
+        try:
+            addr = Web3.to_checksum_address(addr)
+            return self.soul_contract.functions.hasSoul(addr).call()
+        except Exception:
+            return False
 
     def get_total_souls(self):
-        cmd = ["cast", "call", "--rpc-url", self.rpc, self.contract, "totalSouls()"]
-        r = subprocess.run(cmd, capture_output=True, text=True)
-        return int(r.stdout.strip(), 16) if r.stdout.strip() else 0
+        try:
+            return self.soul_contract.functions.totalSouls().call()
+        except Exception:
+            return 0
 
     def record_action(self, token_id, action_type, action_hash):
-        cmd = ["cast", "send", "--rpc-url", self.rpc, "--private-key", PRIVATE_KEY, self.contract, "recordAction(uint256,string,string)", str(token_id), action_type, action_hash]
-        r = subprocess.run(cmd, capture_output=True, text=True)
-        return r.stdout if r.returncode == 0 else r.stderr
+        try:
+            if not PRIVATE_KEY:
+                return "Error: PRIVATE_KEY not set"
+            account = self.w3.eth.account.from_key(PRIVATE_KEY)
+            tx = self.soul_contract.functions.recordAction(
+                int(token_id), action_type, action_hash
+            ).build_transaction({
+                "from": account.address,
+                "nonce": self.w3.eth.get_transaction_count(account.address),
+                "gas": 300000,
+                "gasPrice": self.w3.eth.gas_price,
+            })
+            signed = account.sign_transaction(tx)
+            tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
+            return self.w3.to_hex(tx_hash)
+        except Exception as e:
+            return f"Error: {str(e)}"
 
     # ============== ENS ==============
     def resolve_ens(self, ens_name):
-        cmd = ["cast", "resolve-name", "--rpc-url", "https://ethereum.publicnode.com", ens_name]
-        r = subprocess.run(cmd, capture_output=True, text=True)
-        return r.stdout.strip() if r.returncode == 0 else None
+        try:
+            # Use ensdata.net API (same as frontend) — no cast needed
+            r = requests.get(f"https://api.ensdata.net/{ens_name}", timeout=10)
+            if r.status_code == 200:
+                data = r.json()
+                return data.get("address")
+            return None
+        except Exception:
+            return None
 
     def lookup_by_ens(self, ens_name):
         addr = self.resolve_ens(ens_name)

@@ -404,7 +404,7 @@ alias-agent/
 | Resource | URL |
 |----------|-----|
 | Live Demo | https://jess9400.github.io/alias-agent/ |
-| API Server | https://89-167-68-215.sslip.io |
+| API Server | https://api.alias-protocol.xyz |
 | ALIAS Contract | [BaseScan](https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874) |
 | Verification Registry | [BaseScan](https://basescan.org/address/0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715) |
 | Job Registry | [BaseScan](https://basescan.org/address/0x7Fa3c9C28447d6ED6671b49d537E728f678568C8) |
