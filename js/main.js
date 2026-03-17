@@ -27,7 +27,9 @@ const CONFIG = {
     VERIFICATION_REGISTRY: "0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715",
     API_URL: "https://api.alias-protocol.xyz",
     PLATFORM_WALLET: "0x7F66dFcD8e9e4e7Ec435D0631C5d723fFaDdb211",
-    JOB_REGISTRY: "0x7Fa3c9C28447d6ED6671b49d537E728f678568C8"
+    JOB_REGISTRY: "0x7Fa3c9C28447d6ED6671b49d537E728f678568C8",
+    ESCROW_REGISTRY: "0xfE97854DF19d0d20185EFE4ACc9EE477797FA0a0",
+    STAKE_REGISTRY: "0x2de431772062817EEB799c42Dbb5083F607BA6Ce"
 };
 
 // Agent operator wallets (where tips/payments go) - keyed by token ID
@@ -225,6 +227,30 @@ const JOB_REGISTRY_ABI = [
     "function getJobs(uint256 tokenId, uint256 offset, uint256 limit) external view returns (tuple(address recorder, uint256 timestamp, string escrowId, string message)[])"
 ];
 
+const STAKE_REGISTRY_ABI = [
+    "function stake(uint256 tokenId) external payable",
+    "function requestUnstake(uint256 tokenId, uint256 amount) external",
+    "function unstake(uint256 tokenId) external",
+    "function getStakeInfo(uint256 tokenId) external view returns (uint256 amount, uint256 stakedAt, address stakedBy, uint8 tier)",
+    "function getTier(uint256 tokenId) external view returns (uint8)",
+    "function getStake(uint256 tokenId) external view returns (uint256)",
+    "function isEligible(uint256 tokenId, uint8 required) external view returns (bool)"
+];
+
+const ESCROW_REGISTRY_ABI = [
+    "function createEscrow(uint256 clientTokenId, uint256 agentTokenId, string jobDescription, uint256 deadline) external payable returns (uint256)",
+    "function startJob(uint256 escrowId) external",
+    "function completeJob(uint256 escrowId, string resultHash) external",
+    "function approveAndRelease(uint256 escrowId) external",
+    "function disputeJob(uint256 escrowId, string reason) external",
+    "function cancelEscrow(uint256 escrowId) external",
+    "function getEscrow(uint256 escrowId) external view returns (tuple(uint256 id, uint256 clientTokenId, uint256 agentTokenId, address client, address agent, uint256 amount, uint256 createdAt, uint256 deadline, string jobDescription, string resultHash, string disputeReason, uint8 state))",
+    "function nextEscrowId() external view returns (uint256)",
+    "function activeEscrowCount() external view returns (uint256)"
+];
+
+const STAKE_TIERS = ["None", "Bronze", "Silver", "Gold", "Platinum"];
+const STAKE_TIER_COLORS = { None: "#666", Bronze: "#cd7f32", Silver: "#c0c0c0", Gold: "#ffd700", Platinum: "#e5e4e2" };
 
 // Create a provider that skips network detection (avoids SES lockdown issues)
 function getStaticProvider() {
@@ -836,10 +862,41 @@ function populateAgents() {
         repTier.className = 'rep-tier';
         repTier.textContent = a.tier;
         rep.appendChild(repTier);
-        
+
+        var stakeBadge = document.createElement('div');
+        stakeBadge.className = 'stake-badge';
+        stakeBadge.id = 'stake-badge-' + a.tokenId;
+        stakeBadge.style.fontSize = '10px';
+        stakeBadge.style.marginTop = '2px';
+        rep.appendChild(stakeBadge);
+
         item.appendChild(rep);
         list.appendChild(item);
     });
+    loadStakeTiers();
+}
+
+async function loadStakeTiers() {
+    try {
+        var provider = getStaticProvider();
+        var stakeContract = new ethers.Contract(CONFIG.STAKE_REGISTRY, STAKE_REGISTRY_ABI, provider);
+        var promises = agents.map(function(a) {
+            return stakeContract.getTier(a.tokenId).then(function(tier) {
+                return { tokenId: a.tokenId, tier: Number(tier) };
+            }).catch(function() { return { tokenId: a.tokenId, tier: 0 }; });
+        });
+        var results = await Promise.all(promises);
+        results.forEach(function(r) {
+            var badge = document.getElementById('stake-badge-' + r.tokenId);
+            if (badge && r.tier > 0) {
+                var tierName = STAKE_TIERS[r.tier] || "None";
+                badge.textContent = tierName;
+                badge.style.color = STAKE_TIER_COLORS[tierName] || "#666";
+            }
+        });
+    } catch (e) {
+        console.log("Stake tier load skipped:", e.message);
+    }
 }
 
 function populateSkills() {
@@ -1915,14 +1972,33 @@ async function signVerification(agent) {
         return;
     }
     
+    // Stake-gated: require Silver tier to verify
+    var myAgent = agents.find(function(a) {
+        return a.fullAddress && a.fullAddress.toLowerCase() === connectedWallet.toLowerCase();
+    });
+    if (myAgent) {
+        try {
+            var stakeProvider = getStaticProvider();
+            var stakeCheck = new ethers.Contract(CONFIG.STAKE_REGISTRY, STAKE_REGISTRY_ABI, stakeProvider);
+            var eligible = await stakeCheck.isEligible(myAgent.tokenId, 2); // 2 = Silver
+            if (!eligible) {
+                typeInTerminal("[STAKE] Silver tier (0.005 ETH stake) required to verify agents", "warning");
+                showToast("Stake at least 0.005 ETH to unlock verification. Use the Stake button.", "warning");
+                return;
+            }
+        } catch (e) {
+            console.log("Stake check skipped:", e.message);
+        }
+    }
+
     var message = prompt("Enter verification message (e.g., \"Trusted for DeFi tasks\"):", "Verified as trusted AI agent");
     if (!message) return;
-    
+
     try {
         var provider = new ethers.BrowserProvider(getWalletProvider());
         var signer = await provider.getSigner();
         var contract = new ethers.Contract(CONFIG.VERIFICATION_REGISTRY, VERIFICATION_ABI, signer);
-        
+
         typeInTerminal("[VERIFY] Recording on-chain verification...", "warning");
         typeInTerminal("[TARGET] " + agent.name + " (Token #" + agent.tokenId + ")", "system");
         
@@ -1957,6 +2033,9 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("mintSubmitBtn").addEventListener("click", mintSoul);
     document.getElementById("mintCancelBtn").addEventListener("click", closeMintModal);
     
+    // Stake button
+    document.getElementById("stakeBtn").addEventListener("click", stakeForAgent);
+
     // Close modal on outside click
     document.getElementById("mintModal").addEventListener("click", function(e) {
         if (e.target.id === "mintModal") closeMintModal();
@@ -2174,6 +2253,73 @@ async function hireAgent(agent) {
     } catch (error) {
         console.error("Hire error:", error);
         typeInTerminal("[ERROR] Hire failed: " + (error.reason || error.message), "warning");
+    }
+}
+
+// =============================================================================
+// STAKING FUNCTIONS
+// =============================================================================
+
+async function stakeForAgent() {
+    if (!connectedWallet) {
+        showToast("Please connect your wallet first!", "warning");
+        return;
+    }
+
+    // Find the caller's agent by matching wallet
+    var myAgent = agents.find(function(a) {
+        return a.fullAddress && a.fullAddress.toLowerCase() === connectedWallet.toLowerCase();
+    });
+
+    if (!myAgent) {
+        showToast("You need an ALIAS soul to stake. Mint one first!", "warning");
+        return;
+    }
+
+    try {
+        var provider = getStaticProvider();
+        var stakeContract = new ethers.Contract(CONFIG.STAKE_REGISTRY, STAKE_REGISTRY_ABI, provider);
+        var info = await stakeContract.getStakeInfo(myAgent.tokenId);
+        var currentStake = parseFloat(ethers.formatEther(info[0]));
+        var currentTier = STAKE_TIERS[Number(info[3])] || "None";
+
+        typeInTerminal("[STAKE] " + myAgent.name + " (Token #" + myAgent.tokenId + ")", "system");
+        typeInTerminal("[STAKE] Current: " + currentStake.toFixed(6) + " ETH | Tier: " + currentTier, "system");
+        typeInTerminal("[STAKE] Tiers: Bronze=0.001 | Silver=0.005 | Gold=0.01 | Platinum=0.05", "system");
+
+        var amount = prompt(
+            "Stake ETH for " + myAgent.name + "\n\n" +
+            "Current stake: " + currentStake.toFixed(6) + " ETH (" + currentTier + ")\n\n" +
+            "Tier thresholds:\n" +
+            "  Bronze: 0.001 ETH (register, take jobs)\n" +
+            "  Silver: 0.005 ETH (verify others)\n" +
+            "  Gold: 0.01 ETH (arbitrate disputes)\n" +
+            "  Platinum: 0.05 ETH (governance)\n\n" +
+            "Enter amount to stake (ETH):"
+        );
+        if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) return;
+
+        var walletProvider = new ethers.BrowserProvider(getWalletProvider());
+        var signer = await walletProvider.getSigner();
+        var stakeWrite = new ethers.Contract(CONFIG.STAKE_REGISTRY, STAKE_REGISTRY_ABI, signer);
+
+        typeInTerminal("[STAKE] Staking " + amount + " ETH for " + myAgent.name + "...", "warning");
+        var tx = await stakeWrite.stake(myAgent.tokenId, { value: ethers.parseEther(amount) });
+        typeInTerminal("[STAKE] TX submitted: " + tx.hash.slice(0, 18) + "...", "warning");
+
+        await tx.wait();
+
+        var newInfo = await stakeContract.getStakeInfo(myAgent.tokenId);
+        var newTier = STAKE_TIERS[Number(newInfo[3])] || "None";
+        typeInTerminal("[STAKE] ✓ Staked! New balance: " + parseFloat(ethers.formatEther(newInfo[0])).toFixed(6) + " ETH | Tier: " + newTier, "success");
+        typeInTerminal("[TX] https://basescan.org/tx/" + tx.hash, "system");
+        showToast("Staked " + amount + " ETH! Tier: " + newTier, "success");
+
+        loadStakeTiers();
+    } catch (error) {
+        console.error("Stake error:", error);
+        typeInTerminal("[ERROR] Staking failed: " + (error.reason || error.message), "warning");
+        showToast("Staking failed: " + (error.reason || error.message), "error");
     }
 }
 

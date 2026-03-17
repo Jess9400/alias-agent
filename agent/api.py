@@ -52,7 +52,7 @@ def index():
         "contract": "0x0F2f94281F87793ee086a2B6517B6db450192874",
         "chain": "Base Mainnet",
         "powered_by": "Venice AI",
-        "endpoints": ["/reputation/<address>", "/stats", "/soul/<address>", "/ens/<name>", "/chat", "/pin", "/job/execute", "/demo/auto-hire", "/demo/collaborate", "/health"]
+        "endpoints": ["/reputation/<address>", "/stake/<token_id>", "/stake/check", "/stats", "/soul/<address>", "/ens/<name>", "/chat", "/pin", "/job/execute", "/demo/auto-hire", "/demo/collaborate", "/health"]
     })
 
 @app.route('/stats')
@@ -548,6 +548,59 @@ def reputation(address):
         "source": "100% on-chain — no off-chain signals, no oracles"
     })
 
+
+STAKE_REGISTRY = "0x2de431772062817EEB799c42Dbb5083F607BA6Ce"
+STAKE_ABI = [
+    {"inputs":[{"name":"tokenId","type":"uint256"}],"name":"getStakeInfo","outputs":[{"name":"amount","type":"uint256"},{"name":"stakedAt","type":"uint256"},{"name":"stakedBy","type":"address"},{"name":"tier","type":"uint8"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"name":"tokenId","type":"uint256"}],"name":"getTier","outputs":[{"type":"uint8"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"name":"tokenId","type":"uint256"},{"name":"required","type":"uint8"}],"name":"isEligible","outputs":[{"type":"bool"}],"stateMutability":"view","type":"function"},
+]
+STAKE_TIER_NAMES = ["None", "Bronze", "Silver", "Gold", "Platinum"]
+
+@app.route('/stake/<int:token_id>')
+@rate_limit(max_per_minute=30)
+def get_stake(token_id):
+    """Get stake info for an agent token ID."""
+    try:
+        w3 = Web3(Web3.HTTPProvider("https://mainnet.base.org"))
+        contract = w3.eth.contract(address=Web3.to_checksum_address(STAKE_REGISTRY), abi=STAKE_ABI)
+        info = contract.functions.getStakeInfo(token_id).call()
+        tier_idx = info[3]
+        return jsonify({
+            "token_id": token_id,
+            "amount_wei": str(info[0]),
+            "amount_eth": str(w3.from_wei(info[0], 'ether')),
+            "staked_at": info[1],
+            "staked_by": info[2],
+            "tier": STAKE_TIER_NAMES[tier_idx] if tier_idx < len(STAKE_TIER_NAMES) else "Unknown",
+            "tier_index": tier_idx
+        })
+    except Exception as e:
+        logging.error(f"Stake lookup failed: {e}")
+        return jsonify({"error": "Failed to read stake data"}), 500
+
+@app.route('/stake/check', methods=['POST'])
+@rate_limit(max_per_minute=30)
+def check_stake():
+    """Check if a token meets a required stake tier."""
+    data = request.get_json()
+    if not data or 'token_id' not in data or 'required_tier' not in data:
+        return jsonify({"error": "Missing token_id or required_tier"}), 400
+    try:
+        w3 = Web3(Web3.HTTPProvider("https://mainnet.base.org"))
+        contract = w3.eth.contract(address=Web3.to_checksum_address(STAKE_REGISTRY), abi=STAKE_ABI)
+        token_id = int(data['token_id'])
+        required = int(data['required_tier'])
+        eligible = contract.functions.isEligible(token_id, required).call()
+        tier = contract.functions.getTier(token_id).call()
+        return jsonify({
+            "eligible": eligible,
+            "current_tier": STAKE_TIER_NAMES[tier] if tier < len(STAKE_TIER_NAMES) else "Unknown",
+            "required_tier": STAKE_TIER_NAMES[required] if required < len(STAKE_TIER_NAMES) else "Unknown"
+        })
+    except Exception as e:
+        logging.error(f"Stake check failed: {e}")
+        return jsonify({"error": "Failed to check stake eligibility"}), 500
 
 @app.route('/health')
 def health():
