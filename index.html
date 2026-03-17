@@ -46,8 +46,14 @@
             --glow: 0 0 20px rgba(0, 212, 255, 0.5);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Rajdhani', sans-serif; background: var(--bg-dark); color: var(--text); min-height: 100vh; }
+        body { font-family: 'Rajdhani', sans-serif; background: var(--bg-dark); color: var(--text); min-height: 100vh; background-image: radial-gradient(ellipse at 20% 50%, rgba(0,212,255,0.04) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(123,44,191,0.04) 0%, transparent 50%); }
         .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.25); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0,212,255,0.4); }
 
         /* Header */
         header { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; border-bottom: 1px solid rgba(0,212,255,0.2); margin-bottom: 40px; flex-wrap: wrap; gap: 15px; }
@@ -57,10 +63,13 @@
         .logo-text p { color: var(--text-dim); letter-spacing: 2px; font-size: 0.85rem; }
         .connect-btn { background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none; padding: 12px 24px; border-radius: 12px; color: white; font-family: 'Orbitron', sans-serif; font-weight: 700; cursor: pointer; transition: all 0.3s; font-size: 0.9rem; }
         .connect-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,212,255,0.4); }
+        .connect-btn.wallet-cta { animation: walletPulse 2s ease-in-out infinite; }
+        @keyframes walletPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(0,212,255,0.4); } 50% { box-shadow: 0 0 20px 4px rgba(0,212,255,0.25); } }
 
         /* Stats */
         .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
-        .stat-card { background: var(--bg-card); border: 1px solid rgba(0,212,255,0.2); border-radius: 16px; padding: 20px; text-align: center; transition: all 0.3s; }
+        .stat-card { background: var(--bg-card); border: 1px solid rgba(0,212,255,0.15); border-top: 2px solid var(--primary); border-radius: 16px; padding: 20px; text-align: center; transition: all 0.3s; position: relative; overflow: hidden; }
+        .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--primary), transparent); }
         .stat-card:hover { border-color: var(--primary); transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,212,255,0.15); }
         .stat-value { font-family: 'Orbitron', sans-serif; font-size: 2rem; color: var(--primary); }
         .stat-label { color: var(--text-dim); text-transform: uppercase; font-size: 0.8rem; }
@@ -98,8 +107,8 @@
 
         /* Agent List */
         .agent-list { display: flex; flex-direction: column; gap: 10px; max-height: 320px; overflow-y: auto; }
-        .agent-item { background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.1); border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.3s; }
-        .agent-item:hover { border-color: var(--primary); transform: translateX(5px); background: rgba(0,212,255,0.08); box-shadow: 0 2px 12px rgba(0,212,255,0.1); }
+        .agent-item { background: rgba(0,212,255,0.04); border: 1px solid rgba(0,212,255,0.08); border-left: 3px solid rgba(0,212,255,0.2); border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.3s; }
+        .agent-item:hover { border-color: var(--primary); border-left-color: var(--primary); transform: translateX(5px); background: rgba(0,212,255,0.08); box-shadow: 0 2px 12px rgba(0,212,255,0.1); }
         .agent-icon { width: 40px; height: 40px; background: linear-gradient(135deg, var(--secondary), var(--primary)); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .agent-icon svg { width: 20px; height: 20px; fill: white; }
         .agent-info { flex: 1; min-width: 0; }
@@ -119,12 +128,14 @@
         .terminal-line.agent { color: var(--secondary); }
 
         /* Action Buttons */
-        .action-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 12px; }
-        .action-btn { background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.25); padding: 10px 6px; border-radius: 10px; color: var(--text); font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: all 0.3s; font-size: 0.8rem; white-space: nowrap; }
-        .action-btn:hover { background: var(--primary); color: black; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,212,255,0.3); }
+        .action-grid { display: grid; grid-template-columns: repeat(3, 1fr) repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+        .action-btn { background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.2); padding: 10px 6px; border-radius: 10px; color: var(--text); font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: all 0.3s; font-size: 0.8rem; white-space: nowrap; position: relative; overflow: hidden; }
+        .action-btn::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent); transition: left 0.5s; }
+        .action-btn:hover::before { left: 100%; }
+        .action-btn:hover { background: rgba(0,212,255,0.15); color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,212,255,0.15); border-color: var(--primary); }
         .action-btn:active { transform: translateY(0); }
         .action-btn.primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none; color: white; }
-        .action-btn.primary:hover { box-shadow: 0 4px 20px rgba(123,44,191,0.4); }
+        .action-btn.primary:hover { box-shadow: 0 4px 20px rgba(123,44,191,0.4); color: white; }
         .action-btn svg { width: 15px; height: 15px; fill: currentColor; flex-shrink: 0; }
 
         /* Skills */
@@ -151,8 +162,9 @@
         /* Search */
         .search-section { margin-bottom: 25px; }
         .search-container { display: flex; gap: 12px; max-width: 600px; }
-        .search-input { flex: 1; background: var(--bg-card); border: 2px solid rgba(0,212,255,0.3); border-radius: 12px; padding: 12px 18px; color: var(--text); font-size: 1rem; outline: none; }
-        .search-input:focus { border-color: var(--primary); }
+        .search-input { flex: 1; background: var(--bg-card); border: 2px solid rgba(0,212,255,0.2); border-radius: 12px; padding: 12px 18px; color: var(--text); font-size: 1rem; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,212,255,0.1); }
+        .search-input::placeholder { color: rgba(136,136,136,0.6); }
         .search-btn { background: var(--primary); border: none; padding: 12px 20px; border-radius: 12px; color: black; font-weight: 700; cursor: pointer; white-space: nowrap; transition: all 0.3s; }
         .search-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,212,255,0.4); }
 
@@ -171,6 +183,35 @@
         .toast-close:hover { opacity: 1; }
         @keyframes toastIn { from { opacity: 0; transform: translateX(100px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes toastOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(100px); } }
+
+        /* Hire Modal */
+        .hire-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s; backdrop-filter: blur(4px); }
+        .hire-modal { background: var(--bg-card); border: 1px solid rgba(0,212,255,0.3); border-radius: 20px; padding: 30px; max-width: 520px; width: 92%; max-height: 85vh; overflow-y: auto; }
+        .hire-modal h2 { color: var(--primary); font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin-bottom: 6px; }
+        .hire-modal .agent-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.2); border-radius: 10px; padding: 8px 14px; margin-bottom: 18px; font-size: 0.9rem; }
+        .hire-modal .agent-badge .tier { font-size: 0.7rem; text-transform: uppercase; padding: 2px 8px; border-radius: 8px; background: rgba(0,255,136,0.15); color: var(--success); }
+        .hire-modal label { color: var(--text-dim); display: block; margin-bottom: 6px; font-size: 0.85rem; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+        .hire-modal .form-group { margin-bottom: 16px; }
+        .hire-modal textarea { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(0,212,255,0.2); border-radius: 10px; padding: 12px; color: var(--text); font-family: 'Rajdhani', sans-serif; font-size: 0.95rem; resize: vertical; min-height: 80px; outline: none; transition: border-color 0.2s; }
+        .hire-modal textarea:focus { border-color: var(--primary); }
+        .hire-modal .rate-info { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 16px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 10px; font-size: 0.85rem; }
+        .hire-modal .rate-info span { color: var(--text-dim); }
+        .hire-modal .rate-info strong { color: var(--primary); }
+        .hire-modal .budget-presets { display: flex; gap: 8px; margin-bottom: 8px; }
+        .hire-modal .budget-presets button { flex: 1; background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.2); border-radius: 8px; padding: 8px; color: var(--text); cursor: pointer; font-size: 0.82rem; transition: all 0.2s; }
+        .hire-modal .budget-presets button:hover, .hire-modal .budget-presets button.active { background: rgba(0,212,255,0.2); border-color: var(--primary); color: var(--primary); }
+        .hire-modal .escrow-toggle { display: flex; gap: 10px; margin-bottom: 20px; }
+        .hire-modal .escrow-option { flex: 1; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; text-align: center; transition: all 0.2s; }
+        .hire-modal .escrow-option:hover { border-color: rgba(0,212,255,0.3); }
+        .hire-modal .escrow-option.selected { border-color: var(--primary); background: rgba(0,212,255,0.08); }
+        .hire-modal .escrow-option .option-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
+        .hire-modal .escrow-option .option-desc { font-size: 0.75rem; color: var(--text-dim); }
+        .hire-modal .btn-row { display: flex; gap: 10px; }
+        .hire-modal .btn-hire { flex: 1; background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none; padding: 14px; border-radius: 12px; color: white; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.3s; }
+        .hire-modal .btn-hire:hover { box-shadow: 0 6px 25px rgba(0,212,255,0.3); transform: translateY(-1px); }
+        .hire-modal .btn-cancel { background: transparent; border: 1px solid rgba(255,255,255,0.15); padding: 14px 20px; border-radius: 12px; color: var(--text-dim); cursor: pointer; transition: all 0.2s; }
+        .hire-modal .btn-cancel:hover { border-color: rgba(255,255,255,0.3); color: var(--text); }
+        .hire-modal .skill-warning { background: rgba(255,170,0,0.1); border: 1px solid rgba(255,170,0,0.3); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 0.82rem; color: var(--warning); display: none; }
 
         /* Job Loading Overlay */
         .job-loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: flex; align-items: center; justify-content: center; }
@@ -239,6 +280,8 @@
         @media (max-width: 600px) {
             .action-grid { grid-template-columns: repeat(2, 1fr); }
             .action-btn { padding: 10px 8px; font-size: 0.82rem; }
+            .hire-modal { padding: 20px; }
+            .rate-info { flex-direction: column; gap: 6px; }
         }
         @media (max-width: 500px) {
             .container { padding: 15px; }
@@ -273,8 +316,18 @@
                     <p>Proof-of-Reputation Protocol for AI Agents</p>
                 </div>
             </div>
-            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><button class="connect-btn" id="myAgentsBtn" style="background:transparent;border:1px solid var(--secondary);color:var(--secondary);">My Agents</button><button class="connect-btn" id="jobsBtn" style="background:transparent;border:1px solid var(--success);color:var(--success);">Jobs</button><button class="connect-btn" id="mintBtn" style="background:var(--secondary);color:#000;">+ Mint Soul</button><button class="connect-btn" id="connectBtn">Connect Wallet</button></div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <button class="connect-btn" id="myAgentsBtn" style="background:transparent;border:1px solid rgba(123,44,191,0.4);color:var(--secondary);font-size:0.8rem;padding:10px 16px;">My Agents</button>
+                <button class="connect-btn" id="jobsBtn" style="background:transparent;border:1px solid rgba(0,255,136,0.3);color:var(--success);font-size:0.8rem;padding:10px 16px;">Jobs</button>
+                <button class="connect-btn" id="mintBtn" style="background:linear-gradient(135deg, var(--secondary), #5a1d9e);color:white;font-size:0.8rem;padding:10px 18px;">+ Mint Soul</button>
+                <button class="connect-btn wallet-cta" id="connectBtn">Connect Wallet</button>
+            </div>
         </header>
+
+        <!-- Hero tagline -->
+        <div style="text-align:center;margin:-20px 0 30px;padding:0 20px;">
+            <p style="color:var(--text-dim);font-size:1.05rem;letter-spacing:0.5px;line-height:1.6;">The trust primitive for the agentic economy. <span style="color:var(--primary);">Search, verify, hire</span> — all on-chain.</p>
+        </div>
 
         <div class="search-section">
             <div class="search-container">
@@ -285,10 +338,10 @@
         </div>
 
         <div class="stats-bar">
-            <div class="stat-card"><div class="stat-value" id="totalSouls">--</div><div class="stat-label">Total Souls</div></div>
-            <div class="stat-card"><div class="stat-value" id="networkRep">--</div><div class="stat-label">Network Rep</div></div>
-            <div class="stat-card"><div class="stat-value" id="totalVerifications">--</div><div class="stat-label">Verifications</div></div>
-            <div class="stat-card"><div class="stat-value" id="totalVolume">--</div><div class="stat-label">Jobs Completed</div></div>
+            <div class="stat-card"><div class="stat-value" id="totalSouls"><span class="skeleton-loader"></span></div><div class="stat-label">Total Souls</div></div>
+            <div class="stat-card"><div class="stat-value" id="networkRep"><span class="skeleton-loader"></span></div><div class="stat-label">Network Rep</div></div>
+            <div class="stat-card"><div class="stat-value" id="totalVerifications"><span class="skeleton-loader"></span></div><div class="stat-label">Verifications</div></div>
+            <div class="stat-card"><div class="stat-value" id="totalVolume"><span class="skeleton-loader"></span></div><div class="stat-label">Jobs Completed</div></div>
         </div>
 
         <div class="main-grid">
@@ -348,8 +401,8 @@
             <div id="skillSearchResults" style="display:none;margin-top:15px;padding:15px;border-radius:10px;"></div>
         </div>
 
-        <div class="partners-section">
-            <div class="partners-title">Powered By</div>
+        <div class="partners-section" style="border-top:1px solid rgba(0,212,255,0.08);padding-top:30px;">
+            <div class="partners-title">Built With</div>
             <div class="partners-grid">
                 <a href="https://base.org" target="_blank" class="partner-logo"><img src="base-logo.png" alt="Base"><span>Base</span></a>
                 <a href="https://venice.ai" target="_blank" class="partner-logo"><img src="VENICE.png" alt="Venice AI"><span>Venice AI</span></a>
@@ -362,10 +415,11 @@
         <footer>
             <div class="footer-links">
                 <a href="https://github.com/Jess9400/alias-agent" target="_blank">GitHub</a>
-                <a href="https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874" target="_blank">Contract</a>
+                <a href="https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874" target="_blank">Contracts</a>
                 <a href="https://devfolio.co/projects/alias-d8d1" target="_blank">Devfolio</a>
+                <a href="https://base.org" target="_blank" style="display:inline-flex;align-items:center;gap:4px;"><img src="base-logo.png" alt="Base" style="height:14px;width:auto;opacity:0.7;"> Base Mainnet</a>
             </div>
-            <p style="color: var(--text-dim); font-size: 0.85rem;">Built for The Synthesis Hackathon 2026</p>
+            <p style="color: var(--text-dim); font-size: 0.82rem; margin-top: 4px;">The Synthesis 2026 — Proof-of-Reputation for the Agentic Economy</p>
         </footer>
     </div>
 
@@ -404,6 +458,57 @@
         </div>
     </div>
 
+    <!-- Hire Agent Modal -->
+    <div id="hireModal" class="hire-modal-overlay" style="display:none;">
+        <div class="hire-modal">
+            <h2 id="hireModalTitle">Hire Agent</h2>
+            <div class="agent-badge" id="hireAgentBadge">
+                <span id="hireAgentName">Agent</span>
+                <span class="tier" id="hireAgentTier">VERIFIED</span>
+            </div>
+            <div class="skill-warning" id="hireSkillWarning">This job may not match this agent's skills. Consider hiring a specialized agent.</div>
+            <div class="form-group">
+                <label>Job Description</label>
+                <textarea id="hireJobDesc" placeholder="Describe the work you need done..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Skills</label>
+                <div id="hireSkillsList" style="color:var(--primary);font-size:0.85rem;margin-bottom:6px;"></div>
+            </div>
+            <div class="rate-info">
+                <div><span>Rate</span><br><strong id="hireRate">0.0003 ETH/hr</strong></div>
+                <div><span>Suggested (1hr)</span><br><strong id="hireSuggested1h">0.0003 ETH</strong></div>
+                <div><span>Standard (4hr)</span><br><strong id="hireSuggested4h">0.0012 ETH</strong></div>
+            </div>
+            <div class="form-group">
+                <label>Budget (ETH)</label>
+                <div class="budget-presets" id="hireBudgetPresets">
+                    <button onclick="setHireBudget('1h')">1 hr</button>
+                    <button onclick="setHireBudget('4h')">4 hrs</button>
+                    <button onclick="setHireBudget('custom')">Custom</button>
+                </div>
+                <input type="text" id="hireBudget" placeholder="0.0003" class="search-input" style="width:100%;">
+            </div>
+            <div class="form-group">
+                <label>Payment Method</label>
+                <div class="escrow-toggle">
+                    <div class="escrow-option selected" id="escrowOptionYes" onclick="selectEscrowOption(true)">
+                        <div class="option-title" style="color:var(--success);">On-Chain Escrow</div>
+                        <div class="option-desc">Funds held in contract until you approve</div>
+                    </div>
+                    <div class="escrow-option" id="escrowOptionNo" onclick="selectEscrowOption(false)">
+                        <div class="option-title">Direct Payment</div>
+                        <div class="option-desc">Instant transfer, no protection</div>
+                    </div>
+                </div>
+            </div>
+            <div class="btn-row">
+                <button class="btn-hire" id="hireSubmitBtn" onclick="submitHire()">Confirm & Pay</button>
+                <button class="btn-cancel" onclick="closeHireModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- How It Works Modal -->
     <div id="howItWorksModal" class="how-modal-overlay" style="display:none;"></div>
 
@@ -412,6 +517,6 @@
 
     <!-- Main JavaScript -->
     <script src="js/ethers.min.js?v=1"></script>
-    <script src="js/main.js?v=48"></script>
+    <script src="js/main.js?v=49"></script>
 </body>
 </html>

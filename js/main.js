@@ -1135,8 +1135,9 @@ document.addEventListener("DOMContentLoaded", function() {
     loadAgentsFromChain();
     populateSkillsWithSearch(); populateTrustNetwork();
     
-    typeInTerminal("[SYSTEM] ALIAS Network initialized", "system");
-    typeInTerminal("[INFO] Loading stats from blockchain...", "warning");
+    typeInTerminal("[SYSTEM] ALIAS Protocol v1.1 — Proof-of-Reputation for AI Agents", "system");
+    typeInTerminal("[NETWORK] Base Mainnet (Chain 8453)", "system");
+    typeInTerminal("[INFO] Loading on-chain data...", "warning");
 
     document.getElementById("connectBtn").addEventListener("click", connectWalletEnhanced);
     autoReconnectWallet();
@@ -1487,8 +1488,9 @@ function setConnectedWallet(account) {
     connectedWallet = account.toLowerCase();
     localStorage.setItem("alias_wallet", connectedWallet);
     var btn = document.getElementById("connectBtn");
-    btn.textContent = connectedWallet.slice(0, 6) + "..." + connectedWallet.slice(-4) + " ✕";
+    btn.textContent = connectedWallet.slice(0, 6) + "..." + connectedWallet.slice(-4) + " \u2715";
     btn.title = "Click to disconnect";
+    btn.classList.remove("wallet-cta");
     typeInTerminal("[WALLET] Connected: " + connectedWallet, "success");
     typeInTerminal("[NETWORK] Base Mainnet (Chain 8453)", "system");
 
@@ -1511,6 +1513,7 @@ function disconnectWallet() {
     var btn = document.getElementById("connectBtn");
     btn.textContent = "Connect Wallet";
     btn.title = "";
+    btn.classList.add("wallet-cta");
     typeInTerminal("[WALLET] Disconnected", "system");
     showToast("Wallet disconnected", "info", 3000);
 
@@ -2047,9 +2050,12 @@ document.addEventListener("DOMContentLoaded", function() {
     // Stake button
     document.getElementById("stakeBtn").addEventListener("click", stakeForAgent);
 
-    // Close modal on outside click
+    // Close modals on outside click
     document.getElementById("mintModal").addEventListener("click", function(e) {
         if (e.target.id === "mintModal") closeMintModal();
+    });
+    document.getElementById("hireModal").addEventListener("click", function(e) {
+        if (e.target.id === "hireModal") closeHireModal();
     });
 });
 
@@ -2106,6 +2112,80 @@ async function tipAgent(agent, amount) {
     }
 }
 
+// ---- Hire Modal State & Helpers ----
+var hireModalAgent = null;
+var hireModalRate = 0;
+var hireModalUseEscrow = true;
+
+function openHireModal(agent) {
+    hireModalAgent = agent;
+    var rate = AGENT_RATES[agent.tokenId] || 0.0003;
+    hireModalRate = rate;
+    hireModalUseEscrow = true;
+    var skills = agent.skills || [];
+
+    document.getElementById("hireModalTitle").textContent = "Hire " + agent.name;
+    document.getElementById("hireAgentName").textContent = agent.name;
+    document.getElementById("hireAgentTier").textContent = agent.tier;
+    document.getElementById("hireSkillsList").textContent = skills.join(" \u2022 ") || "General";
+    document.getElementById("hireRate").textContent = rate + " ETH/hr";
+    document.getElementById("hireSuggested1h").textContent = rate + " ETH";
+    document.getElementById("hireSuggested4h").textContent = (rate * 4).toFixed(6) + " ETH";
+    document.getElementById("hireBudget").value = rate;
+    document.getElementById("hireJobDesc").value = "";
+    document.getElementById("hireSkillWarning").style.display = "none";
+    selectEscrowOption(true);
+
+    document.getElementById("hireModal").style.display = "flex";
+}
+
+function closeHireModal() {
+    document.getElementById("hireModal").style.display = "none";
+    hireModalAgent = null;
+}
+
+function selectEscrowOption(useEscrow) {
+    hireModalUseEscrow = useEscrow;
+    var yes = document.getElementById("escrowOptionYes");
+    var no = document.getElementById("escrowOptionNo");
+    if (useEscrow) { yes.classList.add("selected"); no.classList.remove("selected"); }
+    else { no.classList.add("selected"); yes.classList.remove("selected"); }
+}
+
+function setHireBudget(preset) {
+    var input = document.getElementById("hireBudget");
+    var btns = document.querySelectorAll("#hireBudgetPresets button");
+    btns.forEach(function(b) { b.classList.remove("active"); });
+    if (preset === "1h") { input.value = hireModalRate; btns[0].classList.add("active"); }
+    else if (preset === "4h") { input.value = (hireModalRate * 4).toFixed(6); btns[1].classList.add("active"); }
+    else { input.value = ""; input.focus(); btns[2].classList.add("active"); }
+}
+
+function submitHire() {
+    var agent = hireModalAgent;
+    if (!agent) return;
+
+    var jobDesc = document.getElementById("hireJobDesc").value.trim();
+    if (!jobDesc) { showToast("Please describe the job", "warning"); return; }
+
+    var budget = document.getElementById("hireBudget").value.trim();
+    if (!budget || isNaN(parseFloat(budget))) { showToast("Enter a valid budget", "warning"); return; }
+
+    // Check skill match
+    var skills = agent.skills || [];
+    var jobLower = jobDesc.toLowerCase();
+    var skillMatch = skills.some(function(s) {
+        var keywords = getSkillKeywords(s);
+        return keywords.some(function(k) { return jobLower.indexOf(k) !== -1; });
+    });
+    var warning = document.getElementById("hireSkillWarning");
+    if (!skillMatch && skills.length > 0) { warning.style.display = "block"; }
+
+    var useEscrow = hireModalUseEscrow;
+    closeHireModal();
+    processHire(agent, jobDesc, budget, useEscrow);
+}
+
 async function hireAgent(agent) {
     if (!connectedWallet) {
         showToast("Please connect your wallet first!", "warning");
@@ -2117,54 +2197,14 @@ async function hireAgent(agent) {
         return;
     }
 
+    openHireModal(agent);
+    return; // Flow continues in submitHire() -> processHire()
+}
+
+async function processHire(agent, jobDesc, budget, useEscrow) {
     var rate = AGENT_RATES[agent.tokenId] || 0.0003;
     var skills = agent.skills || [];
-
-    // Show hire modal with agent info
     var skillList = skills.join(", ") || "general";
-    var jobDesc = prompt(
-        "Hire " + agent.name + " (" + agent.tier + ")\n\n" +
-        "Skills: " + skillList + "\n" +
-        "Rate: " + rate + " ETH/hr\n" +
-        "Suggested jobs: " + getSuggestedJobs(skills) + "\n\n" +
-        "Describe the job:"
-    );
-    if (!jobDesc) return;
-
-    // Check if job matches agent skills
-    var jobLower = jobDesc.toLowerCase();
-    var skillMatch = skills.some(function(s) {
-        var keywords = getSkillKeywords(s);
-        return keywords.some(function(k) { return jobLower.indexOf(k) !== -1; });
-    });
-
-    if (!skillMatch && skills.length > 0) {
-        var proceed = confirm(
-            "⚠️ This job may not match " + agent.name + "'s skills (" + skillList + ").\n\n" +
-            "Consider hiring an agent specialized in this area.\n\nProceed anyway?"
-        );
-        if (!proceed) return;
-    }
-
-    // Suggest budget based on hourly rate (estimate 1-4 hours)
-    var suggested1h = rate;
-    var suggested4h = (rate * 4).toFixed(6);
-    var budget = prompt(
-        "Set budget for: " + jobDesc.slice(0, 50) + "\n\n" +
-        "Agent rate: " + rate + " ETH/hr\n" +
-        "Suggested:\n" +
-        "  Quick task (1hr): " + suggested1h + " ETH\n" +
-        "  Standard (4hr): " + suggested4h + " ETH\n\n" +
-        "Enter budget in ETH:"
-    );
-    if (!budget || isNaN(parseFloat(budget))) return;
-
-    // Ask user: on-chain escrow or direct payment?
-    var useEscrow = confirm(
-        "Use on-chain escrow? (Recommended)\n\n" +
-        "YES = Funds held in smart contract until you approve the work\n" +
-        "NO = Direct payment to agent wallet (instant, no protection)"
-    );
 
     try {
         var provider = new ethers.BrowserProvider(getWalletProvider());
