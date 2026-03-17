@@ -18,9 +18,9 @@ def get_soul(address):
 def stats():
     return jsonify({"total_souls": agent.get_total_souls(), "contract": "0x0F2f94281F87793ee086a2B6517B6db450192874", "chain": "Base Mainnet"})
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
-
 @app.route("/ens/<name>")
 def lookup_ens(name):
     return jsonify(agent.lookup_by_ens(name))
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
