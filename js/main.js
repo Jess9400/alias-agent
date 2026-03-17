@@ -25,7 +25,7 @@ const CONFIG = {
     ENS_API: "https://api.ensdata.net",
     BASESCAN_URL: "https://basescan.org",
     VERIFICATION_REGISTRY: "0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715",
-    API_URL: "https://89-167-68-215.sslip.io",
+    API_URL: "https://api.alias-protocol.xyz",
     PLATFORM_WALLET: "0x7F66dFcD8e9e4e7Ec435D0631C5d723fFaDdb211",
     JOB_REGISTRY: "0x7Fa3c9C28447d6ED6671b49d537E728f678568C8"
 };

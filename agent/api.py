@@ -6,7 +6,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from functools import wraps
-from time import time as _time
+from time import time as _time, sleep as _sleep
 from web3 import Web3
 from eth_account import Account
 from alias import AliasSoulAgent
@@ -34,7 +34,7 @@ def rate_limit(max_per_minute=30):
     return decorator
 
 app = Flask(__name__)
-CORS(app, origins=["https://jess9400.github.io", "http://localhost:*"])
+CORS(app, origins=["https://jess9400.github.io", "http://localhost:*", "https://api.alias-protocol.xyz"])
 agent = AliasSoulAgent()
 
 @app.route('/')
@@ -45,7 +45,7 @@ def index():
         "contract": "0x0F2f94281F87793ee086a2B6517B6db450192874",
         "chain": "Base Mainnet",
         "powered_by": "Venice AI",
-        "endpoints": ["/stats", "/soul/<address>", "/ens/<name>", "/chat", "/pin", "/job/execute", "/demo/auto-hire", "/demo/collaborate", "/health"]
+        "endpoints": ["/reputation/<address>", "/stats", "/soul/<address>", "/ens/<name>", "/chat", "/pin", "/job/execute", "/demo/auto-hire", "/demo/collaborate", "/health"]
     })
 
 @app.route('/stats')
@@ -407,6 +407,137 @@ def collaborate_demo():
         "task": task,
         "result": final_result,
         "steps": steps
+    })
+
+
+@app.route('/reputation/<address>')
+def reputation(address):
+    """Get on-chain reputation score for any wallet address — one call, full breakdown."""
+    try:
+        w3 = Web3(Web3.HTTPProvider("https://mainnet.base.org"))
+        address = Web3.to_checksum_address(address)
+    except Exception:
+        return jsonify({"error": "Invalid address"}), 400
+
+    soul_contract = w3.eth.contract(
+        address=Web3.to_checksum_address("0x0F2f94281F87793ee086a2B6517B6db450192874"),
+        abi=[
+            {"inputs":[{"name":"addr","type":"address"}],"name":"hasSoul","outputs":[{"type":"bool"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"name":"addr","type":"address"}],"name":"agentToSoul","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"name":"tokenId","type":"uint256"}],"name":"actionCount","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"name":"tokenId","type":"uint256"}],"name":"souls","outputs":[{"name":"name","type":"string"},{"name":"metadataURI","type":"string"},{"name":"creator","type":"address"},{"name":"createdAt","type":"uint256"},{"name":"skills","type":"string"},{"name":"active","type":"bool"}],"stateMutability":"view","type":"function"},
+        ]
+    )
+
+    verify_contract = w3.eth.contract(
+        address=Web3.to_checksum_address("0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715"),
+        abi=[
+            {"inputs":[{"name":"tokenId","type":"uint256"}],"name":"getVerificationCount","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"},
+        ]
+    )
+
+    job_contract = w3.eth.contract(
+        address=Web3.to_checksum_address("0x7Fa3c9C28447d6ED6671b49d537E728f678568C8"),
+        abi=[
+            {"inputs":[{"name":"tokenId","type":"uint256"}],"name":"getJobCount","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"},
+        ]
+    )
+
+    # Check if address has a soul
+    try:
+        has_soul = soul_contract.functions.hasSoul(address).call()
+    except Exception:
+        has_soul = False
+
+    if not has_soul:
+        return jsonify({
+            "address": address,
+            "has_soul": False,
+            "score": 0,
+            "tier": "NO_SOUL",
+            "risk_percent": 100,
+            "message": "This address has no ALIAS soulbound identity. Register at https://jess9400.github.io/alias-agent/"
+        })
+
+    # Get token ID and on-chain data (with retry for free RPC rate limits)
+    def _call_with_retry(fn, retries=3):
+        for i in range(retries):
+            try:
+                return fn()
+            except Exception as e:
+                if i < retries - 1 and "429" in str(e):
+                    _sleep(0.5)
+                else:
+                    raise e
+
+    try:
+        token_id = _call_with_retry(lambda: soul_contract.functions.agentToSoul(address).call())
+        soul_data = _call_with_retry(lambda: soul_contract.functions.souls(token_id).call())
+        actions = _call_with_retry(lambda: soul_contract.functions.actionCount(token_id).call())
+        verifications = _call_with_retry(lambda: verify_contract.functions.getVerificationCount(token_id).call())
+        jobs = _call_with_retry(lambda: job_contract.functions.getJobCount(token_id).call())
+    except Exception as e:
+        return jsonify({"error": f"Failed to read on-chain data: {str(e)}"}), 500
+
+    # souls() returns: (name, metadataURI, creator, createdAt, skills, active)
+    agent_name = soul_data[0]
+    agent_skills = soul_data[4]
+    created_at_block = soul_data[3]
+
+    # Calculate reputation (matches dashboard logic)
+    # Age bonus: up to 100 pts based on time since creation
+    # createdAt stores a block number, so we fetch its timestamp
+    try:
+        creation_block = _call_with_retry(lambda: w3.eth.get_block(created_at_block))
+        created_timestamp = creation_block['timestamp']
+    except Exception:
+        created_timestamp = 0
+    current_block = _call_with_retry(lambda: w3.eth.get_block('latest'))
+    age_seconds = current_block['timestamp'] - created_timestamp
+    age_days = max(age_seconds / 86400, 0)
+    age_bonus = min(int(age_days * 2), 100)  # 2 pts per day, max 100
+
+    action_pts = actions * 20
+    verification_pts = verifications * 15
+    job_pts = jobs * 25
+    total_score = age_bonus + action_pts + verification_pts + job_pts
+
+    # Tier calculation
+    if total_score >= 500:
+        tier, risk = "LEGENDARY", 5
+    elif total_score >= 200:
+        tier, risk = "ELITE", 15
+    elif total_score >= 100:
+        tier, risk = "TRUSTED", 30
+    elif total_score >= 50:
+        tier, risk = "VERIFIED", 50
+    elif total_score >= 1:
+        tier, risk = "NEWCOMER", 70
+    else:
+        tier, risk = "NO_SOUL", 100
+
+    return jsonify({
+        "address": address,
+        "has_soul": True,
+        "token_id": token_id,
+        "name": agent_name,
+        "skills": agent_skills,
+        "score": total_score,
+        "tier": tier,
+        "risk_percent": risk,
+        "breakdown": {
+            "age_bonus": age_bonus,
+            "actions": {"count": actions, "points": action_pts},
+            "verifications": {"count": verifications, "points": verification_pts},
+            "jobs": {"count": jobs, "points": job_pts}
+        },
+        "contracts": {
+            "soul": "0x0F2f94281F87793ee086a2B6517B6db450192874",
+            "verifications": "0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715",
+            "jobs": "0x7Fa3c9C28447d6ED6671b49d537E728f678568C8"
+        },
+        "chain": "Base Mainnet (8453)",
+        "source": "100% on-chain — no off-chain signals, no oracles"
     })
 
 
