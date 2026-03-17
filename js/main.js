@@ -2057,6 +2057,9 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("hireModal").addEventListener("click", function(e) {
         if (e.target.id === "hireModal") closeHireModal();
     });
+    document.getElementById("tipModal").addEventListener("click", function(e) {
+        if (e.target.id === "tipModal") closeTipModal();
+    });
 });
 
 // =============================================================================
@@ -2064,6 +2067,37 @@ document.addEventListener("DOMContentLoaded", function() {
 // =============================================================================
 
 var activeEscrows = {};
+
+// ---- Tip Modal State & Helpers ----
+var tipModalAgent = null;
+
+function openTipModal(agent) {
+    tipModalAgent = agent;
+    document.getElementById("tipAgentName").textContent = agent.name;
+    document.getElementById("tipAmount").value = "0.001";
+    document.getElementById("tipModal").style.display = "flex";
+    // Clear active states
+    document.querySelectorAll("#tipPresets button").forEach(function(b) { b.classList.remove("active"); });
+}
+
+function closeTipModal() {
+    document.getElementById("tipModal").style.display = "none";
+    tipModalAgent = null;
+}
+
+function setTipAmount(val) {
+    document.getElementById("tipAmount").value = val;
+    document.querySelectorAll("#tipPresets button").forEach(function(b) {
+        b.classList.toggle("active", b.textContent.trim() === val);
+    });
+}
+
+function submitTip() {
+    var amount = document.getElementById("tipAmount").value.trim();
+    if (!amount || isNaN(parseFloat(amount))) { showToast("Enter a valid amount", "warning"); return; }
+    closeTipModal();
+    processTip(tipModalAgent, amount);
+}
 
 async function tipAgent(agent, amount) {
     if (!connectedWallet) {
@@ -2083,8 +2117,17 @@ async function tipAgent(agent, amount) {
         return;
     }
 
-    var tipAmount = amount || prompt("Enter tip amount in ETH (e.g., 0.001):");
+    if (amount) {
+        processTip(agent, amount);
+    } else {
+        openTipModal(agent);
+    }
+}
+
+async function processTip(agent, tipAmount) {
     if (!tipAmount || isNaN(parseFloat(tipAmount))) return;
+
+    var recipient = AGENT_WALLETS[agent.tokenId] || agent.fullAddress;
 
     try {
         var provider = new ethers.BrowserProvider(getWalletProvider());
@@ -2099,13 +2142,13 @@ async function tipAgent(agent, amount) {
 
         typeInTerminal("[BANKR] TX submitted: " + tx.hash.slice(0, 15) + "...", "warning");
 
-        var receipt = await tx.wait();
+        await tx.wait();
 
-        typeInTerminal("[BANKR] ✓ Sent " + tipAmount + " ETH to " + agent.name + " operator", "success");
+        typeInTerminal("[BANKR] \u2713 Sent " + tipAmount + " ETH to " + agent.name + " operator", "success");
         typeInTerminal("[TX] " + tx.hash, "system");
 
         showToast("Tipped " + tipAmount + " ETH to " + agent.name + "!", "success", 7000);
-        
+
     } catch (error) {
         console.error("Tip error:", error);
         typeInTerminal("[ERROR] Payment failed: " + (error.reason || error.message), "warning");

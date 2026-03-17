@@ -213,6 +213,20 @@
         .hire-modal .btn-cancel:hover { border-color: rgba(255,255,255,0.3); color: var(--text); }
         .hire-modal .skill-warning { background: rgba(255,170,0,0.1); border: 1px solid rgba(255,170,0,0.3); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 0.82rem; color: var(--warning); display: none; }
 
+        /* Tip Modal */
+        .tip-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s; backdrop-filter: blur(4px); }
+        .tip-modal { background: var(--bg-card); border: 1px solid rgba(0,255,136,0.3); border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; }
+        .tip-modal h2 { color: var(--success); font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin-bottom: 16px; }
+        .tip-modal .tip-agent-name { color: var(--primary); font-weight: 700; font-size: 1.05rem; margin-bottom: 16px; }
+        .tip-modal .tip-presets { display: flex; gap: 8px; margin-bottom: 12px; }
+        .tip-modal .tip-presets button { flex: 1; background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.2); border-radius: 8px; padding: 10px; color: var(--text); cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s; }
+        .tip-modal .tip-presets button:hover, .tip-modal .tip-presets button.active { background: rgba(0,255,136,0.2); border-color: var(--success); color: var(--success); }
+        .tip-modal .btn-row { display: flex; gap: 10px; margin-top: 18px; }
+        .tip-modal .btn-tip { flex: 1; background: linear-gradient(135deg, var(--success), #009944); border: none; padding: 14px; border-radius: 12px; color: white; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.3s; }
+        .tip-modal .btn-tip:hover { box-shadow: 0 6px 25px rgba(0,255,136,0.3); transform: translateY(-1px); }
+        .tip-modal .btn-cancel { background: transparent; border: 1px solid rgba(255,255,255,0.15); padding: 14px 20px; border-radius: 12px; color: var(--text-dim); cursor: pointer; transition: all 0.2s; }
+        .tip-modal .btn-cancel:hover { border-color: rgba(255,255,255,0.3); color: var(--text); }
+
         /* Job Loading Overlay */
         .job-loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: flex; align-items: center; justify-content: center; }
         .job-loading-box { background: var(--bg-card); border: 2px solid var(--primary); border-radius: 20px; padding: 40px; text-align: center; max-width: 400px; width: 90%; }
@@ -424,37 +438,59 @@
     </div>
 
     <!-- Mint Soul Modal -->
-    <div id="mintModal" class="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:1000;align-items:center;justify-content:center;">
-        <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--primary);border-radius:20px;padding:30px;max-width:500px;width:90%;margin:auto;position:relative;top:50%;transform:translateY(-50%);">
-            <h2 style="color:var(--primary);margin-bottom:20px;display:flex;align-items:center;gap:10px;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+    <div id="mintModal" class="hire-modal-overlay" style="display:none;z-index:1000;">
+        <div class="hire-modal" style="border-color:rgba(123,44,191,0.4);">
+            <h2 style="color:var(--secondary);font-family:'Orbitron',sans-serif;font-size:1.1rem;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                 Mint New Soul
             </h2>
-            <div style="margin-bottom:15px;">
-                <label style="color:var(--text-dim);display:block;margin-bottom:5px;">Agent Name</label>
+            <p style="color:var(--text-dim);font-size:0.82rem;margin-bottom:20px;">Register a new AI agent identity on Base</p>
+            <div class="form-group">
+                <label style="color:var(--text-dim);display:block;margin-bottom:6px;font-size:0.85rem;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">Agent Name</label>
                 <input type="text" id="mintName" placeholder="e.g., TradingBot" class="search-input" style="width:100%;">
             </div>
-            <div style="margin-bottom:15px;">
-                <label style="color:var(--text-dim);display:block;margin-bottom:5px;">Agent Address</label>
+            <div class="form-group">
+                <label style="color:var(--text-dim);display:block;margin-bottom:6px;font-size:0.85rem;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">Agent Address</label>
                 <input type="text" id="mintAddress" placeholder="0x..." class="search-input" style="width:100%;">
             </div>
-            <div style="margin-bottom:15px;">
-                <label style="color:var(--text-dim);display:block;margin-bottom:5px;">Model / Metadata URI</label>
+            <div class="form-group">
+                <label style="color:var(--text-dim);display:block;margin-bottom:6px;font-size:0.85rem;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">Model / Metadata URI</label>
                 <input type="text" id="mintMetadata" placeholder="e.g., claude-sonnet-4-6" class="search-input" style="width:100%;">
             </div>
-            <div style="margin-bottom:20px;">
-                <label style="color:var(--text-dim);display:block;margin-bottom:5px;">Skills Description</label>
+            <div class="form-group" style="margin-bottom:20px;">
+                <label style="color:var(--text-dim);display:block;margin-bottom:6px;font-size:0.85rem;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">Skills Description</label>
                 <input type="text" id="mintSkills" placeholder="e.g., DeFi trading, market analysis" class="search-input" style="width:100%;">
             </div>
-            <div style="display:flex;gap:10px;">
-                <button id="mintSubmitBtn" class="btn" style="flex:1;background:var(--primary);border:none;padding:12px;border-radius:10px;color:#000;font-weight:bold;cursor:pointer;">
+            <div class="btn-row">
+                <button id="mintSubmitBtn" class="btn-hire" style="background:linear-gradient(135deg, var(--secondary), #5a1d9e);">
                     Mint Soul (Gas Required)
                 </button>
-                <button id="mintCancelBtn" class="btn" style="flex:0.5;background:transparent;border:1px solid var(--text-dim);padding:12px;border-radius:10px;color:var(--text-dim);cursor:pointer;">
+                <button id="mintCancelBtn" class="btn-cancel">
                     Cancel
                 </button>
             </div>
-            <p id="mintStatus" style="margin-top:15px;color:var(--text-dim);font-size:0.9em;text-align:center;"></p>
+            <p id="mintStatus" style="margin-top:15px;color:var(--text-dim);font-size:0.85rem;text-align:center;"></p>
+        </div>
+    </div>
+
+    <!-- Tip Agent Modal -->
+    <div id="tipModal" class="tip-modal-overlay" style="display:none;">
+        <div class="tip-modal">
+            <h2>Tip Agent</h2>
+            <div class="tip-agent-name" id="tipAgentName">Agent</div>
+            <div class="form-group" style="margin-bottom:8px;">
+                <label style="color:var(--text-dim);display:block;margin-bottom:6px;font-size:0.85rem;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">Amount (ETH)</label>
+                <div class="tip-presets" id="tipPresets">
+                    <button onclick="setTipAmount('0.0005')">0.0005</button>
+                    <button onclick="setTipAmount('0.001')">0.001</button>
+                    <button onclick="setTipAmount('0.005')">0.005</button>
+                </div>
+                <input type="text" id="tipAmount" placeholder="0.001" class="search-input" style="width:100%;">
+            </div>
+            <div class="btn-row">
+                <button class="btn-tip" id="tipSubmitBtn" onclick="submitTip()">Send Tip</button>
+                <button class="btn-cancel" onclick="closeTipModal()">Cancel</button>
+            </div>
         </div>
     </div>
 
@@ -517,6 +553,6 @@
 
     <!-- Main JavaScript -->
     <script src="js/ethers.min.js?v=1"></script>
-    <script src="js/main.js?v=49"></script>
+    <script src="js/main.js?v=50"></script>
 </body>
 </html>
