@@ -19,7 +19,7 @@ contract AgentSoulTest is Test {
         owner = address(this);
         agent1 = makeAddr("agent1");
         agent2 = makeAddr("agent2");
-        
+
         agentSoul = new AgentSoul();
     }
 
@@ -29,7 +29,7 @@ contract AgentSoulTest is Test {
 
     function test_MintSoul() public {
         agentSoul.mintSoul(agent1, "TestAgent", "gpt-4", "Test agent description");
-        
+
         assertTrue(agentSoul.hasSoul(agent1));
         assertEq(agentSoul.totalSouls(), 1);
     }
@@ -37,7 +37,7 @@ contract AgentSoulTest is Test {
     function test_MintSoul_MultipleTimes() public {
         agentSoul.mintSoul(agent1, "Agent1", "model1", "desc1");
         agentSoul.mintSoul(agent2, "Agent2", "model2", "desc2");
-        
+
         assertTrue(agentSoul.hasSoul(agent1));
         assertTrue(agentSoul.hasSoul(agent2));
         assertEq(agentSoul.totalSouls(), 2);
@@ -45,8 +45,8 @@ contract AgentSoulTest is Test {
 
     function test_CannotMintTwice() public {
         agentSoul.mintSoul(agent1, "TestAgent", "gpt-4", "desc");
-        
-        vm.expectRevert("Agent already has soul");
+
+        vm.expectRevert("Agent already has a soul");
         agentSoul.mintSoul(agent1, "TestAgent2", "gpt-4", "desc2");
     }
 
@@ -57,20 +57,20 @@ contract AgentSoulTest is Test {
     function test_RecordAction() public {
         agentSoul.mintSoul(agent1, "TestAgent", "gpt-4", "desc");
         uint256 tokenId = agentSoul.agentToSoul(agent1);
-        
-        agentSoul.recordAction(tokenId, "verification", keccak256("test"));
-        
+
+        agentSoul.recordAction(tokenId, "verification", "test");
+
         assertEq(agentSoul.actionCount(tokenId), 1);
     }
 
     function test_MultipleActions() public {
         agentSoul.mintSoul(agent1, "TestAgent", "gpt-4", "desc");
         uint256 tokenId = agentSoul.agentToSoul(agent1);
-        
-        agentSoul.recordAction(tokenId, "verification", keccak256("test1"));
-        agentSoul.recordAction(tokenId, "task_complete", keccak256("test2"));
-        agentSoul.recordAction(tokenId, "payment", keccak256("test3"));
-        
+
+        agentSoul.recordAction(tokenId, "verification", "hash1");
+        agentSoul.recordAction(tokenId, "task_complete", "hash2");
+        agentSoul.recordAction(tokenId, "payment", "hash3");
+
         assertEq(agentSoul.actionCount(tokenId), 3);
     }
 
@@ -81,9 +81,9 @@ contract AgentSoulTest is Test {
     function test_CannotTransfer() public {
         agentSoul.mintSoul(agent1, "TestAgent", "gpt-4", "desc");
         uint256 tokenId = agentSoul.agentToSoul(agent1);
-        
+
         vm.prank(agent1);
-        vm.expectRevert("Soulbound: non-transferable");
+        vm.expectRevert("Soulbound: transfers disabled");
         agentSoul.transfer(agent2, tokenId);
     }
 
@@ -93,14 +93,22 @@ contract AgentSoulTest is Test {
 
     function test_GetSoul() public {
         agentSoul.mintSoul(agent1, "TestAgent", "gpt-4", "Test description");
-        
-        (string memory name, string memory model, string memory desc, uint256 mintTime, address minter) = agentSoul.getSoul(agent1);
-        
+
+        (
+            string memory name,
+            string memory model,
+            address creator,
+            uint256 birthBlock,
+            string memory desc,
+            uint256 actions
+        ) = agentSoul.getSoul(agent1);
+
         assertEq(name, "TestAgent");
         assertEq(model, "gpt-4");
+        assertEq(creator, owner);
+        assertGt(birthBlock, 0);
         assertEq(desc, "Test description");
-        assertGt(mintTime, 0);
-        assertEq(minter, owner);
+        assertEq(actions, 0);
     }
 
     function test_HasSoul_ReturnsFalse() public {
@@ -109,7 +117,7 @@ contract AgentSoulTest is Test {
 
     function test_AgentToSoul() public {
         agentSoul.mintSoul(agent1, "TestAgent", "gpt-4", "desc");
-        
+
         uint256 tokenId = agentSoul.agentToSoul(agent1);
         assertEq(tokenId, 1);
     }
