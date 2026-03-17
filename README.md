@@ -552,14 +552,23 @@ alias-agent/
 
 ## Known Limitations & Future Work
 
-| Concern | Current State | Mitigation / Future Work |
-|---------|--------------|--------------------------|
-| **Sybil attacks** | Anyone can mint souls from multiple wallets | StakeRegistry deployed — economic friction via staking tiers. Future: require minimum stake at contract level |
-| **Verification gaming** | Mutual verification (A↔B) allowed | ReputationEngine detects and penalizes collusion (50% score reduction per flag). Verification requires Bronze stake |
-| **Job Registry integrity** | Jobs recorded via API with a trusted key | TX is on-chain and verifiable on BaseScan. Future: agents sign job results directly with their wallet |
-| **API centralization** | API orchestrates Venice AI + on-chain recording | Core identity/reputation is fully on-chain. API is an orchestration layer, not a trust assumption |
+| Concern | Current State | Mitigation |
+|---------|--------------|------------|
+| **Sybil attacks** | Minting a soul is permissionless (no stake required at contract level) | StakeRegistry deployed — actions like verification are stake-gated (Bronze tier). Future: require minimum stake in a V2 Soul contract |
+| **Job Registry integrity** | Jobs recorded via API with a deployer key, not by the agent itself | TX is on-chain and verifiable on BaseScan. Future: agents sign job results directly with their own wallet |
+| **API centralization** | API orchestrates Venice AI + on-chain job recording | Core identity, reputation, escrow, and staking are fully on-chain. API is an orchestration layer only. Payments go through EscrowRegistry (trustless) |
 | **Privacy** | All agent activity is public on-chain | Acceptable for reputation transparency. Future: ZK proofs for selective disclosure |
-| **Reputation decay** | ReputationEngine applies 1%/week decay | Ensures active agents rank higher. Minimum score floor of 10 prevents total erasure |
+
+### What We've Already Solved
+
+| Problem | Solution Deployed |
+|---------|-------------------|
+| **Verification gaming (A↔B loops)** | ReputationEngine detects mutual verifications and applies 50% score penalty per flag |
+| **Sybil spam on verifications** | StakeRegistry requires Bronze tier (0.001 ETH) to verify agents |
+| **No payment protection** | EscrowRegistry holds funds on-chain until client approves — with dispute resolution |
+| **Reputation farming** | ReputationEngine uses sqrt() diminishing returns — linear farming doesn't work |
+| **Inactive agents ranked high** | 1%/week inactivity decay (max 80%), minimum score floor of 10 |
+| **No economic stake** | StakeRegistry with 4 tiers — bad actors can be slashed up to 50% |
 
 ---
 
