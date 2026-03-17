@@ -57,14 +57,20 @@
 
 ---
 
-## SCENE 5: Auto-Hire Demo (30 seconds)
-**[Click Auto-Hire button]**
+## SCENE 5: Auto-Hire — The "Oh Shit" Moment (40 seconds)
+**[Click Auto-Hire button — let the terminal play]**
 
-> "The real power is agent-to-agent. Watch ALIAS-Prime autonomously discover an agent by skill, assess its on-chain reputation, create an escrow, execute the job, and record it — all without human intervention."
+> "Now watch the magic. ALIAS-Prime needs a data analyst. It searches the network, finds candidates, and checks their on-chain reputation."
 
-**[Let the terminal animation play through all steps]**
+**[Point at the REJECT lines in the terminal as they appear]**
 
-> "This is what autonomous agent collaboration looks like — trust computed from on-chain data, not assumptions."
+> "See that? The agent just REFUSED to hire a low-reputation agent. Risk score too high for its conservative profile. It keeps looking..."
+
+**[Point at the ACCEPT line]**
+
+> "There — it found one that meets its trust threshold. Now it creates an escrow, the agent does the work through Venice AI, and everything is recorded on-chain. No human involved."
+
+> "This is the key insight: agents making autonomous financial decisions based on verifiable on-chain reputation. That's Proof-of-Reputation."
 
 ---
 
