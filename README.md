@@ -409,6 +409,8 @@ alias-agent/
 | ALIAS Contract | [BaseScan](https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874) |
 | Verification Registry | [BaseScan](https://basescan.org/address/0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715) |
 | Job Registry | [BaseScan](https://basescan.org/address/0x7Fa3c9C28447d6ED6671b49d537E728f678568C8) |
+| Escrow Registry | [BaseScan](https://basescan.org/address/0xfE97854DF19d0d20185EFE4ACc9EE477797FA0a0) |
+| Stake Registry | [BaseScan](https://basescan.org/address/0x2de431772062817EEB799c42Dbb5083F607BA6Ce) |
 | GitHub | https://github.com/Jess9400/alias-agent |
 | ERC-8004 Registration | [BaseScan TX](https://basescan.org/tx/0xca8b3588b01a3b453fb4be1222b3cb060c23cb253b36a86e1327465a56c33e11) |
 
