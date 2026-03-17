@@ -28,16 +28,23 @@ interface IStakeRegistryRep {
 contract ReputationEngine {
     // ======================== TYPES ========================
 
-    enum Tier { NO_SOUL, NEWCOMER, VERIFIED, TRUSTED, ELITE, LEGENDARY }
+    enum Tier {
+        NO_SOUL,
+        NEWCOMER,
+        VERIFIED,
+        TRUSTED,
+        ELITE,
+        LEGENDARY
+    }
 
     struct ReputationBreakdown {
-        uint256 activityScore;      // From on-chain actions (diminishing returns)
-        uint256 verificationScore;  // From verifications (weighted)
-        uint256 jobScore;           // From job completions
-        uint256 ageScore;           // From time since registration
-        uint256 stakeBonus;         // Multiplier from staking
-        uint256 decayPenalty;       // Reduction from inactivity
-        uint256 collusionPenalty;   // Reduction from suspicious patterns
+        uint256 activityScore; // From on-chain actions (diminishing returns)
+        uint256 verificationScore; // From verifications (weighted)
+        uint256 jobScore; // From job completions
+        uint256 ageScore; // From time since registration
+        uint256 stakeBonus; // Multiplier from staking
+        uint256 decayPenalty; // Reduction from inactivity
+        uint256 collusionPenalty; // Reduction from suspicious patterns
         uint256 totalScore;
         Tier tier;
     }
@@ -66,17 +73,17 @@ contract ReputationEngine {
     mapping(uint256 => uint256) public mutualVerifyCount;
 
     // Scoring weights (basis points, total flexible)
-    uint256 public constant ACTIVITY_WEIGHT = 2000;      // 20%
-    uint256 public constant VERIFICATION_WEIGHT = 3000;   // 30%
-    uint256 public constant JOB_WEIGHT = 2500;            // 25%
-    uint256 public constant AGE_WEIGHT = 1000;            // 10%
-    uint256 public constant STAKE_WEIGHT = 1500;          // 15%
+    uint256 public constant ACTIVITY_WEIGHT = 2000; // 20%
+    uint256 public constant VERIFICATION_WEIGHT = 3000; // 30%
+    uint256 public constant JOB_WEIGHT = 2500; // 25%
+    uint256 public constant AGE_WEIGHT = 1000; // 10%
+    uint256 public constant STAKE_WEIGHT = 1500; // 15%
 
     // Decay: ~1% per week of inactivity (represented as seconds)
     uint256 public constant DECAY_PERIOD = 7 days;
-    uint256 public constant DECAY_BPS_PER_PERIOD = 100;   // 1% per period
-    uint256 public constant MAX_DECAY_BPS = 8000;         // Max 80% decay
-    uint256 public constant MIN_SCORE_FLOOR = 10;         // Never below this
+    uint256 public constant DECAY_BPS_PER_PERIOD = 100; // 1% per period
+    uint256 public constant MAX_DECAY_BPS = 8000; // Max 80% decay
+    uint256 public constant MIN_SCORE_FLOOR = 10; // Never below this
 
     // Anti-collusion
     uint256 public constant MUTUAL_VERIFY_PENALTY_BPS = 5000; // 50% reduction
@@ -117,12 +124,7 @@ contract ReputationEngine {
 
     // ======================== CONSTRUCTOR ========================
 
-    constructor(
-        address _soul,
-        address _verification,
-        address _job,
-        address _stake
-    ) {
+    constructor(address _soul, address _verification, address _job, address _stake) {
         require(_soul != address(0), "Invalid soul");
         soulContract = IAliasSoulRep(_soul);
         verificationRegistry = IVerificationRegistryRep(_verification);
@@ -187,7 +189,12 @@ contract ReputationEngine {
     /**
      * @notice Get detailed reputation breakdown
      */
-    function getReputationBreakdown(uint256 tokenId) external view validToken(tokenId) returns (ReputationBreakdown memory) {
+    function getReputationBreakdown(uint256 tokenId)
+        external
+        view
+        validToken(tokenId)
+        returns (ReputationBreakdown memory)
+    {
         return _calculateBreakdown(tokenId);
     }
 
@@ -233,13 +240,13 @@ contract ReputationEngine {
         // 5. Stake bonus: percentage increase based on stake amount
         uint256 stakeAmount = stakeRegistry.getStake(tokenId);
         if (stakeAmount >= 0.05 ether) {
-            b.stakeBonus = 200;     // Platinum: +200%  (applied as bonus points)
+            b.stakeBonus = 200; // Platinum: +200%  (applied as bonus points)
         } else if (stakeAmount >= 0.01 ether) {
-            b.stakeBonus = 100;     // Gold: +100%
+            b.stakeBonus = 100; // Gold: +100%
         } else if (stakeAmount >= 0.005 ether) {
-            b.stakeBonus = 50;      // Silver: +50%
+            b.stakeBonus = 50; // Silver: +50%
         } else if (stakeAmount >= 0.001 ether) {
-            b.stakeBonus = 25;      // Bronze: +25%
+            b.stakeBonus = 25; // Bronze: +25%
         }
 
         // Raw score before modifiers
@@ -323,12 +330,7 @@ contract ReputationEngine {
         emit CallerRevoked(caller);
     }
 
-    function updateContracts(
-        address _soul,
-        address _verification,
-        address _job,
-        address _stake
-    ) external onlyOwner {
+    function updateContracts(address _soul, address _verification, address _job, address _stake) external onlyOwner {
         if (_soul != address(0)) soulContract = IAliasSoulRep(_soul);
         if (_verification != address(0)) verificationRegistry = IVerificationRegistryRep(_verification);
         if (_job != address(0)) jobRegistry = IJobRegistryRep(_job);

@@ -64,14 +64,18 @@ contract VerificationRegistryV2Test is Test {
 
     function test_Verify_RevertsOnLongMessage() public {
         bytes memory longMsg = new bytes(281);
-        for (uint i = 0; i < 281; i++) longMsg[i] = "x";
+        for (uint256 i = 0; i < 281; i++) {
+            longMsg[i] = "x";
+        }
         vm.expectRevert("Message too long");
         registry.verify(1, string(longMsg));
     }
 
     function test_Verify_AllowsMaxLengthMessage() public {
         bytes memory msg280 = new bytes(280);
-        for (uint i = 0; i < 280; i++) msg280[i] = "y";
+        for (uint256 i = 0; i < 280; i++) {
+            msg280[i] = "y";
+        }
         registry.verify(1, string(msg280));
         assertEq(registry.getVerificationCount(1), 1);
     }
@@ -86,7 +90,7 @@ contract VerificationRegistryV2Test is Test {
     function test_GetVerifications_Paginated() public {
         // Add 5 verifications
         address[5] memory verifiers = [address(0x1), address(0x2), address(0x3), address(0x4), address(0x5)];
-        for (uint i = 0; i < 5; i++) {
+        for (uint256 i = 0; i < 5; i++) {
             vm.prank(verifiers[i]);
             registry.verify(1, string(abi.encodePacked("V", vm.toString(i))));
         }
