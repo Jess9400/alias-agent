@@ -51,6 +51,9 @@ contract ReputationEngine {
 
     address public owner;
 
+    // Authorized callers for recording functions
+    mapping(address => bool) public authorizedCallers;
+
     // tokenId => last activity timestamp
     mapping(uint256 => uint256) public lastActivity;
     // tokenId => registration timestamp
@@ -59,6 +62,8 @@ contract ReputationEngine {
     mapping(uint256 => uint256) public jobValue;
     // Mutual verification tracking: keccak256(tokenA, tokenB) => true
     mapping(bytes32 => bool) public mutualVerifications;
+    // tokenId => count of mutual verifications flagged
+    mapping(uint256 => uint256) public mutualVerifyCount;
 
     // Scoring weights (basis points, total flexible)
     uint256 public constant ACTIVITY_WEIGHT = 2000;      // 20%
@@ -90,11 +95,18 @@ contract ReputationEngine {
     event AgentRegistered(uint256 indexed tokenId, uint256 timestamp);
     event JobValueRecorded(uint256 indexed tokenId, uint256 value);
     event MutualVerificationFlagged(uint256 indexed tokenA, uint256 indexed tokenB);
+    event CallerAuthorized(address indexed caller);
+    event CallerRevoked(address indexed caller);
 
     // ======================== MODIFIERS ========================
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Not owner");
+        _;
+    }
+
+    modifier onlyAuthorized() {
+        require(msg.sender == owner || authorizedCallers[msg.sender], "Not authorized");
         _;
     }
 
@@ -122,9 +134,9 @@ contract ReputationEngine {
     // ======================== RECORDING FUNCTIONS ========================
 
     /**
-     * @notice Record activity to reset decay timer
+     * @notice Record activity to reset decay timer (only authorized contracts/owner)
      */
-    function recordActivity(uint256 tokenId) external validToken(tokenId) {
+    function recordActivity(uint256 tokenId) external onlyAuthorized validToken(tokenId) {
         lastActivity[tokenId] = block.timestamp;
         emit ActivityRecorded(tokenId, block.timestamp);
     }
@@ -132,7 +144,7 @@ contract ReputationEngine {
     /**
      * @notice Register an agent's creation time (called once at mint)
      */
-    function registerAgent(uint256 tokenId) external validToken(tokenId) {
+    function registerAgent(uint256 tokenId) external onlyAuthorized validToken(tokenId) {
         require(registeredAt[tokenId] == 0, "Already registered");
         registeredAt[tokenId] = block.timestamp;
         lastActivity[tokenId] = block.timestamp;
@@ -142,20 +154,22 @@ contract ReputationEngine {
     /**
      * @notice Record escrow value for a completed job (called by escrow contract)
      */
-    function recordJobValue(uint256 tokenId, uint256 value) external validToken(tokenId) {
+    function recordJobValue(uint256 tokenId, uint256 value) external onlyAuthorized validToken(tokenId) {
         jobValue[tokenId] += value;
         lastActivity[tokenId] = block.timestamp;
         emit JobValueRecorded(tokenId, value);
     }
 
     /**
-     * @notice Flag mutual verification between two agents
+     * @notice Flag mutual verification between two agents — penalizes both
      */
-    function flagMutualVerification(uint256 tokenA, uint256 tokenB) external {
+    function flagMutualVerification(uint256 tokenA, uint256 tokenB) external onlyAuthorized {
         require(tokenA != tokenB, "Same token");
         bytes32 key = _mutualKey(tokenA, tokenB);
         if (!mutualVerifications[key]) {
             mutualVerifications[key] = true;
+            mutualVerifyCount[tokenA]++;
+            mutualVerifyCount[tokenB]++;
             emit MutualVerificationFlagged(tokenA, tokenB);
         }
     }
@@ -239,9 +253,14 @@ contract ReputationEngine {
         b.decayPenalty = rawScore - (rawScore * decayMul / 10000);
         rawScore = rawScore * decayMul / 10000;
 
-        // 7. Collusion penalty (checked off-chain, flagged on-chain)
-        // Placeholder — real penalty applied if mutualVerifications flagged
-        b.collusionPenalty = 0;
+        // 7. Collusion penalty — 50% of verification score per flagged mutual verification
+        uint256 mutualCount = mutualVerifyCount[tokenId];
+        if (mutualCount > 0) {
+            uint256 penaltyBps = mutualCount * MUTUAL_VERIFY_PENALTY_BPS;
+            if (penaltyBps > 10000) penaltyBps = 10000; // Cap at 100%
+            b.collusionPenalty = rawScore * penaltyBps / 10000;
+            rawScore -= b.collusionPenalty;
+        }
 
         // Floor
         b.totalScore = rawScore < MIN_SCORE_FLOOR && rawScore > 0 ? MIN_SCORE_FLOOR : rawScore;
@@ -292,6 +311,17 @@ contract ReputationEngine {
     }
 
     // ======================== ADMIN ========================
+
+    function addAuthorizedCaller(address caller) external onlyOwner {
+        require(caller != address(0), "Zero address");
+        authorizedCallers[caller] = true;
+        emit CallerAuthorized(caller);
+    }
+
+    function removeAuthorizedCaller(address caller) external onlyOwner {
+        authorizedCallers[caller] = false;
+        emit CallerRevoked(caller);
+    }
 
     function updateContracts(
         address _soul,

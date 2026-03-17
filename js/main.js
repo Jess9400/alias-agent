@@ -2148,6 +2148,13 @@ async function hireAgent(agent) {
     );
     if (!budget || isNaN(parseFloat(budget))) return;
 
+    // Ask user: on-chain escrow or direct payment?
+    var useEscrow = confirm(
+        "Use on-chain escrow? (Recommended)\n\n" +
+        "YES = Funds held in smart contract until you approve the work\n" +
+        "NO = Direct payment to agent wallet (instant, no protection)"
+    );
+
     try {
         var provider = new ethers.BrowserProvider(getWalletProvider());
         var signer = await provider.getSigner();
@@ -2163,31 +2170,77 @@ async function hireAgent(agent) {
         typeInTerminal("[ESCROW] Platform fee (5%): " + fee.toFixed(6) + " ETH → gas + AI costs", "warning");
         typeInTerminal("[ESCROW] Agent payment: " + agentPayment.toFixed(6) + " ETH", "warning");
 
-        // Send agent payment (95%) to operator wallet
-        var hireRecipient = AGENT_WALLETS[agent.tokenId] || agent.fullAddress;
-        var tx = await signer.sendTransaction({
-            to: hireRecipient,
-            value: ethers.parseEther(agentPayment.toFixed(18))
-        });
-
-        typeInTerminal("[ESCROW] Agent TX submitted: " + tx.hash.slice(0, 15) + "...", "warning");
-
-        var receipt = await tx.wait();
-
-        // Send platform fee (5%) to cover gas + Venice AI costs
-        typeInTerminal("[ESCROW] Sending platform fee...", "warning");
-        try {
-            var feeTx = await signer.sendTransaction({
-                to: CONFIG.PLATFORM_WALLET,
-                value: ethers.parseEther(fee.toFixed(18))
+        var onChainEscrowId = null;
+        if (useEscrow) {
+            // Find caller's tokenId
+            var myAgent = agents.find(function(a) {
+                return a.fullAddress && a.fullAddress.toLowerCase() === connectedWallet.toLowerCase();
             });
-            await feeTx.wait();
-            typeInTerminal("[ESCROW] ✓ Platform fee sent (gas + AI)", "success");
-        } catch (feeErr) {
-            typeInTerminal("[ESCROW] Platform fee skipped: " + (feeErr.reason || "insufficient funds"), "warning");
+            if (!myAgent) {
+                typeInTerminal("[ESCROW] You need an ALIAS soul to use on-chain escrow. Falling back to direct payment.", "warning");
+                useEscrow = false;
+            } else {
+                typeInTerminal("[ESCROW] Creating on-chain escrow via EscrowRegistry...", "warning");
+                var escrowContract = new ethers.Contract(CONFIG.ESCROW_REGISTRY, ESCROW_REGISTRY_ABI, signer);
+                var deadline = Math.floor(Date.now() / 1000) + 86400 * 3; // 3 days
+                var escrowTx = await escrowContract.createEscrow(
+                    myAgent.tokenId,
+                    agent.tokenId,
+                    jobDesc.slice(0, 1000),
+                    deadline,
+                    { value: ethers.parseEther(totalBudget.toFixed(18)) }
+                );
+                typeInTerminal("[ESCROW] TX submitted: " + escrowTx.hash.slice(0, 18) + "...", "warning");
+                var escrowReceipt = await escrowTx.wait();
+
+                // Parse escrow ID from event
+                try {
+                    var escrowIface = new ethers.Interface(ESCROW_REGISTRY_ABI);
+                    for (var log of escrowReceipt.logs) {
+                        try {
+                            var parsed = escrowIface.parseLog({ topics: log.topics, data: log.data });
+                            if (parsed && parsed.name === "EscrowCreated") {
+                                onChainEscrowId = Number(parsed.args[0]);
+                                break;
+                            }
+                        } catch (e) {}
+                    }
+                } catch (e) {}
+
+                typeInTerminal("[ESCROW] ✓ On-chain escrow created! ID: " + (onChainEscrowId || "pending"), "success");
+                typeInTerminal("[TX] https://basescan.org/tx/" + escrowTx.hash, "system");
+            }
         }
 
-        var escrowId = "ESC-" + Date.now();
+        var escrowId = useEscrow ? "ESCROW-" + (onChainEscrowId || Date.now()) : "ESC-" + Date.now();
+        var txHash = "";
+
+        if (!useEscrow) {
+            // Direct payment flow (original)
+            var hireRecipient = AGENT_WALLETS[agent.tokenId] || agent.fullAddress;
+            var tx = await signer.sendTransaction({
+                to: hireRecipient,
+                value: ethers.parseEther(agentPayment.toFixed(18))
+            });
+            txHash = tx.hash;
+
+            typeInTerminal("[ESCROW] Agent TX submitted: " + tx.hash.slice(0, 15) + "...", "warning");
+            await tx.wait();
+
+            // Send platform fee (5%) to cover gas + Venice AI costs
+            typeInTerminal("[ESCROW] Sending platform fee...", "warning");
+            try {
+                var feeTx = await signer.sendTransaction({
+                    to: CONFIG.PLATFORM_WALLET,
+                    value: ethers.parseEther(fee.toFixed(18))
+                });
+                await feeTx.wait();
+                typeInTerminal("[ESCROW] ✓ Platform fee sent (gas + AI)", "success");
+            } catch (feeErr) {
+                typeInTerminal("[ESCROW] Platform fee skipped: " + (feeErr.reason || "insufficient funds"), "warning");
+            }
+        }
+
         var jobData = {
             agent: agent.name,
             agentAddress: agent.fullAddress,
@@ -2197,8 +2250,10 @@ async function hireAgent(agent) {
             job: jobDesc,
             budget: budget,
             rate: rate,
-            status: "PAID",
-            txHash: tx.hash,
+            status: useEscrow ? "ESCROWED" : "PAID",
+            txHash: txHash,
+            onChainEscrow: useEscrow,
+            onChainEscrowId: onChainEscrowId,
             timestamp: new Date().toISOString()
         };
         activeEscrows[escrowId] = jobData;
@@ -2206,7 +2261,6 @@ async function hireAgent(agent) {
 
         typeInTerminal("[ESCROW] ✓ Job funded! ID: " + escrowId, "success");
         typeInTerminal("[HIRE] " + escapeHtml(agent.name) + " hired successfully!", "success");
-        typeInTerminal("[TX] " + tx.hash, "system");
 
         // Execute job via Venice AI with loading spinner
         showJobLoading(agent.name);
@@ -2238,6 +2292,28 @@ async function hireAgent(agent) {
                 jobData.result = jobResult.result;
                 saveJob(escrowId, jobData);
                 showToast("Job completed by " + agent.name + "! Check terminal for results.", "success", 8000);
+
+                // If escrow: prompt to approve and release
+                if (useEscrow && onChainEscrowId) {
+                    var doApprove = confirm("Job completed! Approve and release escrow payment to " + agent.name + "?");
+                    if (doApprove) {
+                        try {
+                            var escrowWrite = new ethers.Contract(CONFIG.ESCROW_REGISTRY, ESCROW_REGISTRY_ABI, signer);
+                            typeInTerminal("[ESCROW] Approving and releasing payment...", "warning");
+                            var approveTx = await escrowWrite.approveAndRelease(onChainEscrowId);
+                            await approveTx.wait();
+                            typeInTerminal("[ESCROW] ✓ Payment released to " + escapeHtml(agent.name) + "!", "success");
+                            typeInTerminal("[TX] https://basescan.org/tx/" + approveTx.hash, "system");
+                            jobData.status = "RELEASED";
+                            saveJob(escrowId, jobData);
+                        } catch (approveErr) {
+                            typeInTerminal("[ESCROW] Release failed: " + (approveErr.reason || approveErr.message), "warning");
+                            typeInTerminal("[INFO] You can approve later from the Jobs panel.", "system");
+                        }
+                    } else {
+                        typeInTerminal("[INFO] Escrow held. You can approve or dispute later from the Jobs panel.", "system");
+                    }
+                }
             } else {
                 typeInTerminal("[WORK] Job error: " + escapeHtml(jobResult.error || "unknown"), "warning");
                 typeInTerminal("[INFO] Job saved. Use Jobs button to retry later.", "system");

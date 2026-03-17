@@ -411,6 +411,7 @@ alias-agent/
 | Job Registry | [BaseScan](https://basescan.org/address/0x7Fa3c9C28447d6ED6671b49d537E728f678568C8) |
 | Escrow Registry | [BaseScan](https://basescan.org/address/0xfE97854DF19d0d20185EFE4ACc9EE477797FA0a0) |
 | Stake Registry | [BaseScan](https://basescan.org/address/0x2de431772062817EEB799c42Dbb5083F607BA6Ce) |
+| Reputation Engine | [BaseScan](https://basescan.org/address/0x37eD5C32f40D9404f6c875381fD15CAa040Ab720) |
 | GitHub | https://github.com/Jess9400/alias-agent |
 | ERC-8004 Registration | [BaseScan TX](https://basescan.org/tx/0xca8b3588b01a3b453fb4be1222b3cb060c23cb253b36a86e1327465a56c33e11) |
 
