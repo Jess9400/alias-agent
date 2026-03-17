@@ -252,6 +252,17 @@ const ESCROW_REGISTRY_ABI = [
 const STAKE_TIERS = ["None", "Bronze", "Silver", "Gold", "Platinum"];
 const STAKE_TIER_COLORS = { None: "#666", Bronze: "#cd7f32", Silver: "#c0c0c0", Gold: "#ffd700", Platinum: "#e5e4e2" };
 
+// Fetch with timeout — prevents demo from hanging if Venice/API is slow
+function fetchWithTimeout(url, options, timeoutMs) {
+    timeoutMs = timeoutMs || 30000;
+    return Promise.race([
+        fetch(url, options),
+        new Promise(function(_, reject) {
+            setTimeout(function() { reject(new Error("Request timed out after " + (timeoutMs/1000) + "s — API may be busy, try again")); }, timeoutMs);
+        })
+    ]);
+}
+
 // Create a provider that skips network detection (avoids SES lockdown issues)
 function getStaticProvider() {
     return new ethers.JsonRpcProvider(CONFIG.RPC_URL, 8453, { staticNetwork: true });
@@ -1571,7 +1582,7 @@ function retryJob(escrowId) {
     typeInTerminal("[WORK] " + escapeHtml(job.agent) + " is working on your job...", "warning");
     showJobLoading(job.agent);
 
-    fetch(CONFIG.API_URL + "/job/execute", {
+    fetchWithTimeout(CONFIG.API_URL + "/job/execute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1912,7 +1923,7 @@ async function mintSoul() {
         if (!metadata.startsWith("ipfs://")) {
             status.textContent = "Pinning metadata to IPFS...";
             try {
-                var pinRes = await fetch(CONFIG.API_URL + "/pin", {
+                var pinRes = await fetchWithTimeout(CONFIG.API_URL + "/pin", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ name: name, skills: skills, creator: connectedWallet })
@@ -2266,7 +2277,7 @@ async function hireAgent(agent) {
         showJobLoading(agent.name);
         typeInTerminal("[WORK] " + escapeHtml(agent.name) + " is working on your job...", "warning");
         try {
-            var jobResponse = await fetch(CONFIG.API_URL + "/job/execute", {
+            var jobResponse = await fetchWithTimeout(CONFIG.API_URL + "/job/execute", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -2321,9 +2332,9 @@ async function hireAgent(agent) {
             }
         } catch (aiError) {
             hideJobLoading();
-            typeInTerminal("[WORK] Could not reach AI service", "warning");
+            typeInTerminal("[WORK] AI service unavailable: " + (aiError.message || "timeout"), "warning");
             typeInTerminal("[INFO] Job saved. Use Jobs button to retry later.", "system");
-            showToast("Could not reach AI service. Job saved for retry.", "error");
+            showToast("AI service unavailable — job saved for retry.", "error");
         }
 
     } catch (error) {
@@ -2711,7 +2722,7 @@ function runAutoHireDemo() {
     showJobLoading("Running autonomous agent-to-agent demo...");
     updateJobLoadingText("ALIAS-Prime is discovering specialists...");
 
-    fetch(CONFIG.API_URL + "/demo/auto-hire", {
+    fetchWithTimeout(CONFIG.API_URL + "/demo/auto-hire", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2760,7 +2771,7 @@ function runCollabDemo() {
     showJobLoading("Running multi-agent collaboration...");
     updateJobLoadingText("ALIAS-Prime decomposing task for specialists...");
 
-    fetch(CONFIG.API_URL + "/demo/collaborate", {
+    fetchWithTimeout(CONFIG.API_URL + "/demo/collaborate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
