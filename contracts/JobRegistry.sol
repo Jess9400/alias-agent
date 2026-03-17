@@ -19,11 +19,7 @@ contract JobRegistry {
 
     // Events
     event JobCompleted(
-        uint256 indexed tokenId,
-        address indexed recorder,
-        string escrowId,
-        uint256 timestamp,
-        string message
+        uint256 indexed tokenId, address indexed recorder, string escrowId, uint256 timestamp, string message
     );
 
     /**
@@ -36,12 +32,9 @@ contract JobRegistry {
         require(tokenId > 0, "Invalid token ID");
         require(bytes(message).length <= 280, "Message too long");
 
-        jobs[tokenId].push(JobRecord({
-            recorder: msg.sender,
-            timestamp: block.timestamp,
-            escrowId: escrowId,
-            message: message
-        }));
+        jobs[tokenId].push(
+            JobRecord({recorder: msg.sender, timestamp: block.timestamp, escrowId: escrowId, message: message})
+        );
 
         emit JobCompleted(tokenId, msg.sender, escrowId, block.timestamp, message);
     }

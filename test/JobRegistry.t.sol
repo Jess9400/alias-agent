@@ -33,14 +33,18 @@ contract JobRegistryTest is Test {
 
     function test_RecordJob_RevertsOnLongMessage() public {
         bytes memory longMsg = new bytes(281);
-        for (uint i = 0; i < 281; i++) longMsg[i] = "a";
+        for (uint256 i = 0; i < 281; i++) {
+            longMsg[i] = "a";
+        }
         vm.expectRevert("Message too long");
         registry.recordJob(1, "ESC-001", string(longMsg));
     }
 
     function test_RecordJob_AllowsMaxLengthMessage() public {
         bytes memory msg280 = new bytes(280);
-        for (uint i = 0; i < 280; i++) msg280[i] = "b";
+        for (uint256 i = 0; i < 280; i++) {
+            msg280[i] = "b";
+        }
         registry.recordJob(1, "ESC-001", string(msg280));
         assertEq(registry.getJobCount(1), 1);
     }
@@ -70,7 +74,7 @@ contract JobRegistryTest is Test {
     }
 
     function test_GetJobs_Pagination() public {
-        for (uint i = 0; i < 5; i++) {
+        for (uint256 i = 0; i < 5; i++) {
             registry.recordJob(1, string(abi.encodePacked("ESC-", vm.toString(i))), "Job");
         }
 

@@ -37,12 +37,7 @@ contract VerificationRegistryV2 {
     mapping(address => mapping(uint256 => bool)) public hasVerified;
 
     // Events
-    event AgentVerified(
-        uint256 indexed tokenId,
-        address indexed verifier,
-        uint256 timestamp,
-        string message
-    );
+    event AgentVerified(uint256 indexed tokenId, address indexed verifier, uint256 timestamp, string message);
 
     constructor(address _aliasContract) {
         require(_aliasContract != address(0), "Invalid ALIAS contract address");
@@ -62,11 +57,7 @@ contract VerificationRegistryV2 {
 
         hasVerified[msg.sender][tokenId] = true;
 
-        verifications[tokenId].push(Verification({
-            verifier: msg.sender,
-            timestamp: block.timestamp,
-            message: message
-        }));
+        verifications[tokenId].push(Verification({verifier: msg.sender, timestamp: block.timestamp, message: message}));
 
         emit AgentVerified(tokenId, msg.sender, block.timestamp, message);
     }
@@ -85,7 +76,11 @@ contract VerificationRegistryV2 {
      * @param offset Start index
      * @param limit Max number of results
      */
-    function getVerifications(uint256 tokenId, uint256 offset, uint256 limit) external view returns (Verification[] memory) {
+    function getVerifications(uint256 tokenId, uint256 offset, uint256 limit)
+        external
+        view
+        returns (Verification[] memory)
+    {
         Verification[] storage allVerifications = verifications[tokenId];
         uint256 total = allVerifications.length;
 

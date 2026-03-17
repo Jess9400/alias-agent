@@ -34,9 +34,9 @@ import "../contracts/ReputationEngine.sol";
  *   Job Registry:  0x7Fa3c9C28447d6ED6671b49d537E728f678568C8
  */
 contract DeployAll is Script {
-    address constant SOUL       = 0x0F2f94281F87793ee086a2B6517B6db450192874;
-    address constant VERIFY     = 0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715;
-    address constant JOB        = 0x7Fa3c9C28447d6ED6671b49d537E728f678568C8;
+    address constant SOUL = 0x0F2f94281F87793ee086a2B6517B6db450192874;
+    address constant VERIFY = 0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715;
+    address constant JOB = 0x7Fa3c9C28447d6ED6671b49d537E728f678568C8;
 
     function run() external {
         address arbiter = vm.envAddress("ARBITER_ADDRESS");
@@ -50,9 +50,7 @@ contract DeployAll is Script {
         EscrowRegistry escrow = new EscrowRegistry(SOUL, arbiter);
 
         // 3. ReputationEngine — depends on Soul, Verification, Job, Stake
-        ReputationEngine reputation = new ReputationEngine(
-            SOUL, VERIFY, JOB, address(stake)
-        );
+        ReputationEngine reputation = new ReputationEngine(SOUL, VERIFY, JOB, address(stake));
 
         vm.stopBroadcast();
 

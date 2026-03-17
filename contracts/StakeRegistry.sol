@@ -15,11 +15,11 @@ contract StakeRegistry {
     // ======================== TYPES ========================
 
     enum StakeTier {
-        None,       // 0 ETH — no capabilities
-        Bronze,     // 0.001 ETH — can register, take jobs
-        Silver,     // 0.005 ETH — can verify others
-        Gold,       // 0.01 ETH — can be arbiter
-        Platinum    // 0.05 ETH — can slash, governance
+        None, // 0 ETH — no capabilities
+        Bronze, // 0.001 ETH — can register, take jobs
+        Silver, // 0.005 ETH — can verify others
+        Gold, // 0.01 ETH — can be arbiter
+        Platinum // 0.05 ETH — can slash, governance
     }
 
     struct StakeInfo {
@@ -54,9 +54,9 @@ contract StakeRegistry {
     uint256 public constant UNSTAKE_COOLDOWN = 7 days;
     uint256 public constant MAX_SLASH_BPS = 5000; // Max 50% per slash
 
-    mapping(uint256 => StakeInfo) public stakes;              // tokenId => stake
+    mapping(uint256 => StakeInfo) public stakes; // tokenId => stake
     mapping(uint256 => UnstakeRequest) public unstakeRequests; // tokenId => pending unstake
-    mapping(uint256 => SlashRecord[]) public slashHistory;    // tokenId => slashes
+    mapping(uint256 => SlashRecord[]) public slashHistory; // tokenId => slashes
     mapping(address => bool) public authorizedSlashers;
 
     uint256 public totalStaked;
@@ -140,11 +140,7 @@ contract StakeRegistry {
         require(amount > 0, "Must unstake > 0");
         require(!unstakeRequests[tokenId].pending, "Unstake already pending");
 
-        unstakeRequests[tokenId] = UnstakeRequest({
-            amount: amount,
-            requestedAt: block.timestamp,
-            pending: true
-        });
+        unstakeRequests[tokenId] = UnstakeRequest({amount: amount, requestedAt: block.timestamp, pending: true});
 
         emit UnstakeRequested(tokenId, amount, block.timestamp + UNSTAKE_COOLDOWN);
     }
@@ -205,12 +201,9 @@ contract StakeRegistry {
         totalStaked -= slashAmount;
         slashedFundsBalance += slashAmount;
 
-        slashHistory[tokenId].push(SlashRecord({
-            slasher: msg.sender,
-            amount: slashAmount,
-            timestamp: block.timestamp,
-            reason: reason
-        }));
+        slashHistory[tokenId].push(
+            SlashRecord({slasher: msg.sender, amount: slashAmount, timestamp: block.timestamp, reason: reason})
+        );
 
         emit Slashed(tokenId, msg.sender, slashAmount, reason);
         if (s.tier != oldTier) {
@@ -244,7 +237,11 @@ contract StakeRegistry {
         return slashHistory[tokenId].length;
     }
 
-    function getSlashHistory(uint256 tokenId, uint256 offset, uint256 limit) external view returns (SlashRecord[] memory) {
+    function getSlashHistory(uint256 tokenId, uint256 offset, uint256 limit)
+        external
+        view
+        returns (SlashRecord[] memory)
+    {
         SlashRecord[] storage all = slashHistory[tokenId];
         uint256 total = all.length;
         if (offset >= total) return new SlashRecord[](0);
