@@ -1980,10 +1980,10 @@ async function signVerification(agent) {
         try {
             var stakeProvider = getStaticProvider();
             var stakeCheck = new ethers.Contract(CONFIG.STAKE_REGISTRY, STAKE_REGISTRY_ABI, stakeProvider);
-            var eligible = await stakeCheck.isEligible(myAgent.tokenId, 2); // 2 = Silver
+            var eligible = await stakeCheck.isEligible(myAgent.tokenId, 1); // 1 = Bronze
             if (!eligible) {
-                typeInTerminal("[STAKE] Silver tier (0.005 ETH stake) required to verify agents", "warning");
-                showToast("Stake at least 0.005 ETH to unlock verification. Use the Stake button.", "warning");
+                typeInTerminal("[STAKE] Bronze tier (0.001 ETH stake) required to verify agents", "warning");
+                showToast("Stake at least 0.001 ETH to unlock verification. Use the Stake button.", "warning");
                 return;
             }
         } catch (e) {
