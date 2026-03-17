@@ -388,6 +388,7 @@ alias-agent/
 | GET | `/` | API info |
 | GET | `/stats` | Network stats |
 | GET | `/soul/<address>` | Check if address has a soul |
+| GET | `/reputation/<address>` | Full on-chain reputation breakdown (score, tier, risk %) |
 | GET | `/ens/<name>` | Resolve ENS name and check soul |
 | POST | `/chat` | Chat with ALIAS via Venice AI (rate limited) |
 | GET | `/ask/<question>` | Quick question to ALIAS (rate limited) |

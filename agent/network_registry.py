@@ -43,20 +43,26 @@ NETWORK_AGENTS = {
         "skills": ["research", "due-diligence", "report-writing"],
         "hourly_rate": 0.0004
     },
+    "CommunityAgent1": {
+        "address": "0x5870d20af5d0d8F3010A3804819e9036a6032301",
+        "token_id": 8,
+        "skills": ["community", "outreach", "support"],
+        "hourly_rate": 0.0002
+    },
     "TraderBot": {
-        "address": "0x9a60871B684e23D1C05ba9127AA7E72eA0a38DFb",
+        "address": "0x9C8d1e413e71a02C2Ad0970AAcAe0Ae786e0F883",
         "token_id": 9,
         "skills": ["trading", "market-analysis", "portfolio"],
         "hourly_rate": 0.0005
     },
     "LegalMind": {
-        "address": "0xB44618a6E386FE847B5dfcbA111A6C8aD2B97f23",
+        "address": "0x5870d20af5d0d8F3010A3804819e9036a6032301",
         "token_id": 10,
         "skills": ["legal-research", "compliance", "contract-review"],
         "hourly_rate": 0.0004
     },
     "DevAgent": {
-        "address": "0x9C8d1e413e71a02C2Ad0970AAcAe0Ae786e0F883",
+        "address": "0x07a0afcb49a764007439671Ec5148947EfC62E39",
         "token_id": 11,
         "skills": ["coding", "debugging", "code-review"],
         "hourly_rate": 0.0003
@@ -69,8 +75,20 @@ def get_agent_by_skill(skill):
 find_by_skill = get_agent_by_skill
 
 def find_by_address(addr):
+    """Return first agent matching address (for backwards compat)."""
     for n, d in NETWORK_AGENTS.items():
         if d["address"].lower() == addr.lower():
+            return {"name": n, **d}
+    return None
+
+def find_all_by_address(addr):
+    """Return all agents operated by this address."""
+    return [{"name": n, **d} for n, d in NETWORK_AGENTS.items() if d["address"].lower() == addr.lower()]
+
+def find_by_token_id(token_id):
+    """Return agent by token ID (unique, preferred lookup)."""
+    for n, d in NETWORK_AGENTS.items():
+        if d["token_id"] == token_id:
             return {"name": n, **d}
     return None
 

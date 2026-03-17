@@ -14,8 +14,10 @@ from network_registry import NETWORK_AGENTS, get_agent_by_skill
 
 logging.basicConfig(level=logging.INFO)
 
-# Simple in-memory rate limiter
+# Simple in-memory rate limiter with bounded size
 _rate_limits = {}
+_MAX_RATE_KEYS = 10000
+
 def rate_limit(max_per_minute=30):
     def decorator(f):
         @wraps(f)
@@ -24,6 +26,11 @@ def rate_limit(max_per_minute=30):
             now = _time()
             key = f"{f.__name__}:{ip}"
             if key not in _rate_limits:
+                # Evict stale entries if dict gets too large
+                if len(_rate_limits) > _MAX_RATE_KEYS:
+                    stale = [k for k, v in _rate_limits.items() if not v or now - v[-1] > 120]
+                    for k in stale:
+                        del _rate_limits[k]
                 _rate_limits[key] = []
             _rate_limits[key] = [t for t in _rate_limits[key] if now - t < 60]
             if len(_rate_limits[key]) >= max_per_minute:
@@ -163,7 +170,7 @@ def execute_job():
         })
     except Exception as e:
         logging.error(f"Job execution failed: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Job execution failed. Please try again."}), 500
 
 @app.route('/pin', methods=['POST'])
 @rate_limit(max_per_minute=10)
@@ -477,7 +484,8 @@ def reputation(address):
         verifications = _call_with_retry(lambda: verify_contract.functions.getVerificationCount(token_id).call())
         jobs = _call_with_retry(lambda: job_contract.functions.getJobCount(token_id).call())
     except Exception as e:
-        return jsonify({"error": f"Failed to read on-chain data: {str(e)}"}), 500
+        logging.error(f"Reputation on-chain read failed: {e}")
+        return jsonify({"error": "Failed to read on-chain data. Please try again."}), 500
 
     # souls() returns: (name, metadataURI, creator, createdAt, skills, active)
     agent_name = soul_data[0]

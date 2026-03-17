@@ -1,53 +1,77 @@
 #!/usr/bin/env python3
 """ALIAS Base Agent - Shared functionality for all agents"""
-import os, subprocess, requests
+import os, requests
 from dotenv import load_dotenv
+from web3 import Web3
+from eth_account import Account
 load_dotenv()
 
 CONTRACT = "0x0F2f94281F87793ee086a2B6517B6db450192874"
-RPC_URL = "https://mainnet.base.org"
+VERIFY_CONTRACT = "0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715"
+JOB_CONTRACT = "0x7Fa3c9C28447d6ED6671b49d537E728f678568C8"
+RPC_URL = os.getenv("RPC_URL", "https://mainnet.base.org")
 PRIVATE_KEY = os.getenv("PRIVATE_KEY")
 VENICE_API_KEY = os.getenv("VENICE_API_KEY")
 BANKR_API_KEY = os.getenv("BANKR_API_KEY")
 
+SOUL_ABI = [
+    {"inputs":[{"name":"addr","type":"address"}],"name":"hasSoul","outputs":[{"type":"bool"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"name":"addr","type":"address"}],"name":"agentToSoul","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"name":"tokenId","type":"uint256"}],"name":"actionCount","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"name":"tokenId","type":"uint256"},{"name":"actionType","type":"string"},{"name":"actionHash","type":"string"}],"name":"recordAction","outputs":[],"stateMutability":"nonpayable","type":"function"},
+]
+VERIFY_ABI = [
+    {"inputs":[{"name":"tokenId","type":"uint256"}],"name":"getVerificationCount","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"},
+]
+JOB_ABI = [
+    {"inputs":[{"name":"tokenId","type":"uint256"}],"name":"getJobCount","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"},
+]
+
 class BaseAgent:
     def __init__(self, name="ALIAS-Agent"):
         self.name = name
+        self.w3 = Web3(Web3.HTTPProvider(RPC_URL))
+        self.soul_contract = self.w3.eth.contract(address=Web3.to_checksum_address(CONTRACT), abi=SOUL_ABI)
+        self.verify_contract = self.w3.eth.contract(address=Web3.to_checksum_address(VERIFY_CONTRACT), abi=VERIFY_ABI)
+        self.job_contract = self.w3.eth.contract(address=Web3.to_checksum_address(JOB_CONTRACT), abi=JOB_ABI)
         self.wallet = self._get_wallet()
         self.token_id = None
         self.action_count = 0
 
     def _get_wallet(self):
-        r = subprocess.run(["cast", "wallet", "address", "--private-key", PRIVATE_KEY], capture_output=True, text=True)
-        return r.stdout.strip()
-
-    def _call(self, func, *args):
-        r = subprocess.run(["cast", "call", "--rpc-url", RPC_URL, CONTRACT, func] + list(args), capture_output=True, text=True)
-        return r.stdout.strip()
-
-    def _send(self, func, *args):
-        r = subprocess.run(["cast", "send", "--rpc-url", RPC_URL, "--private-key", PRIVATE_KEY, CONTRACT, func] + list(args), capture_output=True, text=True)
-        if r.returncode == 0:
-            for line in r.stdout.split("\n"):
-                if "transactionHash" in line:
-                    return line.split()[-1]
-        return None
+        try:
+            if not PRIVATE_KEY:
+                return ""
+            return Account.from_key(PRIVATE_KEY).address
+        except Exception:
+            return ""
 
     def has_soul(self, addr=None):
-        result = self._call("hasSoul(address)", addr or self.wallet)
-        return "0x0000000000000000000000000000000000000000000000000000000000000001" in result
+        try:
+            addr = Web3.to_checksum_address(addr or self.wallet)
+            return self.soul_contract.functions.hasSoul(addr).call()
+        except Exception:
+            return False
 
     def get_token_id(self, addr=None):
-        result = self._call("agentToSoul(address)", addr or self.wallet)
-        try: return int(result, 16)
-        except Exception: return None
+        try:
+            addr = Web3.to_checksum_address(addr or self.wallet)
+            return self.soul_contract.functions.agentToSoul(addr).call()
+        except Exception:
+            return None
 
     def get_reputation(self, token_id=None):
+        """Unified reputation: actions*20 + verifications*15 + jobs*25 (matches api.py and frontend)"""
         tid = token_id or self.token_id
-        if not tid: return 0
-        result = self._call("actionCount(uint256)", str(tid))
-        try: return int(result, 16) * 10
-        except Exception: return 0
+        if not tid:
+            return 0
+        try:
+            actions = self.soul_contract.functions.actionCount(tid).call()
+            verifications = self.verify_contract.functions.getVerificationCount(tid).call()
+            jobs = self.job_contract.functions.getJobCount(tid).call()
+            return actions * 20 + verifications * 15 + jobs * 25
+        except Exception:
+            return 0
 
     def get_tier(self, rep=None):
         score = rep if rep is not None else self.get_reputation()
@@ -68,11 +92,26 @@ class BaseAgent:
         return False
 
     def record_action(self, atype, ahash):
-        if not self.token_id: return None
+        if not self.token_id:
+            return None
         print(f"[CHAIN] {atype}")
-        tx = self._send("recordAction(uint256,string,string)", str(self.token_id), atype, ahash)
-        if tx: self.action_count += 1
-        return tx
+        try:
+            account = Account.from_key(PRIVATE_KEY)
+            tx = self.soul_contract.functions.recordAction(
+                int(self.token_id), atype, ahash
+            ).build_transaction({
+                "from": account.address,
+                "nonce": self.w3.eth.get_transaction_count(account.address),
+                "gas": 300000,
+                "gasPrice": self.w3.eth.gas_price,
+            })
+            signed = account.sign_transaction(tx)
+            tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
+            self.action_count += 1
+            return self.w3.to_hex(tx_hash)
+        except Exception as e:
+            print(f"[CHAIN] Error: {e}")
+            return None
 
     def think(self, prompt):
         if not VENICE_API_KEY: return "No API key"
