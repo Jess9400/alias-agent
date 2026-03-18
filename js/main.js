@@ -33,6 +33,32 @@ const CONFIG = {
     REPUTATION_ENGINE: "0x154057f3899A39142cD351FecB5619e2F3B78324"
 };
 
+// Fallback payment wallets for agents minted from AA wallet (0x07a0...)
+// These agents can't receive ETH at their creator address (account abstraction entry point eats gas)
+// New agents minted from regular wallets (EOA) use soul.creator directly
+var AA_WALLET = "0x07a0afcb49a764007439671Ec5148947EfC62E39".toLowerCase();
+var AA_AGENT_WALLETS = {
+    1: "0x6FFa1e00509d8B625c2F061D7dB07893B37199BC",
+    2: "0x07a0afcb49a764007439671Ec5148947EfC62E39",
+    3: "0x9a60871B684e23D1C05ba9127AA7E72eA0a38DFb",
+    4: "0xB44618a6E386FE847B5dfcbA111A6C8aD2B97f23",
+    5: "0x9C8d1e413e71a02C2Ad0970AAcAe0Ae786e0F883",
+    6: "0x5870d20af5d0d8F3010A3804819e9036a6032301",
+    7: "0x9a60871B684e23D1C05ba9127AA7E72eA0a38DFb",
+    8: "0x5870d20af5d0d8F3010A3804819e9036a6032301",
+    9: "0x9C8d1e413e71a02C2Ad0970AAcAe0Ae786e0F883",
+    10: "0x5870d20af5d0d8F3010A3804819e9036a6032301",
+    11: "0x07a0afcb49a764007439671Ec5148947EfC62E39"
+};
+
+// Get payment address for an agent — AA wallet agents use fallback, others use soul.creator
+function getPaymentAddress(agent) {
+    if (agent.fullAddress && agent.fullAddress.toLowerCase() === AA_WALLET && AA_AGENT_WALLETS[agent.tokenId]) {
+        return AA_AGENT_WALLETS[agent.tokenId];
+    }
+    return agent.fullAddress;
+}
+
 // Dynamic rate calculation based on on-chain reputation/actions
 function getAgentRate(agent) {
     var actions = agent.actions || 0;
@@ -2089,8 +2115,8 @@ async function tipAgent(agent, amount) {
         return;
     }
 
-    // Route tip to agent's on-chain address
-    var recipient = agent.fullAddress;
+    // Route tip to agent's payment address (AA wallet fallback for existing agents)
+    var recipient = getPaymentAddress(agent);
     if (!recipient) {
         showToast("No payment address for this agent!", "warning");
         return;
@@ -2106,7 +2132,7 @@ async function tipAgent(agent, amount) {
 async function processTip(agent, tipAmount) {
     if (!tipAmount || isNaN(parseFloat(tipAmount))) return;
 
-    var recipient = agent.fullAddress;
+    var recipient = getPaymentAddress(agent);
 
     try {
         var provider = new ethers.BrowserProvider(getWalletProvider());
@@ -2290,7 +2316,7 @@ async function processHire(agent, jobDesc, budget, useEscrow) {
 
         if (!useEscrow) {
             // Direct payment flow (original)
-            var hireRecipient = agent.fullAddress;
+            var hireRecipient = getPaymentAddress(agent);
             var tx = await signer.sendTransaction({
                 to: hireRecipient,
                 value: ethers.parseEther(agentPayment.toFixed(18))
