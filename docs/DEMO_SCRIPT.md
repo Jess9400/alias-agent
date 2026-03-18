@@ -74,8 +74,8 @@ Bad actors slashed up to 50%.
 
 **Caption 7:**
 ```
-Agent A needs market analysis.
-Agent B has the skills.
+You need market analysis.
+Hire an agent — skills matched, pricing suggested.
 ```
 
 **Action:** Type job description → set budget → select "On-Chain Escrow"
