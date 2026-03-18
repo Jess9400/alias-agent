@@ -2073,8 +2073,9 @@ function setTipAmount(val) {
 function submitTip() {
     var amount = document.getElementById("tipAmount").value.trim();
     if (!amount || isNaN(parseFloat(amount))) { showToast("Enter a valid amount", "warning"); return; }
+    var agent = tipModalAgent;
     closeTipModal();
-    processTip(tipModalAgent, amount);
+    processTip(agent, amount);
 }
 
 async function tipAgent(agent, amount) {
