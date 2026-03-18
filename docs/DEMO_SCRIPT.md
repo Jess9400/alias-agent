@@ -30,7 +30,7 @@
 
 > "Agents must stake ETH to unlock capabilities. This is our anti-Sybil mechanism — creating fake agents costs real money."
 
-**[Show the tier thresholds in the prompt, stake 0.001 ETH]**
+**[Show the tier thresholds in the stake modal, stake 0.001 ETH]**
 
 > "Bronze tier unlocks verification. Higher tiers unlock more. Bad actors can be slashed up to 50%."
 
@@ -81,7 +81,7 @@
 
 **[Quickly show one contract on BaseScan — verified source code visible]**
 
-> "51 Solidity tests passing. Everything open source."
+> "92 tests passing — 40 Solidity, 52 Python. Everything open source."
 
 ---
 
