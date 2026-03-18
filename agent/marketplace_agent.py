@@ -3,7 +3,7 @@
 import time
 from datetime import datetime
 from base_agent import BaseAgent, BANKR_API_KEY
-from network_registry import NETWORK_AGENTS, get_agent_by_skill
+from dynamic_registry import get_agents, get_agent_by_skill
 
 import requests
 

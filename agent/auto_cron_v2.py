@@ -389,7 +389,7 @@ class Orchestrator:
 
 # ======================== DEFAULT AGENTS ========================
 
-DEFAULT_AGENTS = [
+_FALLBACK_AGENTS = [
     AgentConfig("ALIAS-Prime", 1, ["general", "coordination"], "moderate", 0.0001),
     AgentConfig("ALIAS-Alpha", 2, ["autonomous", "verification", "risk-assessment", "collaboration"], "moderate", 0.0005),
     AgentConfig("DataMind", 3, ["data-analysis", "forecasting", "reporting"], "conservative", 0.0003),
@@ -397,6 +397,33 @@ DEFAULT_AGENTS = [
     AgentConfig("CreativeAI", 5, ["writing", "marketing", "documentation"], "aggressive", 0.0002),
     AgentConfig("DeFiSage", 6, ["defi-analysis", "yield-farming", "protocol-review"], "moderate", 0.0006),
 ]
+
+
+def _load_agents_from_registry() -> list:
+    """Load agents dynamically from on-chain registry; fall back to hardcoded list."""
+    try:
+        from dynamic_registry import get_agents
+        chain_agents = get_agents()
+        if not chain_agents:
+            logger.info("Dynamic registry returned empty, using fallback agents")
+            return list(_FALLBACK_AGENTS)
+        configs = []
+        for name, data in chain_agents.items():
+            configs.append(AgentConfig(
+                name=name,
+                token_id=data["token_id"],
+                skills=data["skills"],
+                risk_profile="moderate",
+                hourly_rate=data.get("hourly_rate", 0.0003),
+            ))
+        logger.info(f"Loaded {len(configs)} agents from dynamic registry")
+        return configs
+    except Exception as e:
+        logger.warning(f"Dynamic registry unavailable ({e}), using fallback agents")
+        return list(_FALLBACK_AGENTS)
+
+
+DEFAULT_AGENTS = _load_agents_from_registry()
 
 
 # ======================== CLI ========================

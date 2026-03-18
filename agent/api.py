@@ -260,31 +260,47 @@ def auto_hire_demo():
     steps.append({"phase": "DISCOVER", "message": f"Searching network for '{skill}' specialists...", "color": "system"})
     steps.append({"phase": "DISCOVER", "message": f"Found {len(candidates)} agent(s): {', '.join(c['name'] for c in candidates)}", "color": "success"})
 
-    # Step 2: Risk Assessment — evaluate candidates, reject those above risk threshold
+    # Step 2: Risk Assessment — evaluate candidates via on-chain ReputationEngine
     w3 = Web3(Web3.HTTPProvider("https://mainnet.base.org"))
-    soul_abi = [{"inputs":[{"name":"tokenId","type":"uint256"}],"name":"actionCount","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"}]
-    contract = w3.eth.contract(address=Web3.to_checksum_address("0x0F2f94281F87793ee086a2B6517B6db450192874"), abi=soul_abi)
+    rep_contract = w3.eth.contract(address=Web3.to_checksum_address(REPUTATION_ENGINE), abi=REPUTATION_ABI)
 
-    risk_map = {"LEGENDARY": 5, "ELITE": 15, "TRUSTED": 30, "VERIFIED": 50, "NEWCOMER": 70}
+    def _get_rep_and_tier(token_id):
+        """Get reputation score and tier from on-chain ReputationEngine, with local fallback."""
+        try:
+            rep = rep_contract.functions.calculateReputation(token_id).call()
+            tier = "NEWCOMER"
+            if rep >= 500: tier = "LEGENDARY"
+            elif rep >= 200: tier = "ELITE"
+            elif rep >= 100: tier = "TRUSTED"
+            elif rep >= 50: tier = "VERIFIED"
+            elif rep < 1: tier = "NO_SOUL"
+            return rep, tier
+        except Exception as e:
+            logging.warning(f"ReputationEngine call failed for token {token_id}, using fallback: {e}")
+            # Fallback: read actionCount from soul contract
+            soul_abi = [{"inputs":[{"name":"tokenId","type":"uint256"}],"name":"actionCount","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"}]
+            soul_contract = w3.eth.contract(address=Web3.to_checksum_address("0x0F2f94281F87793ee086a2B6517B6db450192874"), abi=soul_abi)
+            try:
+                actions = soul_contract.functions.actionCount(token_id).call()
+            except Exception:
+                actions = 0
+            rep = actions * 20
+            tier = "NEWCOMER"
+            if rep >= 500: tier = "LEGENDARY"
+            elif rep >= 200: tier = "ELITE"
+            elif rep >= 100: tier = "TRUSTED"
+            elif rep >= 50: tier = "VERIFIED"
+            return rep, tier
+
     hired = None
     rejected = []
 
     for candidate in candidates:
-        try:
-            actions = contract.functions.actionCount(candidate["token_id"]).call()
-        except:
-            actions = 0
-
-        rep = actions * 20
-        tier = "NEWCOMER"
-        if rep >= 500: tier = "LEGENDARY"
-        elif rep >= 200: tier = "ELITE"
-        elif rep >= 100: tier = "TRUSTED"
-        elif rep >= 50: tier = "VERIFIED"
-        risk = risk_map.get(tier, 70)
+        rep, tier = _get_rep_and_tier(candidate["token_id"])
+        risk = TIER_RISK.get(tier, 70)
 
         steps.append({"phase": "ASSESS", "message": f"Evaluating {candidate['name']} (Token #{candidate['token_id']})...", "color": "warning"})
-        steps.append({"phase": "ASSESS", "message": f"On-chain actions: {actions} | Reputation: {rep} | Tier: {tier} | Risk: {risk}%", "color": "system"})
+        steps.append({"phase": "ASSESS", "message": f"On-chain reputation: {rep} | Tier: {tier} | Risk: {risk}%", "color": "system"})
 
         if risk > max_risk:
             steps.append({"phase": "REJECT", "message": f"REJECTED {candidate['name']} — risk {risk}% exceeds {risk_profile} threshold ({max_risk}%)", "color": "warning"})
@@ -297,17 +313,8 @@ def auto_hire_demo():
     if not hired:
         # Fallback: pick the best available despite risk
         hired = candidates[0]
-        try:
-            actions = contract.functions.actionCount(hired["token_id"]).call()
-        except:
-            actions = 0
-        rep = actions * 20
-        tier = "NEWCOMER"
-        if rep >= 500: tier = "LEGENDARY"
-        elif rep >= 200: tier = "ELITE"
-        elif rep >= 100: tier = "TRUSTED"
-        elif rep >= 50: tier = "VERIFIED"
-        risk = risk_map.get(tier, 70)
+        rep, tier = _get_rep_and_tier(hired["token_id"])
+        risk = TIER_RISK.get(tier, 70)
         steps.append({"phase": "FALLBACK", "message": f"No agents met {risk_profile} risk threshold. Relaxing criteria...", "color": "warning"})
         steps.append({"phase": "FALLBACK", "message": f"Selecting best available: {hired['name']} (risk {risk}%) with enhanced monitoring", "color": "agent"})
 
@@ -550,37 +557,70 @@ def reputation(address):
     agent_skills = soul_data[4]
     created_at_block = soul_data[3]
 
-    # Calculate reputation (matches dashboard logic)
-    # Age bonus: up to 100 pts based on time since creation
-    # createdAt stores a block number, so we fetch its timestamp
+    # Call ReputationEngine on-chain for authoritative score + breakdown
+    rep_source = "on-chain ReputationEngine"
     try:
-        creation_block = _call_with_retry(lambda: w3.eth.get_block(created_at_block))
-        created_timestamp = creation_block['timestamp']
-    except Exception:
-        created_timestamp = 0
-    current_block = _call_with_retry(lambda: w3.eth.get_block('latest'))
-    age_seconds = current_block['timestamp'] - created_timestamp
-    age_days = max(age_seconds / 86400, 0)
-    age_bonus = min(int(age_days * 2), 100)  # 2 pts per day, max 100
+        rep_contract = w3.eth.contract(
+            address=Web3.to_checksum_address(REPUTATION_ENGINE), abi=REPUTATION_ABI
+        )
+        breakdown = _call_with_retry(lambda: rep_contract.functions.getReputationBreakdown(token_id).call())
+        # breakdown is a tuple: (activityScore, verificationScore, jobScore, ageScore, stakeBonus, decayPenalty, collusionPenalty, totalScore, tier)
+        total_score = breakdown[7]
+        tier_idx = breakdown[8]
+        tier = TIER_NAMES[tier_idx] if tier_idx < len(TIER_NAMES) else "NEWCOMER"
+        risk = TIER_RISK.get(tier, 70)
 
-    action_pts = actions * 20
-    verification_pts = verifications * 15
-    job_pts = jobs * 25
-    total_score = age_bonus + action_pts + verification_pts + job_pts
+        breakdown_data = {
+            "activity_score": breakdown[0],
+            "verification_score": breakdown[1],
+            "job_score": breakdown[2],
+            "age_score": breakdown[3],
+            "stake_bonus": breakdown[4],
+            "decay_penalty": breakdown[5],
+            "collusion_penalty": breakdown[6],
+            "actions": {"count": actions},
+            "verifications": {"count": verifications},
+            "jobs": {"count": jobs}
+        }
+    except Exception as e:
+        logging.warning(f"ReputationEngine call failed, using local fallback: {e}")
+        rep_source = "local fallback (ReputationEngine unreachable)"
 
-    # Tier calculation
-    if total_score >= 500:
-        tier, risk = "LEGENDARY", 5
-    elif total_score >= 200:
-        tier, risk = "ELITE", 15
-    elif total_score >= 100:
-        tier, risk = "TRUSTED", 30
-    elif total_score >= 50:
-        tier, risk = "VERIFIED", 50
-    elif total_score >= 1:
-        tier, risk = "NEWCOMER", 70
-    else:
-        tier, risk = "NO_SOUL", 100
+        # Local fallback: original formula
+        try:
+            creation_block = _call_with_retry(lambda: w3.eth.get_block(created_at_block))
+            created_timestamp = creation_block['timestamp']
+        except Exception:
+            created_timestamp = 0
+        current_block = _call_with_retry(lambda: w3.eth.get_block('latest'))
+        age_seconds = current_block['timestamp'] - created_timestamp
+        age_days = max(age_seconds / 86400, 0)
+        age_bonus = min(int(age_days * 2), 100)
+
+        action_pts = actions * 20
+        verification_pts = verifications * 15
+        job_pts = jobs * 25
+        total_score = age_bonus + action_pts + verification_pts + job_pts
+
+        if total_score >= 500:
+            tier, risk = "LEGENDARY", 5
+        elif total_score >= 200:
+            tier, risk = "ELITE", 15
+        elif total_score >= 100:
+            tier, risk = "TRUSTED", 30
+        elif total_score >= 50:
+            tier, risk = "VERIFIED", 50
+        elif total_score >= 1:
+            tier, risk = "NEWCOMER", 70
+        else:
+            tier, risk = "NO_SOUL", 100
+
+        breakdown_data = {
+            "age_bonus": age_bonus,
+            "actions": {"count": actions, "points": action_pts},
+            "verifications": {"count": verifications, "points": verification_pts},
+            "jobs": {"count": jobs, "points": job_pts}
+        }
 
     return jsonify({
         "address": address,
@@ -591,21 +631,25 @@ def reputation(address):
         "score": total_score,
         "tier": tier,
         "risk_percent": risk,
-        "breakdown": {
-            "age_bonus": age_bonus,
-            "actions": {"count": actions, "points": action_pts},
-            "verifications": {"count": verifications, "points": verification_pts},
-            "jobs": {"count": jobs, "points": job_pts}
-        },
+        "breakdown": breakdown_data,
         "contracts": {
             "soul": "0x0F2f94281F87793ee086a2B6517B6db450192874",
             "verifications": "0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715",
-            "jobs": "0x7Fa3c9C28447d6ED6671b49d537E728f678568C8"
+            "jobs": "0x7Fa3c9C28447d6ED6671b49d537E728f678568C8",
+            "reputation_engine": REPUTATION_ENGINE
         },
         "chain": "Base Mainnet (8453)",
-        "source": "100% on-chain — no off-chain signals, no oracles"
+        "source": rep_source
     })
 
+
+REPUTATION_ENGINE = "0x37eD5C32f40D9404f6c875381fD15CAa040Ab720"
+REPUTATION_ABI = [
+    {"inputs":[{"name":"tokenId","type":"uint256"}],"name":"calculateReputation","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"name":"tokenId","type":"uint256"}],"name":"getReputationBreakdown","outputs":[{"components":[{"name":"activityScore","type":"uint256"},{"name":"verificationScore","type":"uint256"},{"name":"jobScore","type":"uint256"},{"name":"ageScore","type":"uint256"},{"name":"stakeBonus","type":"uint256"},{"name":"decayPenalty","type":"uint256"},{"name":"collusionPenalty","type":"uint256"},{"name":"totalScore","type":"uint256"},{"name":"tier","type":"uint8"}],"name":"","type":"tuple"}],"stateMutability":"view","type":"function"},
+]
+TIER_NAMES = ["NO_SOUL", "NEWCOMER", "VERIFIED", "TRUSTED", "ELITE", "LEGENDARY"]
+TIER_RISK = {"LEGENDARY": 5, "ELITE": 15, "TRUSTED": 30, "VERIFIED": 50, "NEWCOMER": 70, "NO_SOUL": 100}
 
 STAKE_REGISTRY = "0x2de431772062817EEB799c42Dbb5083F607BA6Ce"
 STAKE_ABI = [
