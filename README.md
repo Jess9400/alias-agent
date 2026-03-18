@@ -494,6 +494,7 @@ alias-agent/
 │   └── conftest.py
 ├── agent/                              # Python backend
 │   ├── api.py                          # Flask REST API (production)
+│   ├── api_v2.py                       # V2 API with Blueprints + RESTful endpoints
 │   ├── alias.py                        # Core soul agent (Venice + web3.py)
 │   ├── base_agent.py                   # Shared agent functionality
 │   ├── autonomous_agent.py             # Risk assessment & collaboration
