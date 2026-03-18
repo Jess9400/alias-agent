@@ -79,6 +79,15 @@ JOB_ABI = [
      "name": "JobCompleted", "type": "event"},
 ]
 
+# ReputationEngine on-chain (primary reputation source)
+REPUTATION_ENGINE = "0x37eD5C32f40D9404f6c875381fD15CAa040Ab720"
+REPUTATION_ABI = [
+    {"inputs": [{"name": "tokenId", "type": "uint256"}],
+     "name": "calculateReputation",
+     "outputs": [{"type": "uint256"}],
+     "stateMutability": "view", "type": "function"},
+]
+
 log = logging.getLogger("alias.loop")
 
 
@@ -157,19 +166,16 @@ class AgentStatus:
 
 
 # ---------------------------------------------------------------------------
-# Network registry (imported if available, else inline fallback)
+# Dynamic registry (on-chain discovery, falls back to hardcoded)
 # ---------------------------------------------------------------------------
 try:
-    from network_registry import NETWORK_AGENTS, get_agent_by_skill
+    from dynamic_registry import get_agents, get_agent_by_skill
 except ImportError:
-    NETWORK_AGENTS: dict = {}
+    def get_agents() -> dict:
+        return {}
 
     def get_agent_by_skill(skill: str) -> list:
-        return [
-            {"name": n, **d}
-            for n, d in NETWORK_AGENTS.items()
-            if skill in d.get("skills", [])
-        ]
+        return []
 
 
 # ---------------------------------------------------------------------------
@@ -309,6 +315,10 @@ class AutonomousLoop:
         self._jobs_contract = self._w3.eth.contract(
             address=Web3.to_checksum_address(JOB_REGISTRY), abi=JOB_ABI
         )
+        self._rep_engine = self._w3.eth.contract(
+            address=Web3.to_checksum_address(REPUTATION_ENGINE),
+            abi=REPUTATION_ABI,
+        )
 
         # Runtime
         self._state = AgentState.IDLE
@@ -327,6 +337,23 @@ class AutonomousLoop:
             self.max_concurrent_jobs,
             self._account.address if self._account else "NO_KEY",
         )
+
+    # ------------------------------------------------------------------
+    # Reputation helper
+    # ------------------------------------------------------------------
+
+    def _fetch_reputation(self, token_id: int) -> int:
+        """Query ReputationEngine on-chain; fall back to local formula."""
+        try:
+            return self._rep_engine.functions.calculateReputation(token_id).call()
+        except Exception as exc:
+            log.debug("ReputationEngine call failed, using local fallback: %s", exc)
+        # Fallback: actions * 20
+        try:
+            actions = self._soul.functions.actionCount(token_id).call()
+            return actions * 20
+        except Exception:
+            return 0
 
     # ------------------------------------------------------------------
     # Public interface
@@ -399,7 +426,7 @@ class AutonomousLoop:
                 Web3.to_checksum_address(addr)
             ).call()
             actions = self._soul.functions.actionCount(self._token_id).call()
-            self._reputation = actions * 20
+            self._reputation = self._fetch_reputation(self._token_id)
             tier, risk = _tier_from_rep(self._reputation)
             log.info(
                 "Soul verified  token=#%d  actions=%d  rep=%d  tier=%s  risk=%d%%",
@@ -466,8 +493,8 @@ class AutonomousLoop:
                 has = self._soul.functions.hasSoul(ck).call()
                 if has:
                     tid = self._soul.functions.agentToSoul(ck).call()
-                    actions = self._soul.functions.actionCount(tid).call()
-                    _, requester_risk = _tier_from_rep(actions * 20)
+                    requester_rep = self._fetch_reputation(tid)
+                    _, requester_risk = _tier_from_rep(requester_rep)
             except Exception:
                 pass
 
@@ -680,10 +707,7 @@ class AutonomousLoop:
         # If the event concerns our token, refresh reputation
         if token_id == self._token_id:
             try:
-                actions = self._soul.functions.actionCount(
-                    self._token_id
-                ).call()
-                self._reputation = actions * 20
+                self._reputation = self._fetch_reputation(self._token_id)
             except Exception:
                 pass
 
@@ -704,11 +728,8 @@ class AutonomousLoop:
         if not self._token_id:
             return
         try:
-            actions = self._soul.functions.actionCount(
-                self._token_id
-            ).call()
             old = self._reputation
-            self._reputation = actions * 20
+            self._reputation = self._fetch_reputation(self._token_id)
             tier, _ = _tier_from_rep(self._reputation)
             if self._reputation != old:
                 log.info(
@@ -748,13 +769,12 @@ class AutonomousLoop:
             total_souls = self._soul.functions.totalSouls().call()
             flagged = 0
             for tid in range(1, min(total_souls + 1, 20)):
-                actions = self._soul.functions.actionCount(tid).call()
-                rep = actions * 20
+                rep = self._fetch_reputation(tid)
                 if rep > 1000:
                     log.warning(
-                        "[WATCHDOG] Token #%d has %d rep (%d actions) "
+                        "[WATCHDOG] Token #%d has %d rep "
                         "— possible anomaly",
-                        tid, rep, actions,
+                        tid, rep,
                     )
                     flagged += 1
             if flagged:

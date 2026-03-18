@@ -29,38 +29,18 @@ const CONFIG = {
     PLATFORM_WALLET: "0x7F66dFcD8e9e4e7Ec435D0631C5d723fFaDdb211",
     JOB_REGISTRY: "0x7Fa3c9C28447d6ED6671b49d537E728f678568C8",
     ESCROW_REGISTRY: "0xfE97854DF19d0d20185EFE4ACc9EE477797FA0a0",
-    STAKE_REGISTRY: "0x2de431772062817EEB799c42Dbb5083F607BA6Ce"
+    STAKE_REGISTRY: "0x2de431772062817EEB799c42Dbb5083F607BA6Ce",
+    REPUTATION_ENGINE: "0x37eD5C32f40D9404f6c875381fD15CAa040Ab720"
 };
 
-// Agent operator wallets (where tips/payments go) - keyed by token ID
-const AGENT_WALLETS = {
-    1: "0x6FFa1e00509d8B625c2F061D7dB07893B37199BC",
-    2: "0x07a0afcb49a764007439671Ec5148947EfC62E39",
-    3: "0x9a60871B684e23D1C05ba9127AA7E72eA0a38DFb",
-    4: "0xB44618a6E386FE847B5dfcbA111A6C8aD2B97f23",
-    5: "0x9C8d1e413e71a02C2Ad0970AAcAe0Ae786e0F883",
-    6: "0x5870d20af5d0d8F3010A3804819e9036a6032301",
-    7: "0x9a60871B684e23D1C05ba9127AA7E72eA0a38DFb",
-    8: "0xB44618a6E386FE847B5dfcbA111A6C8aD2B97f23",
-    9: "0x9C8d1e413e71a02C2Ad0970AAcAe0Ae786e0F883",
-    10: "0x5870d20af5d0d8F3010A3804819e9036a6032301",
-    11: "0x07a0afcb49a764007439671Ec5148947EfC62E39"
-};
-
-// Agent hourly rates in ETH - keyed by token ID
-const AGENT_RATES = {
-    1: 0.0001,
-    2: 0.0005,
-    3: 0.0003,
-    4: 0.0008,
-    5: 0.0002,
-    6: 0.0006,
-    7: 0.0004,
-    8: 0.0001,
-    9: 0.0005,
-    10: 0.0003,
-    11: 0.0004
-};
+// Dynamic rate calculation based on on-chain reputation/actions
+function getAgentRate(agent) {
+    var actions = agent.actions || 0;
+    if (actions >= 20) return 0.0008;
+    if (actions >= 10) return 0.0005;
+    if (actions >= 5) return 0.0003;
+    return 0.0001;
+}
 
 const SELECTORS = {
     hasSoul: "0xbdd75202",
@@ -188,18 +168,7 @@ function updateJobLoadingText(text) {
 // AGENT REGISTRY
 // =============================================================================
 
-var agents = [
-    { name: "ALIAS-Prime", address: "0x6FFa...9BC", fullAddress: "0x6FFa1e00509d8B625c2F061D7dB07893B37199BC", skills: ["general", "coordination"], rep: 200, tier: "ELITE", tokenId: 1 },
-    { name: "ALIAS-Alpha", address: "0x07a0...E39", fullAddress: "0x07a0afcb49a764007439671Ec5148947EfC62E39", skills: ["autonomous", "verification", "risk-assessment", "collaboration"], rep: 150, tier: "VERIFIED", tokenId: 2 },
-    { name: "DataMind", address: "0x1111...111", fullAddress: "0x1111111111111111111111111111111111111111", skills: ["data-analysis", "forecasting", "reporting"], rep: 100, tier: "VERIFIED", tokenId: 3 },
-    { name: "SecureBot", address: "0x2222...222", fullAddress: "0x2222222222222222222222222222222222222222", skills: ["code-audit", "vulnerability-detection", "security-review"], rep: 50, tier: "NEWCOMER", tokenId: 4 },
-    { name: "CreativeAI", address: "0x3333...333", fullAddress: "0x3333333333333333333333333333333333333333", skills: ["writing", "marketing", "documentation"], rep: 50, tier: "NEWCOMER", tokenId: 5 },
-    { name: "DeFiSage", address: "0x4444...444", fullAddress: "0x4444444444444444444444444444444444444444", skills: ["defi-analysis", "yield-farming", "protocol-review"], rep: 50, tier: "NEWCOMER", tokenId: 6 },
-    { name: "ResearchPrime", address: "0x5555...555", fullAddress: "0x5555555555555555555555555555555555555555", skills: ["research", "due-diligence", "report-writing"], rep: 50, tier: "NEWCOMER", tokenId: 7 },
-    { name: "TraderBot", address: "0x9a60...DFb", fullAddress: "0x9a60871B684e23D1C05ba9127AA7E72eA0a38DFb", skills: ["trading", "market-analysis", "portfolio"], rep: 20, tier: "NEWCOMER", tokenId: 9 },
-    { name: "LegalMind", address: "0xB446...f23", fullAddress: "0xB44618a6E386FE847B5dfcbA111A6C8aD2B97f23", skills: ["legal-research", "compliance", "contract-review"], rep: 10, tier: "NEWCOMER", tokenId: 10 },
-    { name: "DevAgent", address: "0x9C8d...883", fullAddress: "0x9C8d1e413e71a02C2Ad0970AAcAe0Ae786e0F883", skills: ["coding", "debugging", "code-review"], rep: 5, tier: "NEWCOMER", tokenId: 11 }
-];
+var agents = []; // Populated from chain by loadAgentsFromChain()
 var selectedAgent = null;
 
 var allSkills = ["general", "coordination", "autonomous", "verification", "risk-assessment", "collaboration", "data-analysis", "forecasting", "reporting", "code-audit", "vulnerability-detection", "security-review", "writing", "marketing", "documentation", "defi-analysis", "yield-farming", "protocol-review", "research", "due-diligence", "report-writing"];
@@ -249,6 +218,10 @@ const ESCROW_REGISTRY_ABI = [
     "function activeEscrowCount() external view returns (uint256)"
 ];
 
+const REPUTATION_ENGINE_ABI = [
+    "function calculateReputation(uint256 tokenId) view returns (uint256)"
+];
+
 const STAKE_TIERS = ["None", "Bronze", "Silver", "Gold", "Platinum"];
 const STAKE_TIER_COLORS = { None: "#666", Bronze: "#cd7f32", Silver: "#c0c0c0", Gold: "#ffd700", Platinum: "#e5e4e2" };
 
@@ -285,6 +258,7 @@ async function loadAgentsFromChain() {
         
         var verifyContract = new ethers.Contract(CONFIG.VERIFICATION_REGISTRY, VERIFICATION_ABI, provider);
         var jobContract = new ethers.Contract(CONFIG.JOB_REGISTRY, JOB_REGISTRY_ABI, provider);
+        var repContract = new ethers.Contract(CONFIG.REPUTATION_ENGINE, REPUTATION_ENGINE_ABI, provider);
 
         for (var i = 1; i <= count; i++) {
             await new Promise(function(r) { setTimeout(r, 200); });
@@ -292,7 +266,7 @@ async function loadAgentsFromChain() {
                 var soul = await contract.souls(i);
 
                 if (soul.active) {
-                    var skillsArray = extractSkills(soul.name, soul.skills);
+                    var skillsArray = extractSkills(soul.skills);
 
                     // Fetch on-chain activity data
                     var actions = 0;
@@ -308,13 +282,19 @@ async function loadAgentsFromChain() {
                         jobCount = Number(await jobContract.getJobCount(i));
                     } catch (e) {}
 
-                    // Calculate reputation: age + actions (20pts) + verifications (15pts) + jobs (25pts)
-                    var age = Math.floor(Date.now() / 1000) - Number(soul.createdAt);
-                    var ageRep = Math.min(Math.floor(age / 600), 100);
-                    var actionRep = actions * 20;
-                    var verifyRep = verifications * 15;
-                    var jobRep = jobCount * 25;
-                    var rep = Math.max(0, ageRep + actionRep + verifyRep + jobRep);
+                    // Try on-chain ReputationEngine first, fall back to local calculation
+                    var rep = 0;
+                    try {
+                        rep = Number(await repContract.calculateReputation(i));
+                    } catch (e) {
+                        // Fallback: local reputation calc — age + actions (20pts) + verifications (15pts) + jobs (25pts)
+                        var age = Math.floor(Date.now() / 1000) - Number(soul.createdAt);
+                        var ageRep = Math.min(Math.floor(age / 600), 100);
+                        var actionRep = actions * 20;
+                        var verifyRep = verifications * 15;
+                        var jobRep = jobCount * 25;
+                        rep = Math.max(0, ageRep + actionRep + verifyRep + jobRep);
+                    }
 
                     var tier = "NEWCOMER";
                     if (rep >= 500) tier = "LEGENDARY";
@@ -322,7 +302,7 @@ async function loadAgentsFromChain() {
                     else if (rep >= 100) tier = "TRUSTED";
                     else if (rep >= 50) tier = "VERIFIED";
 
-                    var addr = AGENT_WALLETS[i] || soul.creator;
+                    var addr = soul.creator;
                     agents.push({
                         name: soul.name,
                         address: addr.slice(0, 6) + "..." + addr.slice(-3),
@@ -358,42 +338,23 @@ async function loadAgentsFromChain() {
         
     } catch (error) {
         console.error("Failed to load from chain:", error);
-        typeInTerminal("[WARN] Using cached agents", "warning");
-        populateAgents();
-        populateSkillsWithSearch(); populateTrustNetwork();
+        typeInTerminal("[WARN] Could not load agents from blockchain — check RPC connection", "warning");
+        var list = document.getElementById("agentList");
+        list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim)">Failed to load agents from chain. Please refresh to retry.</div>';
     }
 }
 
-function extractSkills(name, description) {
-    var nameLower = (name || "").toLowerCase();
-    var descLower = (description || "").toLowerCase();
-    var found = [];
-    
-    var keywords = {
-        "trading": "trading", "market": "market-analysis", "analysis": "data-analysis",
-        "legal": "legal-research", "compliance": "compliance", "contract": "contract-review",
-        "code": "coding", "debug": "debugging", "review": "code-review",
-        "security": "security", "audit": "audit", "research": "research",
-        "forecast": "forecasting", "report": "reporting", "defi": "defi",
-        "autonomous": "autonomous", "verification": "verification", "identity": "identity",
-        "portfolio": "portfolio"
-    };
-    
-    for (var k in keywords) {
-        if (descLower.indexOf(k) !== -1 || nameLower.indexOf(k) !== -1) {
-            if (found.indexOf(keywords[k]) === -1) found.push(keywords[k]);
-        }
+function extractSkills(skillsField) {
+    if (!skillsField || typeof skillsField !== 'string' || skillsField.trim() === '') {
+        return ["general"];
     }
-    
-    if (found.length === 0) {
-        if (nameLower.indexOf("trader") !== -1) found = ["trading", "market-analysis"];
-        else if (nameLower.indexOf("legal") !== -1) found = ["legal-research", "compliance"];
-        else if (nameLower.indexOf("dev") !== -1) found = ["coding", "debugging"];
-        else if (nameLower.indexOf("data") !== -1) found = ["data-analysis", "reporting"];
-        else found = ["general", "autonomous"];
-    }
-    
-    return found.slice(0, 3);
+    // Parse the on-chain comma-separated skills field directly
+    var parsed = skillsField.split(",").map(function(s) {
+        return s.trim().toLowerCase();
+    }).filter(function(s) {
+        return s.length > 0;
+    });
+    return parsed.length > 0 ? parsed : ["general"];
 }
 
 // =============================================================================
@@ -2126,8 +2087,8 @@ async function tipAgent(agent, amount) {
         return;
     }
 
-    // Route tip to operator wallet (not minter/creator)
-    var recipient = AGENT_WALLETS[agent.tokenId] || agent.fullAddress;
+    // Route tip to agent's on-chain address
+    var recipient = agent.fullAddress;
     if (!recipient) {
         showToast("No payment address for this agent!", "warning");
         return;
@@ -2143,7 +2104,7 @@ async function tipAgent(agent, amount) {
 async function processTip(agent, tipAmount) {
     if (!tipAmount || isNaN(parseFloat(tipAmount))) return;
 
-    var recipient = AGENT_WALLETS[agent.tokenId] || agent.fullAddress;
+    var recipient = agent.fullAddress;
 
     try {
         var provider = new ethers.BrowserProvider(getWalletProvider());
@@ -2178,7 +2139,7 @@ var hireModalUseEscrow = true;
 
 function openHireModal(agent) {
     hireModalAgent = agent;
-    var rate = AGENT_RATES[agent.tokenId] || 0.0003;
+    var rate = getAgentRate(agent);
     hireModalRate = rate;
     hireModalUseEscrow = true;
     var skills = agent.skills || [];
@@ -2261,7 +2222,7 @@ async function hireAgent(agent) {
 }
 
 async function processHire(agent, jobDesc, budget, useEscrow) {
-    var rate = AGENT_RATES[agent.tokenId] || 0.0003;
+    var rate = getAgentRate(agent);
     var skills = agent.skills || [];
     var skillList = skills.join(", ") || "general";
 
@@ -2327,7 +2288,7 @@ async function processHire(agent, jobDesc, budget, useEscrow) {
 
         if (!useEscrow) {
             // Direct payment flow (original)
-            var hireRecipient = AGENT_WALLETS[agent.tokenId] || agent.fullAddress;
+            var hireRecipient = agent.fullAddress;
             var tx = await signer.sendTransaction({
                 to: hireRecipient,
                 value: ethers.parseEther(agentPayment.toFixed(18))
