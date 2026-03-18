@@ -643,7 +643,7 @@ def reputation(address):
     })
 
 
-REPUTATION_ENGINE = "0x37eD5C32f40D9404f6c875381fD15CAa040Ab720"
+REPUTATION_ENGINE = "0x154057f3899A39142cD351FecB5619e2F3B78324"
 REPUTATION_ABI = [
     {"inputs":[{"name":"tokenId","type":"uint256"}],"name":"calculateReputation","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"},
     {"inputs":[{"name":"tokenId","type":"uint256"}],"name":"getReputationBreakdown","outputs":[{"components":[{"name":"activityScore","type":"uint256"},{"name":"verificationScore","type":"uint256"},{"name":"jobScore","type":"uint256"},{"name":"ageScore","type":"uint256"},{"name":"stakeBonus","type":"uint256"},{"name":"decayPenalty","type":"uint256"},{"name":"collusionPenalty","type":"uint256"},{"name":"totalScore","type":"uint256"},{"name":"tier","type":"uint8"}],"name":"","type":"tuple"}],"stateMutability":"view","type":"function"},
@@ -651,7 +651,7 @@ REPUTATION_ABI = [
 TIER_NAMES = ["NO_SOUL", "NEWCOMER", "VERIFIED", "TRUSTED", "ELITE", "LEGENDARY"]
 TIER_RISK = {"LEGENDARY": 5, "ELITE": 15, "TRUSTED": 30, "VERIFIED": 50, "NEWCOMER": 70, "NO_SOUL": 100}
 
-STAKE_REGISTRY = "0x2de431772062817EEB799c42Dbb5083F607BA6Ce"
+STAKE_REGISTRY = "0xCf40EA41A2a5FC3489f7282FA913977C8c69bC6f"
 STAKE_ABI = [
     {"inputs":[{"name":"tokenId","type":"uint256"}],"name":"getStakeInfo","outputs":[{"name":"amount","type":"uint256"},{"name":"stakedAt","type":"uint256"},{"name":"stakedBy","type":"address"},{"name":"tier","type":"uint8"}],"stateMutability":"view","type":"function"},
     {"inputs":[{"name":"tokenId","type":"uint256"}],"name":"getTier","outputs":[{"type":"uint8"}],"stateMutability":"view","type":"function"},

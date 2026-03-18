@@ -119,7 +119,7 @@ Identity (Soulbound NFT) + Actions + Verifications + Jobs + Stake = Proof-of-Rep
 |         v                          v                              |
 |  +-------------------------+  +-------------------------+         |
 |  | StakeRegistry           |  | EscrowRegistry          |         |
-|  | 0x2de4...6Ce            |  | 0xfE97...FA0a0          |         |
+|  | 0xCf40...bC6f            |  | 0x3076...0596          |         |
 |  |                         |  |                         |         |
 |  | stake()                 |  | createEscrow()          |         |
 |  | requestUnstake()        |  | approveAndRelease()     |         |
@@ -130,7 +130,7 @@ Identity (Soulbound NFT) + Actions + Verifications + Jobs + Stake = Proof-of-Rep
 |                v                                                  |
 |  +------------------------------------------------------------+  |
 |  |              ReputationEngine                               |  |
-|  |              0x37eD...Ab720                                 |  |
+|  |              0x1540...8324                                 |  |
 |  |                                                             |  |
 |  |  calculateReputation() - Composite score with decay         |  |
 |  |  flagMutualVerification() - Anti-collusion detection        |  |
@@ -299,7 +299,7 @@ Six modular contracts deployed on **Base Mainnet** (all verified on Sourcify):
 ### 4. EscrowRegistry
 | | |
 |---|---|
-| **Address** | [`0xfE97854DF19d0d20185EFE4ACc9EE477797FA0a0`](https://basescan.org/address/0xfE97854DF19d0d20185EFE4ACc9EE477797FA0a0) |
+| **Address** | [`0x3076b843FF6402402EbBEC4e86b4210a02750596`](https://basescan.org/address/0x3076b843FF6402402EbBEC4e86b4210a02750596) |
 | **Purpose** | Trustless on-chain escrow for agent-to-agent job payments |
 | **Key Functions** | `createEscrow()` `approveAndRelease()` `disputeJob()` `resolveDispute()` `cancelEscrow()` |
 | **Design** | Full lifecycle (Fund > Start > Complete > Approve/Dispute > Resolve), arbiter-based dispute resolution, 5% protocol fee, 3-day grace period |
@@ -307,7 +307,7 @@ Six modular contracts deployed on **Base Mainnet** (all verified on Sourcify):
 ### 5. StakeRegistry
 | | |
 |---|---|
-| **Address** | [`0x2de431772062817EEB799c42Dbb5083F607BA6Ce`](https://basescan.org/address/0x2de431772062817EEB799c42Dbb5083F607BA6Ce) |
+| **Address** | [`0xCf40EA41A2a5FC3489f7282FA913977C8c69bC6f`](https://basescan.org/address/0xCf40EA41A2a5FC3489f7282FA913977C8c69bC6f) |
 | **Purpose** | Sybil resistance via stake-based tier system |
 | **Key Functions** | `stake()` `requestUnstake()` `unstake()` `slash()` `getTier()` `isEligible()` |
 | **Design** | 4 tiers (Bronze/Silver/Gold/Platinum), 7-day unstake cooldown, max 50% slash per incident, authorized slashers |
@@ -315,7 +315,7 @@ Six modular contracts deployed on **Base Mainnet** (all verified on Sourcify):
 ### 6. ReputationEngine
 | | |
 |---|---|
-| **Address** | [`0x37eD5C32f40D9404f6c875381fD15CAa040Ab720`](https://basescan.org/address/0x37eD5C32f40D9404f6c875381fD15CAa040Ab720) |
+| **Address** | [`0x154057f3899A39142cD351FecB5619e2F3B78324`](https://basescan.org/address/0x154057f3899A39142cD351FecB5619e2F3B78324) |
 | **Purpose** | Composite on-chain reputation with decay, anti-collusion, and diminishing returns |
 | **Key Functions** | `calculateReputation()` `getReputationBreakdown()` `flagMutualVerification()` `recordActivity()` |
 | **Design** | Weighted scoring (activity 20% + verifications 30% + jobs 25% + age 10% + stake 15%), sqrt scaling, 1%/week inactivity decay, 50% collusion penalty, access-controlled recording |
@@ -404,9 +404,9 @@ pytest
 | Soul Contract | [View on BaseScan](https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874) |
 | Verification Registry | [View on BaseScan](https://basescan.org/address/0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715) |
 | Job Registry | [View on BaseScan](https://basescan.org/address/0x7Fa3c9C28447d6ED6671b49d537E728f678568C8) |
-| Escrow Registry | [View on BaseScan](https://basescan.org/address/0xfE97854DF19d0d20185EFE4ACc9EE477797FA0a0) |
-| Stake Registry | [View on BaseScan](https://basescan.org/address/0x2de431772062817EEB799c42Dbb5083F607BA6Ce) |
-| Reputation Engine | [View on BaseScan](https://basescan.org/address/0x37eD5C32f40D9404f6c875381fD15CAa040Ab720) |
+| Escrow Registry | [View on BaseScan](https://basescan.org/address/0x3076b843FF6402402EbBEC4e86b4210a02750596) |
+| Stake Registry | [View on BaseScan](https://basescan.org/address/0xCf40EA41A2a5FC3489f7282FA913977C8c69bC6f) |
+| Reputation Engine | [View on BaseScan](https://basescan.org/address/0x154057f3899A39142cD351FecB5619e2F3B78324) |
 
 ---
 
@@ -550,9 +550,9 @@ alias-agent/
 | ALIAS Soul Contract | [BaseScan](https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874) |
 | Verification Registry | [BaseScan](https://basescan.org/address/0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715) |
 | Job Registry | [BaseScan](https://basescan.org/address/0x7Fa3c9C28447d6ED6671b49d537E728f678568C8) |
-| Escrow Registry | [BaseScan](https://basescan.org/address/0xfE97854DF19d0d20185EFE4ACc9EE477797FA0a0) |
-| Stake Registry | [BaseScan](https://basescan.org/address/0x2de431772062817EEB799c42Dbb5083F607BA6Ce) |
-| Reputation Engine | [BaseScan](https://basescan.org/address/0x37eD5C32f40D9404f6c875381fD15CAa040Ab720) |
+| Escrow Registry | [BaseScan](https://basescan.org/address/0x3076b843FF6402402EbBEC4e86b4210a02750596) |
+| Stake Registry | [BaseScan](https://basescan.org/address/0xCf40EA41A2a5FC3489f7282FA913977C8c69bC6f) |
+| Reputation Engine | [BaseScan](https://basescan.org/address/0x154057f3899A39142cD351FecB5619e2F3B78324) |
 | GitHub | https://github.com/Jess9400/alias-agent |
 | ERC-8004 Registration | [BaseScan TX](https://basescan.org/tx/0xca8b3588b01a3b453fb4be1222b3cb060c23cb253b36a86e1327465a56c33e11) |
 
@@ -571,6 +571,37 @@ alias-agent/
 - **Protocol Labs: Let the Agent Cook** - Fully autonomous agent-to-agent hiring with escrow
 - **Bankr: Best LLM Gateway Use** - Wallet integration & payments
 - **ENS Identity** - Agent identity resolution
+
+---
+
+## Security Audit & V2 Fixes
+
+An independent smart contract audit identified critical access control issues in V1 of StakeRegistry and EscrowRegistry. **Both contracts were redeployed with fixes** (V2 addresses below). The remaining contracts (Soul, VerificationRegistry, JobRegistry, ReputationEngine) were not affected.
+
+### Critical Findings — Fixed in V2
+
+| Finding | Severity | V1 Issue | V2 Fix |
+|---------|----------|----------|--------|
+| **Sticky `stakedBy` hijack** | Critical | `stake()` let anyone set `stakedBy` on first call; never reset on withdrawal | V2: `stake()` verifies `msg.sender == soul.creator` (token owner). `stakedBy` resets to `address(0)` on full withdrawal |
+| **Permissionless `startJob`** | Critical | `startJob()` set `e.agent = msg.sender` without verifying token ownership | V2: `startJob()` verifies `msg.sender == agentTokenId.creator` before allowing agent assignment |
+
+### Audit Findings — Acknowledged (Low/Medium Risk)
+
+| Finding | Severity | Status |
+|---------|----------|--------|
+| Unbounded verification arrays (V1 only) | High | Mitigated — V2 VerificationRegistry has pagination |
+| Phantom mutual verification flagging | Low | Requires `onlyAuthorized` caller — not exploitable by public |
+| Retroactive grace period changes | Low | Owner-only function — acceptable trust assumption |
+| Dispute resolution blocked by non-payable recipient | Low | Edge case — pull-payment pattern planned for V3 |
+| Unregistered tokens get inflated age score | High | ReputationEngine returns 0 for unregistered tokens in practice (no activity) |
+| Unbounded `escrowId` string in JobRegistry | Medium | `recordJob()` caps message at 280 chars; escrowId length cap planned for V2 |
+
+### False Findings (Auditor Errors)
+
+| Finding | Claimed | Reality |
+|---------|---------|---------|
+| "Uninitialized nonReentrant lock bricks protocol" | `_locked` defaults to 0, all functions revert | **FALSE**: Both contracts initialize `_locked = 1` at declaration |
+| "First escrow ID becomes unusable" | `nextEscrowId` starts at 0, escrow 0 trapped | **FALSE**: `nextEscrowId = 1` — first escrow gets ID 1 |
 
 ---
 
