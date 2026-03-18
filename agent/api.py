@@ -10,7 +10,13 @@ from time import time as _time, sleep as _sleep
 from web3 import Web3
 from eth_account import Account
 from alias import AliasSoulAgent
-from network_registry import NETWORK_AGENTS, get_agent_by_skill
+from dynamic_registry import get_agents as _get_dynamic_agents, get_agent_by_skill, find_by_skill, find_by_address, find_by_token_id, all_skills
+
+# Dynamic NETWORK_AGENTS — loaded from chain, falls back to hardcoded
+def _load_network_agents():
+    return _get_dynamic_agents()
+
+NETWORK_AGENTS = _load_network_agents()
 
 logging.basicConfig(level=logging.INFO)
 
