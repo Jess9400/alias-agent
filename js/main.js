@@ -2080,6 +2080,9 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("stakeModal").addEventListener("click", function(e) {
         if (e.target.id === "stakeModal") closeStakeModal();
     });
+    document.getElementById("autoHireModal").addEventListener("click", function(e) {
+        if (e.target.id === "autoHireModal") closeAutoHireModal();
+    });
 });
 
 // =============================================================================
@@ -2851,20 +2854,46 @@ function renderActivityFeed(container, events) {
 // =============================================================================
 
 function runAutoHireDemo() {
+    openAutoHireModal();
+}
+
+function openAutoHireModal() {
+    document.getElementById("autoHireSkill").value = "";
+    document.getElementById("autoHireTask").value = "";
+    document.getElementById("autoHireModal").style.display = "flex";
+}
+
+function closeAutoHireModal() {
+    document.getElementById("autoHireModal").style.display = "none";
+}
+
+function setAutoHireSkill(skill) {
+    document.getElementById("autoHireSkill").value = skill;
+}
+
+function submitAutoHire() {
+    var skill = document.getElementById("autoHireSkill").value.trim();
+    var task = document.getElementById("autoHireTask").value.trim();
+    if (!skill) { showToast("Please select or enter a skill", "warning"); return; }
+    if (!task) { showToast("Please describe the task", "warning"); return; }
+
+    closeAutoHireModal();
     clearTerminal();
     hideSearchResult();
-    typeInTerminal("[SYSTEM] === AUTONOMOUS AGENT-TO-AGENT DEMO ===", "system");
-    typeInTerminal("[INFO] Initiating agent discovery and hiring...", "warning");
+    typeInTerminal("[SYSTEM] === AUTONOMOUS AGENT-TO-AGENT HIRING ===", "system");
+    typeInTerminal("[INFO] Skill needed: " + escapeHtml(skill), "system");
+    typeInTerminal("[INFO] Task: " + escapeHtml(task.substring(0, 100)) + (task.length > 100 ? "..." : ""), "system");
+    typeInTerminal("[INFO] Searching network for the best agent...", "warning");
 
-    showJobLoading("Running autonomous agent-to-agent demo...");
-    updateJobLoadingText("ALIAS-Prime is discovering specialists...");
+    showJobLoading("Finding and hiring the best agent...");
+    updateJobLoadingText("Discovering " + skill + " specialists...");
 
     fetchWithTimeout(CONFIG.API_URL + "/demo/auto-hire", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            skill: "data-analysis",
-            task: "Analyze the top 5 DeFi protocols on Base by TVL, assess risk, and recommend allocation strategy",
+            skill: skill,
+            task: task,
             requester: "ALIAS-Prime"
         })
     })
