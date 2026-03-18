@@ -1584,7 +1584,8 @@ function retryJob(escrowId) {
             job.result = result.result;
             saveJob(escrowId, job);
             showJobHistory();
-            showToast("Job completed by " + job.agent + "!", "success");
+            typeInTerminal("[INFO] View full job history → click the Jobs button in the header", "system");
+            showToast("Job completed by " + job.agent + "! Click Jobs to see full history.", "success");
         } else {
             typeInTerminal("[ERROR] " + escapeHtml(result.error || "Unknown error"), "warning");
             showToast("Job retry failed: " + (result.error || "Unknown error"), "error");
@@ -2390,7 +2391,8 @@ async function processHire(agent, jobDesc, budget, useEscrow) {
                 jobData.status = "COMPLETED";
                 jobData.result = jobResult.result;
                 saveJob(escrowId, jobData);
-                showToast("Job completed by " + agent.name + "! Check terminal for results.", "success", 8000);
+                typeInTerminal("[INFO] View full job history → click the Jobs button in the header", "system");
+                showToast("Job completed by " + agent.name + "! Click Jobs to see full history.", "success", 8000);
 
                 // If escrow: prompt to approve and release
                 if (useEscrow && onChainEscrowId) {
