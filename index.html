@@ -101,14 +101,14 @@
 
         /* Main Grid */
         .main-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 25px; margin-bottom: 30px; align-items: stretch; }
-        .main-grid .card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
-        .main-grid .agent-list { flex: 1; }
+        .main-grid .card { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+        .main-grid .agent-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
         .card { background: var(--bg-card); border: 1px solid rgba(0,212,255,0.2); border-radius: 20px; padding: 20px; transition: border-color 0.3s, box-shadow 0.3s; }
         .card:hover { border-color: rgba(0,212,255,0.35); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
         .card-title { font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid rgba(0,212,255,0.1); display: flex; align-items: center; gap: 10px; }
 
         /* Agent List */
-        .agent-list { display: flex; flex-direction: column; gap: 10px; max-height: 320px; overflow-y: auto; }
+        .agent-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
         .agent-item { background: rgba(0,212,255,0.04); border: 1px solid rgba(0,212,255,0.08); border-left: 3px solid rgba(0,212,255,0.2); border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.3s; }
         .agent-item:hover { border-color: var(--primary); border-left-color: var(--primary); transform: translateX(5px); background: rgba(0,212,255,0.08); box-shadow: 0 2px 12px rgba(0,212,255,0.1); }
         .agent-icon { width: 40px; height: 40px; background: linear-gradient(135deg, var(--secondary), var(--primary)); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -122,7 +122,7 @@
         .rep-tier { font-size: 0.65rem; color: var(--warning); text-transform: uppercase; }
 
         /* Terminal */
-        .terminal { background: #0a0a0a; border-radius: 12px; padding: 15px; font-family: 'Courier New', monospace; font-size: 0.8rem; height: 260px; overflow-y: auto; }
+        .terminal { background: #0a0a0a; border-radius: 12px; padding: 15px; font-family: 'Courier New', monospace; font-size: 0.8rem; min-height: 260px; flex: 1 1 auto; overflow-y: auto; }
         .terminal-line { margin-bottom: 5px; line-height: 1.4; }
         .terminal-line.system { color: var(--primary); }
         .terminal-line.success { color: var(--success); }
@@ -600,6 +600,6 @@
 
     <!-- Main JavaScript -->
     <script src="js/ethers.min.js?v=1"></script>
-    <script src="js/main.js?v=59"></script>
+    <script src="js/main.js?v=60"></script>
 </body>
 </html>
