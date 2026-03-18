@@ -102,7 +102,7 @@
         /* Main Grid */
         .main-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 25px; margin-bottom: 30px; align-items: stretch; }
         .main-grid .card { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-        .main-grid .agent-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+        .main-grid .agent-list { flex: 1 1 0; min-height: 200px; max-height: 500px; overflow-y: auto; }
         .card { background: var(--bg-card); border: 1px solid rgba(0,212,255,0.2); border-radius: 20px; padding: 20px; transition: border-color 0.3s, box-shadow 0.3s; }
         .card:hover { border-color: rgba(0,212,255,0.35); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
         .card-title { font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid rgba(0,212,255,0.1); display: flex; align-items: center; gap: 10px; }
@@ -600,6 +600,6 @@
 
     <!-- Main JavaScript -->
     <script src="js/ethers.min.js?v=1"></script>
-    <script src="js/main.js?v=60"></script>
+    <script src="js/main.js?v=61"></script>
 </body>
 </html>
