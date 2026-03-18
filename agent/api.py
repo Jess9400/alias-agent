@@ -44,6 +44,14 @@ app = Flask(__name__)
 CORS(app, origins=["https://jess9400.github.io", "http://localhost:*", "https://api.alias-protocol.xyz"])
 agent = AliasSoulAgent()
 
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({"error": "Not found"}), 404
+
+@app.errorhandler(400)
+def bad_request(e):
+    return jsonify({"error": "Bad request"}), 400
+
 @app.route('/')
 def index():
     return jsonify({
@@ -180,11 +188,22 @@ def pin_metadata():
     if not data or 'name' not in data:
         return jsonify({"error": "Missing metadata"}), 400
 
+    # Validate required fields before attempting Pinata call
+    name = data.get("name", "").strip()
+    creator = data.get("creator", "").strip()
+    skills = data.get("skills", "").strip()
+    if not name:
+        return jsonify({"error": "Missing required field: name"}), 400
+    if not creator:
+        return jsonify({"error": "Missing required field: creator"}), 400
+    if not skills:
+        return jsonify({"error": "Missing required field: skills"}), 400
+
     metadata = {
-        "name": data.get("name", ""),
-        "description": f"ALIAS Soulbound Identity for {data.get('name', 'Agent')}",
-        "skills": data.get("skills", ""),
-        "creator": data.get("creator", ""),
+        "name": name,
+        "description": f"ALIAS Soulbound Identity for {name}",
+        "skills": skills,
+        "creator": creator,
         "platform": "ALIAS",
         "chain": "Base Mainnet",
         "chain_id": 8453,
@@ -222,38 +241,71 @@ def auto_hire_demo():
     requester = data.get("requester", "ALIAS-Prime")
 
     steps = []
+    risk_profile = data.get("risk_profile", "conservative")  # conservative | moderate | aggressive
+    max_risk = {"conservative": 30, "moderate": 50, "aggressive": 80}.get(risk_profile, 30)
+
+    steps.append({"phase": "INIT", "message": f"{requester} operating in {risk_profile.upper()} mode (max risk: {max_risk}%)", "color": "system"})
 
     # Step 1: Discovery
     candidates = get_agent_by_skill(skill)
     if not candidates:
         return jsonify({"error": f"No agents found with skill: {skill}"}), 404
 
-    hired = candidates[0]
     steps.append({"phase": "DISCOVER", "message": f"Searching network for '{skill}' specialists...", "color": "system"})
     steps.append({"phase": "DISCOVER", "message": f"Found {len(candidates)} agent(s): {', '.join(c['name'] for c in candidates)}", "color": "success"})
-    steps.append({"phase": "DISCOVER", "message": f"Selected: {hired['name']} (Token #{hired['token_id']})", "color": "agent"})
 
-    # Step 2: Risk Assessment
+    # Step 2: Risk Assessment — evaluate candidates, reject those above risk threshold
     w3 = Web3(Web3.HTTPProvider("https://mainnet.base.org"))
     soul_abi = [{"inputs":[{"name":"tokenId","type":"uint256"}],"name":"actionCount","outputs":[{"type":"uint256"}],"stateMutability":"view","type":"function"}]
     contract = w3.eth.contract(address=Web3.to_checksum_address("0x0F2f94281F87793ee086a2B6517B6db450192874"), abi=soul_abi)
-    try:
-        actions = contract.functions.actionCount(hired["token_id"]).call()
-    except:
-        actions = 0
 
     risk_map = {"LEGENDARY": 5, "ELITE": 15, "TRUSTED": 30, "VERIFIED": 50, "NEWCOMER": 70}
-    rep = actions * 20
-    tier = "NEWCOMER"
-    if rep >= 500: tier = "LEGENDARY"
-    elif rep >= 200: tier = "ELITE"
-    elif rep >= 100: tier = "TRUSTED"
-    elif rep >= 50: tier = "VERIFIED"
-    risk = risk_map.get(tier, 70)
+    hired = None
+    rejected = []
 
-    steps.append({"phase": "ASSESS", "message": f"Assessing {hired['name']}...", "color": "warning"})
-    steps.append({"phase": "ASSESS", "message": f"On-chain actions: {actions} | Reputation: {rep} | Tier: {tier}", "color": "system"})
-    steps.append({"phase": "ASSESS", "message": f"Risk Score: {risk}% - {'ACCEPTED' if risk <= 50 else 'HIGH RISK - proceeding with caution'}", "color": "success" if risk <= 50 else "warning"})
+    for candidate in candidates:
+        try:
+            actions = contract.functions.actionCount(candidate["token_id"]).call()
+        except:
+            actions = 0
+
+        rep = actions * 20
+        tier = "NEWCOMER"
+        if rep >= 500: tier = "LEGENDARY"
+        elif rep >= 200: tier = "ELITE"
+        elif rep >= 100: tier = "TRUSTED"
+        elif rep >= 50: tier = "VERIFIED"
+        risk = risk_map.get(tier, 70)
+
+        steps.append({"phase": "ASSESS", "message": f"Evaluating {candidate['name']} (Token #{candidate['token_id']})...", "color": "warning"})
+        steps.append({"phase": "ASSESS", "message": f"On-chain actions: {actions} | Reputation: {rep} | Tier: {tier} | Risk: {risk}%", "color": "system"})
+
+        if risk > max_risk:
+            steps.append({"phase": "REJECT", "message": f"REJECTED {candidate['name']} — risk {risk}% exceeds {risk_profile} threshold ({max_risk}%)", "color": "warning"})
+            rejected.append(candidate["name"])
+        else:
+            steps.append({"phase": "ACCEPT", "message": f"ACCEPTED {candidate['name']} — risk {risk}% within {risk_profile} threshold", "color": "success"})
+            hired = candidate
+            break
+
+    if not hired:
+        # Fallback: pick the best available despite risk
+        hired = candidates[0]
+        try:
+            actions = contract.functions.actionCount(hired["token_id"]).call()
+        except:
+            actions = 0
+        rep = actions * 20
+        tier = "NEWCOMER"
+        if rep >= 500: tier = "LEGENDARY"
+        elif rep >= 200: tier = "ELITE"
+        elif rep >= 100: tier = "TRUSTED"
+        elif rep >= 50: tier = "VERIFIED"
+        risk = risk_map.get(tier, 70)
+        steps.append({"phase": "FALLBACK", "message": f"No agents met {risk_profile} risk threshold. Relaxing criteria...", "color": "warning"})
+        steps.append({"phase": "FALLBACK", "message": f"Selecting best available: {hired['name']} (risk {risk}%) with enhanced monitoring", "color": "agent"})
+
+    steps.append({"phase": "HIRED", "message": f"Hiring {hired['name']} (Token #{hired['token_id']})", "color": "success"})
 
     # Step 3: Escrow
     budget = hired.get("hourly_rate", 0.0003)

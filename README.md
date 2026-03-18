@@ -20,7 +20,7 @@
   <img src="https://img.shields.io/badge/Base-Mainnet-blue" alt="Base Mainnet" />
   <img src="https://img.shields.io/badge/ERC--8004-Agent_Identity-purple" alt="ERC-8004" />
   <img src="https://img.shields.io/badge/Contracts-6_Deployed-brightgreen" alt="6 Contracts" />
-  <img src="https://img.shields.io/badge/Tests-51_Passing-success" alt="51 Tests" />
+  <img src="https://img.shields.io/badge/Tests-92_Passing-success" alt="92 Tests" />
   <img src="https://img.shields.io/badge/Solidity-0.8.19-orange" alt="Solidity" />
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
 </p>
@@ -100,7 +100,7 @@ Identity (Soulbound NFT) + Actions + Verifications + Jobs + Stake = Proof-of-Rep
 |  |              ALIAS Soul Contract (ERC-721 Soulbound)        |  |
 |  |              0x0F2f...2874                                  |  |
 |  |                                                             |  |
-|  |  registerSoul()  - Mint soulbound identity NFT              |  |
+|  |  mintSoul()  - Mint soulbound identity NFT              |  |
 |  |  recordAction()  - Log on-chain activity                    |  |
 |  |  souls()         - Query agent identity                     |  |
 |  |  actionCount()   - Per-agent activity count                 |  |
@@ -275,7 +275,7 @@ Six modular contracts deployed on **Base Mainnet** (all verified on Sourcify):
 |---|---|
 | **Address** | [`0x0F2f94281F87793ee086a2B6517B6db450192874`](https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874) |
 | **Purpose** | Agent identity registration and on-chain activity tracking |
-| **Key Functions** | `registerSoul()` `souls()` `totalSouls()` `actionCount()` `recordAction()` |
+| **Key Functions** | `mintSoul()` `souls()` `totalSouls()` `actionCount()` `recordAction()` |
 | **Design** | Non-transferable NFT (soulbound) - cannot be bought, sold, or transferred |
 
 ### 2. VerificationRegistry
@@ -322,7 +322,7 @@ Six modular contracts deployed on **Base Mainnet** (all verified on Sourcify):
 ```
 User/Agent                    Contracts                      Result
     |                             |                             |
-    |--- registerSoul() -------->| Soul Contract               | Identity created
+    |--- mintSoul() -------->| Soul Contract               | Identity created
     |--- stake() --------------->| StakeRegistry               | Capabilities unlocked
     |--- verify() -------------->| VerificationRegistry        | Trust recorded
     |--- createEscrow() -------->| EscrowRegistry              | Funds locked
@@ -337,18 +337,18 @@ User/Agent                    Contracts                      Result
 
 ## Testing
 
-### Solidity Tests (51 passing)
+### Solidity Tests (40 passing)
 ```bash
 forge test -vvv
-# Runs: JobRegistry, VerificationRegistry, VerificationRegistryV2, AgentSoul, Counter
-# 51 tests passed, 0 failed
+# Runs: JobRegistry, VerificationRegistry, VerificationRegistryV2
+# 40 tests passed, 0 failed
 ```
 
-### Python Unit Tests
+### Python Unit Tests (52 passing)
 ```bash
-cd tests
 pytest
-# Covers: api, base_agent, network_registry, reputation_system
+# Covers: api_v2, base_agent, network_registry, reputation_system
+# 52 tests passed
 ```
 
 ---
@@ -386,8 +386,7 @@ pytest
 | Payments | On-chain escrow + Bankr Wallet API |
 | Identity | ENS Resolution |
 | Frontend | Vanilla HTML/CSS/JavaScript (no framework) |
-| Testing | Foundry (Solidity) + pytest (Python) — 51 tests |
-| CI/CD | GitHub Actions (forge fmt + forge test) |
+| Testing | Foundry (Solidity) + pytest (Python) — 92 tests total |
 
 ---
 
@@ -396,10 +395,10 @@ pytest
 | Metric | Value |
 |--------|-------|
 | Total Souls | 11 (live from blockchain) |
-| Registered Skills | 21 |
+| Registered Skills | 33 |
 | Total Actions | 24+ |
 | Deployed Contracts | 6 (all verified on Sourcify) |
-| Solidity Tests | 51 passing |
+| Tests | 92 passing (40 Solidity + 52 Python) |
 | Soul Contract | [View on BaseScan](https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874) |
 | Verification Registry | [View on BaseScan](https://basescan.org/address/0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715) |
 | Job Registry | [View on BaseScan](https://basescan.org/address/0x7Fa3c9C28447d6ED6671b49d537E728f678568C8) |
@@ -423,7 +422,7 @@ git clone https://github.com/Jess9400/alias-agent.git
 cd alias-agent
 
 # Install Python dependencies
-pip install flask flask-cors python-dotenv requests web3
+pip install -r requirements.txt
 
 # Install Foundry dependencies
 forge install
@@ -453,11 +452,11 @@ python3 api.py
 
 ### Run Tests
 ```bash
-# Solidity tests (51 tests)
+# Solidity tests (40 tests)
 forge test -vvv
 
-# Python tests
-cd tests && pytest
+# Python tests (52 tests)
+pytest
 ```
 
 ### Run the Autonomous Agent
@@ -480,11 +479,10 @@ alias-agent/
 │   ├── EscrowRegistry.sol             # Trustless job payment escrow
 │   ├── StakeRegistry.sol              # Stake-based Sybil resistance
 │   └── ReputationEngine.sol           # Composite scoring + anti-collusion
-├── test/                               # Solidity tests (51 passing)
+├── test/                               # Solidity tests (40 tests)
 │   ├── JobRegistry.t.sol
 │   ├── VerificationRegistry.t.sol
-│   ├── VerificationRegistryV2.t.sol
-│   └── AgentSoul.t.sol
+│   └── VerificationRegistryV2.t.sol
 ├── script/                             # Foundry deploy scripts
 │   ├── DeployAll.s.sol
 │   └── DeployEscrow.s.sol
@@ -510,8 +508,9 @@ alias-agent/
 │   └── ethers.min.js                   # ethers.js 6.9.0
 ├── index.html                          # Dashboard UI
 ├── CNAME                               # Custom domain (alias-protocol.xyz)
+├── foundry.toml                        # Foundry config (Solidity 0.8.19, optimizer)
 ├── pytest.ini                          # Python test config
-├── foundry.toml                        # Foundry config
+├── requirements.txt                    # Python dependencies
 └── README.md
 ```
 

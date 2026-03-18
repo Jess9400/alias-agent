@@ -16,6 +16,7 @@ To install:
 
 import json
 import logging
+import os
 import random
 import sys
 from datetime import datetime, timezone
@@ -27,7 +28,7 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-API_URL = "http://localhost:5000/demo/auto-hire"
+API_URL = os.getenv("ALIAS_API_URL", "https://api.alias-protocol.xyz") + "/demo/auto-hire"
 
 # Skill/task combinations that exercise different agents in the network
 JOBS = [
