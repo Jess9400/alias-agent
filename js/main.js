@@ -1234,7 +1234,7 @@ function populateSkillsWithSearch() {
         grid.innerHTML = '';
         var filterLower = (filter || '').toLowerCase();
         var displayed = 0;
-        var maxDisplay = filter ? sortedSkills.length : 10; // Show all when searching, top 10 otherwise
+        var maxDisplay = sortedSkills.length; // Show all skills
         
         sortedSkills.forEach(function(skill) {
             if (displayed >= maxDisplay) return;
