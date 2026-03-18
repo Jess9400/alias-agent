@@ -1908,10 +1908,11 @@ async function mintSoul() {
         status.style.color = "var(--success)";
         typeInTerminal("[MINT] Success! New soul: " + name, "success");
         
-        // Refresh agents list
+        // Refresh agents list and stats
         setTimeout(function() {
             closeMintModal();
             loadAgentsFromChain();
+            loadStats();
         }, 2000);
         
     } catch (error) {
