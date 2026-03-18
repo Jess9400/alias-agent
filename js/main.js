@@ -1292,7 +1292,7 @@ function connectWalletEnhanced() {
     }
 
     if (wallets.length === 0) {
-        showToast("No wallet found! Please install MetaMask or Coinbase Wallet.", "error");
+        showToast("No wallet found! Please install MetaMask, Coinbase Wallet, or Phantom.", "error");
         return;
     }
 
@@ -1895,7 +1895,7 @@ async function mintSoul() {
         var signer = await provider.getSigner();
         var contract = new ethers.Contract(CONFIG.CONTRACT_ADDRESS, SOUL_ABI, signer);
 
-        status.textContent = "Please confirm in MetaMask...";
+        status.textContent = "Please confirm in your wallet...";
 
         var tx = await contract.mintSoul(agentAddr, name, metadata, skills);
         
