@@ -100,8 +100,8 @@
         .arrow svg { width: 24px; height: 16px; fill: var(--success); }
 
         /* Main Grid */
-        .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 30px; align-items: stretch; }
-        .main-grid .card { display: flex; flex-direction: column; }
+        .main-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 25px; margin-bottom: 30px; align-items: stretch; }
+        .main-grid .card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
         .main-grid .agent-list { flex: 1; }
         .card { background: var(--bg-card); border: 1px solid rgba(0,212,255,0.2); border-radius: 20px; padding: 20px; transition: border-color 0.3s, box-shadow 0.3s; }
         .card:hover { border-color: rgba(0,212,255,0.35); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
@@ -600,6 +600,6 @@
 
     <!-- Main JavaScript -->
     <script src="js/ethers.min.js?v=1"></script>
-    <script src="js/main.js?v=58"></script>
+    <script src="js/main.js?v=59"></script>
 </body>
 </html>
