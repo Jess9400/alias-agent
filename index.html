@@ -6,7 +6,7 @@
     <title>ALIAS - Proof-of-Reputation Protocol for AI Agents</title>
 
     <!-- Content Security Policy -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https: data:; connect-src 'self' https://mainnet.base.org https://base.publicnode.com https://api.ensdata.net https://api.alias-protocol.xyz https://89-167-68-215.sslip.io wss://*.walletlink.org wss://*.walletconnect.com https://*.walletconnect.com https://*.wallet.coinbase.com https://gateway.pinata.cloud;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https: data:; connect-src 'self' https://mainnet.base.org https://base.publicnode.com https://api.ensdata.net https://api.alias-protocol.xyz wss://*.walletlink.org wss://*.walletconnect.com https://*.walletconnect.com https://*.wallet.coinbase.com https://gateway.pinata.cloud;">
 
     <!-- SEO Meta Tags -->
     <meta name="description" content="ALIAS - Proof-of-Reputation Protocol for AI Agents. On-chain identity, reputation, and trust for autonomous agents on Base. The trust primitive for the agentic economy.">
@@ -16,15 +16,15 @@
     <!-- Open Graph / Social Media -->
     <meta property="og:title" content="ALIAS - Proof-of-Reputation Protocol for AI Agents">
     <meta property="og:description" content="On-chain identity, reputation, and trust for autonomous AI agents on Base.">
-    <meta property="og:image" content="https://jess9400.github.io/alias-agent/logo.jpg">
-    <meta property="og:url" content="https://jess9400.github.io/alias-agent/">
+    <meta property="og:image" content="https://alias-protocol.xyz/logo.jpg">
+    <meta property="og:url" content="https://alias-protocol.xyz/">
     <meta property="og:type" content="website">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="ALIAS - Proof-of-Reputation Protocol for AI Agents">
     <meta name="twitter:description" content="On-chain identity, reputation, and trust for autonomous AI agents on Base.">
-    <meta name="twitter:image" content="https://jess9400.github.io/alias-agent/logo.jpg">
+    <meta name="twitter:image" content="https://alias-protocol.xyz/logo.jpg">
 
     <!-- Favicon -->
     <link rel="icon" type="image/jpeg" href="logo.jpg">
@@ -545,6 +545,51 @@
         </div>
     </div>
 
+    <!-- Verify Agent Modal -->
+    <div id="verifyModal" class="tip-modal-overlay" style="display:none;">
+        <div class="tip-modal" style="border-color:rgba(0,212,255,0.3);">
+            <h2 style="color:var(--primary);">Verify Agent</h2>
+            <div class="tip-agent-name" id="verifyAgentName">Agent</div>
+            <div class="form-group" style="margin-bottom:8px;">
+                <label style="color:var(--text-dim);display:block;margin-bottom:6px;font-size:0.85rem;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">Verification Message</label>
+                <input type="text" id="verifyMessage" placeholder="Trusted for DeFi tasks" value="Verified as trusted AI agent" class="search-input" style="width:100%;">
+            </div>
+            <div class="btn-row" style="margin-top:18px;">
+                <button class="btn-tip" id="verifySubmitBtn" style="background:linear-gradient(135deg, var(--primary), var(--secondary));" onclick="submitVerify()">Verify On-Chain</button>
+                <button class="btn-cancel" onclick="closeVerifyModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stake Modal -->
+    <div id="stakeModal" class="tip-modal-overlay" style="display:none;">
+        <div class="tip-modal" style="border-color:rgba(255,170,0,0.3);max-width:440px;">
+            <h2 style="color:var(--warning);">Stake ETH</h2>
+            <div class="tip-agent-name" id="stakeAgentName">Agent</div>
+            <div id="stakeCurrentInfo" style="background:rgba(0,0,0,0.2);border-radius:10px;padding:12px;margin-bottom:14px;font-size:0.85rem;">
+                <span style="color:var(--text-dim);">Current Stake:</span> <strong id="stakeCurrentAmount" style="color:var(--primary);">0 ETH</strong>
+                <span style="color:var(--text-dim);margin-left:12px;">Tier:</span> <strong id="stakeCurrentTier" style="color:var(--warning);">None</strong>
+            </div>
+            <div style="background:rgba(255,170,0,0.06);border:1px solid rgba(255,170,0,0.15);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:0.78rem;color:var(--text-dim);line-height:1.5;">
+                Bronze: 0.001 ETH &bull; Silver: 0.005 ETH &bull; Gold: 0.01 ETH &bull; Platinum: 0.05 ETH
+            </div>
+            <div class="form-group" style="margin-bottom:8px;">
+                <label style="color:var(--text-dim);display:block;margin-bottom:6px;font-size:0.85rem;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">Amount (ETH)</label>
+                <div class="tip-presets" id="stakePresets" style="margin-bottom:10px;">
+                    <button onclick="setStakeAmount('0.001')" style="background:rgba(255,170,0,0.08);border-color:rgba(255,170,0,0.2);">0.001</button>
+                    <button onclick="setStakeAmount('0.005')" style="background:rgba(255,170,0,0.08);border-color:rgba(255,170,0,0.2);">0.005</button>
+                    <button onclick="setStakeAmount('0.01')" style="background:rgba(255,170,0,0.08);border-color:rgba(255,170,0,0.2);">0.01</button>
+                    <button onclick="setStakeAmount('0.05')" style="background:rgba(255,170,0,0.08);border-color:rgba(255,170,0,0.2);">0.05</button>
+                </div>
+                <input type="text" id="stakeAmount" placeholder="0.001" class="search-input" style="width:100%;">
+            </div>
+            <div class="btn-row" style="margin-top:18px;">
+                <button class="btn-tip" id="stakeSubmitBtn" style="background:linear-gradient(135deg, var(--warning), #cc8800);" onclick="submitStake()">Stake</button>
+                <button class="btn-cancel" onclick="closeStakeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- How It Works Modal -->
     <div id="howItWorksModal" class="how-modal-overlay" style="display:none;"></div>
 
@@ -553,6 +598,6 @@
 
     <!-- Main JavaScript -->
     <script src="js/ethers.min.js?v=1"></script>
-    <script src="js/main.js?v=53"></script>
+    <script src="js/main.js?v=55"></script>
 </body>
 </html>

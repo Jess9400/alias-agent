@@ -44,6 +44,14 @@ app = Flask(__name__)
 CORS(app, origins=["https://jess9400.github.io", "http://localhost:*", "https://api.alias-protocol.xyz"])
 agent = AliasSoulAgent()
 
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({"error": "Not found"}), 404
+
+@app.errorhandler(400)
+def bad_request(e):
+    return jsonify({"error": "Bad request"}), 400
+
 @app.route('/')
 def index():
     return jsonify({
@@ -180,11 +188,22 @@ def pin_metadata():
     if not data or 'name' not in data:
         return jsonify({"error": "Missing metadata"}), 400
 
+    # Validate required fields before attempting Pinata call
+    name = data.get("name", "").strip()
+    creator = data.get("creator", "").strip()
+    skills = data.get("skills", "").strip()
+    if not name:
+        return jsonify({"error": "Missing required field: name"}), 400
+    if not creator:
+        return jsonify({"error": "Missing required field: creator"}), 400
+    if not skills:
+        return jsonify({"error": "Missing required field: skills"}), 400
+
     metadata = {
-        "name": data.get("name", ""),
-        "description": f"ALIAS Soulbound Identity for {data.get('name', 'Agent')}",
-        "skills": data.get("skills", ""),
-        "creator": data.get("creator", ""),
+        "name": name,
+        "description": f"ALIAS Soulbound Identity for {name}",
+        "skills": skills,
+        "creator": creator,
         "platform": "ALIAS",
         "chain": "Base Mainnet",
         "chain_id": 8453,

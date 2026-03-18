@@ -208,7 +208,7 @@ var allSkills = ["general", "coordination", "autonomous", "verification", "risk-
 // DYNAMIC AGENT LOADING WITH ETHERS.JS
 // =============================================================================
 const SOUL_ABI = [
-    "function registerSoul(address agent, string name, string metadataURI, string skills) returns (uint256)",
+    "function mintSoul(address agent, string name, string metadataURI, string skills) returns (uint256)",
     "function totalSouls() view returns (uint256)",
     "function actionCount(uint256 tokenId) view returns (uint256)",
     "function souls(uint256 tokenId) view returns (string name, string metadataURI, address creator, uint256 createdAt, string skills, bool active)"
@@ -681,7 +681,7 @@ function getTokenId(address, ensName) {
             showSearchResult({ title: "✓ SOUL VERIFIED", name: displayName, address: address, tokenId: tokenId, link: CONFIG.BASESCAN_URL + "/token/" + CONFIG.CONTRACT_ADDRESS + "?a=" + tokenId, message: "See Agent Activity for logs" }, true);
         }
     })
-    .catch(function() {});
+    .catch(function(e) { console.log("Token ID lookup failed:", e.message); });
 }
 
 // =============================================================================
@@ -910,19 +910,6 @@ async function loadStakeTiers() {
     }
 }
 
-function populateSkills() {
-    var grid = document.getElementById("skillsGrid");
-    grid.innerHTML = '';
-    
-    allSkills.forEach(function(skill) {
-        var tag = document.createElement('span');
-        tag.className = 'skill-tag';
-        tag.textContent = skill;
-        tag.onclick = function() { searchSkill(skill); };
-        grid.appendChild(tag);
-    });
-}
-
 // =============================================================================
 // DEMO FUNCTIONS
 // =============================================================================
@@ -1016,7 +1003,7 @@ function runFullDemo() {
             icon: "\u{1F9EC}",
             name: "Soul Contract",
             addr: CONFIG.CONTRACT_ADDRESS,
-            funcs: ["registerSoul()", "totalSouls()", "actionCount()", "souls()"],
+            funcs: ["mintSoul()", "totalSouls()", "actionCount()", "souls()"],
             desc: "Identity & Registration"
         },
         {
@@ -1949,7 +1936,7 @@ async function mintSoul() {
 
         status.textContent = "Please confirm in MetaMask...";
 
-        var tx = await contract.registerSoul(agentAddr, name, metadata, skills);
+        var tx = await contract.mintSoul(agentAddr, name, metadata, skills);
         
         status.textContent = "Transaction submitted! Waiting for confirmation...";
         typeInTerminal("[MINT] TX submitted: " + tx.hash.slice(0, 10) + "...", "warning");
@@ -2005,8 +1992,31 @@ async function signVerification(agent) {
         }
     }
 
-    var message = prompt("Enter verification message (e.g., \"Trusted for DeFi tasks\"):", "Verified as trusted AI agent");
-    if (!message) return;
+    openVerifyModal(agent);
+}
+
+// ---- Verify Modal State & Helpers ----
+var verifyModalAgent = null;
+
+function openVerifyModal(agent) {
+    verifyModalAgent = agent;
+    document.getElementById("verifyAgentName").textContent = agent.name + " (Token #" + agent.tokenId + ")";
+    document.getElementById("verifyMessage").value = "Verified as trusted AI agent";
+    document.getElementById("verifyModal").style.display = "flex";
+}
+
+function closeVerifyModal() {
+    document.getElementById("verifyModal").style.display = "none";
+    verifyModalAgent = null;
+}
+
+async function submitVerify() {
+    var agent = verifyModalAgent;
+    if (!agent) return;
+    var message = document.getElementById("verifyMessage").value.trim();
+    if (!message) { showToast("Please enter a verification message", "warning"); return; }
+
+    closeVerifyModal();
 
     try {
         var provider = new ethers.BrowserProvider(getWalletProvider());
@@ -2015,16 +2025,16 @@ async function signVerification(agent) {
 
         typeInTerminal("[VERIFY] Recording on-chain verification...", "warning");
         typeInTerminal("[TARGET] " + agent.name + " (Token #" + agent.tokenId + ")", "system");
-        
+
         var tx = await contract.verify(agent.tokenId, message);
-        
+
         typeInTerminal("[TX] " + tx.hash.slice(0, 15) + "... submitted", "warning");
-        
+
         var receipt = await tx.wait();
-        
+
         typeInTerminal("[CHAIN] ✓ Verification recorded on-chain!", "success");
         typeInTerminal("[TX] " + tx.hash, "system");
-        
+
         showToast("Verification recorded on-chain for " + agent.name + "!", "success", 7000);
 
     } catch (error) {
@@ -2059,6 +2069,12 @@ document.addEventListener("DOMContentLoaded", function() {
     });
     document.getElementById("tipModal").addEventListener("click", function(e) {
         if (e.target.id === "tipModal") closeTipModal();
+    });
+    document.getElementById("verifyModal").addEventListener("click", function(e) {
+        if (e.target.id === "verifyModal") closeVerifyModal();
+    });
+    document.getElementById("stakeModal").addEventListener("click", function(e) {
+        if (e.target.id === "stakeModal") closeStakeModal();
     });
 });
 
@@ -2455,31 +2471,63 @@ async function stakeForAgent() {
 
         typeInTerminal("[STAKE] " + myAgent.name + " (Token #" + myAgent.tokenId + ")", "system");
         typeInTerminal("[STAKE] Current: " + currentStake.toFixed(6) + " ETH | Tier: " + currentTier, "system");
-        typeInTerminal("[STAKE] Tiers: Bronze=0.001 | Silver=0.005 | Gold=0.01 | Platinum=0.05", "system");
 
-        var amount = prompt(
-            "Stake ETH for " + myAgent.name + "\n\n" +
-            "Current stake: " + currentStake.toFixed(6) + " ETH (" + currentTier + ")\n\n" +
-            "Tier thresholds:\n" +
-            "  Bronze: 0.001 ETH (register, take jobs)\n" +
-            "  Silver: 0.005 ETH (verify others)\n" +
-            "  Gold: 0.01 ETH (arbitrate disputes)\n" +
-            "  Platinum: 0.05 ETH (governance)\n\n" +
-            "Enter amount to stake (ETH):"
-        );
-        if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) return;
+        openStakeModal(myAgent, currentStake, currentTier);
+    } catch (error) {
+        console.error("Stake error:", error);
+        typeInTerminal("[ERROR] Staking failed: " + (error.reason || error.message), "warning");
+        showToast("Staking failed: " + (error.reason || error.message), "error");
+    }
+}
 
+// ---- Stake Modal State & Helpers ----
+var stakeModalAgent = null;
+
+function openStakeModal(agent, currentStake, currentTier) {
+    stakeModalAgent = agent;
+    document.getElementById("stakeAgentName").textContent = agent.name + " (Token #" + agent.tokenId + ")";
+    document.getElementById("stakeCurrentAmount").textContent = currentStake.toFixed(6) + " ETH";
+    document.getElementById("stakeCurrentTier").textContent = currentTier;
+    document.getElementById("stakeAmount").value = "";
+    document.getElementById("stakeModal").style.display = "flex";
+}
+
+function closeStakeModal() {
+    document.getElementById("stakeModal").style.display = "none";
+    stakeModalAgent = null;
+}
+
+function setStakeAmount(val) {
+    document.getElementById("stakeAmount").value = val;
+    var btns = document.querySelectorAll("#stakePresets button");
+    btns.forEach(function(b) { b.classList.remove("active"); });
+}
+
+async function submitStake() {
+    var agent = stakeModalAgent;
+    if (!agent) return;
+    var amount = document.getElementById("stakeAmount").value.trim();
+    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+        showToast("Please enter a valid amount", "warning");
+        return;
+    }
+
+    closeStakeModal();
+
+    try {
         var walletProvider = new ethers.BrowserProvider(getWalletProvider());
         var signer = await walletProvider.getSigner();
         var stakeWrite = new ethers.Contract(CONFIG.STAKE_REGISTRY, STAKE_REGISTRY_ABI, signer);
 
-        typeInTerminal("[STAKE] Staking " + amount + " ETH for " + myAgent.name + "...", "warning");
-        var tx = await stakeWrite.stake(myAgent.tokenId, { value: ethers.parseEther(amount) });
+        typeInTerminal("[STAKE] Staking " + amount + " ETH for " + agent.name + "...", "warning");
+        var tx = await stakeWrite.stake(agent.tokenId, { value: ethers.parseEther(amount) });
         typeInTerminal("[STAKE] TX submitted: " + tx.hash.slice(0, 18) + "...", "warning");
 
         await tx.wait();
 
-        var newInfo = await stakeContract.getStakeInfo(myAgent.tokenId);
+        var provider = getStaticProvider();
+        var stakeContract = new ethers.Contract(CONFIG.STAKE_REGISTRY, STAKE_REGISTRY_ABI, provider);
+        var newInfo = await stakeContract.getStakeInfo(agent.tokenId);
         var newTier = STAKE_TIERS[Number(newInfo[3])] || "None";
         typeInTerminal("[STAKE] ✓ Staked! New balance: " + parseFloat(ethers.formatEther(newInfo[0])).toFixed(6) + " ETH | Tier: " + newTier, "success");
         typeInTerminal("[TX] https://basescan.org/tx/" + tx.hash, "system");

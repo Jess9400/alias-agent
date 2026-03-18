@@ -5,46 +5,72 @@ from unittest.mock import MagicMock, patch
 
 
 class TestBaseAgent:
-    @patch("subprocess.run")
-    def test_has_soul_true(self, mock_run, mock_env):
-        mock_run.return_value = MagicMock(
-            stdout="0x0000000000000000000000000000000000000000000000000000000000000001",
-            returncode=0,
-        )
+    @patch("base_agent.Web3")
+    def test_has_soul_true(self, MockWeb3, mock_env):
+        mock_w3 = MagicMock()
+        MockWeb3.return_value = mock_w3
+        MockWeb3.HTTPProvider = MagicMock()
+        MockWeb3.to_checksum_address = lambda x: x
+
+        mock_contract = MagicMock()
+        mock_contract.functions.hasSoul.return_value.call.return_value = True
+        mock_w3.eth.contract.return_value = mock_contract
+
         from base_agent import BaseAgent
         agent = BaseAgent("TestAgent")
         assert agent.has_soul("0x6FFa1e00509d8B625c2F061D7dB07893B37199BC")
 
-    @patch("subprocess.run")
-    def test_has_soul_false(self, mock_run, mock_env):
-        mock_run.return_value = MagicMock(
-            stdout="0x0000000000000000000000000000000000000000000000000000000000000000",
-            returncode=0,
-        )
+    @patch("base_agent.Web3")
+    def test_has_soul_false(self, MockWeb3, mock_env):
+        mock_w3 = MagicMock()
+        MockWeb3.return_value = mock_w3
+        MockWeb3.HTTPProvider = MagicMock()
+        MockWeb3.to_checksum_address = lambda x: x
+
+        mock_contract = MagicMock()
+        mock_contract.functions.hasSoul.return_value.call.return_value = False
+        mock_w3.eth.contract.return_value = mock_contract
+
         from base_agent import BaseAgent
         agent = BaseAgent("TestAgent")
         assert not agent.has_soul("0x1234567890123456789012345678901234567890")
 
-    @patch("subprocess.run")
-    def test_get_token_id(self, mock_run, mock_env):
-        mock_run.return_value = MagicMock(
-            stdout="0x0000000000000000000000000000000000000000000000000000000000000002",
-            returncode=0,
-        )
+    @patch("base_agent.Web3")
+    def test_get_token_id(self, MockWeb3, mock_env):
+        mock_w3 = MagicMock()
+        MockWeb3.return_value = mock_w3
+        MockWeb3.HTTPProvider = MagicMock()
+        MockWeb3.to_checksum_address = lambda x: x
+
+        mock_contract = MagicMock()
+        mock_contract.functions.agentToSoul.return_value.call.return_value = 2
+        mock_w3.eth.contract.return_value = mock_contract
+
         from base_agent import BaseAgent
         agent = BaseAgent("TestAgent")
         assert agent.get_token_id() == 2
 
-    @patch("subprocess.run")
-    def test_get_reputation(self, mock_run, mock_env):
-        mock_run.side_effect = [
-            MagicMock(stdout="0x6FFa1e00509d8B625c2F061D7dB07893B37199BC", returncode=0),  # wallet
-            MagicMock(stdout="0x0000000000000000000000000000000000000000000000000000000000000005", returncode=0),  # actionCount
-        ]
+    @patch("base_agent.Web3")
+    def test_get_reputation(self, MockWeb3, mock_env):
+        mock_w3 = MagicMock()
+        MockWeb3.return_value = mock_w3
+        MockWeb3.HTTPProvider = MagicMock()
+        MockWeb3.to_checksum_address = lambda x: x
+
+        mock_soul = MagicMock()
+        mock_soul.functions.actionCount.return_value.call.return_value = 5
+        mock_verify = MagicMock()
+        mock_verify.functions.getVerificationCount.return_value.call.return_value = 2
+        mock_job = MagicMock()
+        mock_job.functions.getJobCount.return_value.call.return_value = 1
+
+        mock_w3.eth.contract.side_effect = [mock_soul, mock_verify, mock_job]
+
         from base_agent import BaseAgent
         agent = BaseAgent("TestAgent")
         agent.token_id = 1
-        assert agent.get_reputation(1) == 50  # 5 * 10
+        # 5*20 + 2*15 + 1*25 = 100 + 30 + 25 = 155
+        assert agent.get_reputation(1) == 155
 
     def test_get_tier_legendary(self, mock_env):
         with patch("subprocess.run") as mock_run:
