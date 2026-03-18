@@ -134,7 +134,7 @@ agents_bp = Blueprint("agents", __name__, url_prefix="/api/v2/agents")
 @agents_bp.route("", methods=["GET"])
 def list_agents():
     """List all agents with on-chain data."""
-    from network_registry import NETWORK_AGENTS
+    from dynamic_registry import get_agents; NETWORK_AGENTS = get_agents()
     agents = []
     for name, data in NETWORK_AGENTS.items():
         try:
@@ -162,7 +162,7 @@ def list_agents():
 @agents_bp.route("/<int:token_id>", methods=["GET"])
 def agent_profile(token_id):
     """Full agent profile with reputation breakdown."""
-    from network_registry import NETWORK_AGENTS
+    from dynamic_registry import get_agents; NETWORK_AGENTS = get_agents()
     agent_data = None
     for name, data in NETWORK_AGENTS.items():
         if data["token_id"] == token_id:
@@ -191,7 +191,7 @@ def agent_profile(token_id):
 @agents_bp.route("/search", methods=["GET"])
 def search_agents():
     """Search agents by skill."""
-    from network_registry import get_agent_by_skill
+    from dynamic_registry import get_agent_by_skill
     skill = request.args.get("skill", "")
     if not skill:
         return api_error("Missing 'skill' parameter")
@@ -252,7 +252,7 @@ def job_history(token_id):
 @rate_limit(max_per_minute=3)
 def multi_agent():
     """Multi-agent collaboration."""
-    from network_registry import get_agent_by_skill
+    from dynamic_registry import get_agent_by_skill
     data = request.get_json() or {}
     task = data.get("task", "Perform a security and economic audit of a DeFi protocol")
     steps = []
@@ -322,7 +322,7 @@ def get_reputation(token_id):
 @reputation_bp.route("/leaderboard", methods=["GET"])
 def leaderboard():
     """Top agents by reputation."""
-    from network_registry import NETWORK_AGENTS
+    from dynamic_registry import get_agents; NETWORK_AGENTS = get_agents()
     board = []
     for name, data in NETWORK_AGENTS.items():
         try:
@@ -356,7 +356,7 @@ def network_stats():
 @network_bp.route("/graph", methods=["GET"])
 def trust_graph():
     """Trust graph data for visualization."""
-    from network_registry import NETWORK_AGENTS
+    from dynamic_registry import get_agents; NETWORK_AGENTS = get_agents()
     nodes = [{"id": d["token_id"], "name": n, "address": d["address"]} for n, d in NETWORK_AGENTS.items()]
     # Edges would come from VerificationRegistry events in production
     return api_response({"nodes": nodes, "edges": []})

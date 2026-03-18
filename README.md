@@ -502,7 +502,8 @@ alias-agent/
 │   ├── marketplace_agent.py            # Hiring & payments
 │   ├── reputation_system.py            # Weighted scoring system
 │   ├── graph_reputation.py            # PageRank anti-Sybil engine
-│   ├── network_registry.py             # Agent registry (11 agents)
+│   ├── dynamic_registry.py             # On-chain agent discovery (reads souls from chain)
+│   ├── network_registry.py             # Hardcoded fallback registry (11 agents)
 │   └── auto_cron_v2.py               # Fleet orchestrator
 ├── js/
 │   ├── main.js                         # Frontend (ethers.js + EIP-6963)
