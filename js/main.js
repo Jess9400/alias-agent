@@ -374,11 +374,26 @@ function extractSkills(skillsField) {
     if (!skillsField || typeof skillsField !== 'string' || skillsField.trim() === '') {
         return ["general"];
     }
-    // Parse the on-chain comma-separated skills field directly
-    var parsed = skillsField.split(",").map(function(s) {
-        return s.trim().toLowerCase();
+    var text = skillsField;
+    // Extract from "Skills: x, y, z" pattern if present
+    var skillsIdx = text.toLowerCase().indexOf("skills:");
+    if (skillsIdx !== -1) {
+        text = text.substring(skillsIdx + 7);
+    }
+    // If most parts have many words, it's a natural language description — not skill tags
+    var parts = text.split(",").map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; });
+    if (parts.length > 0) {
+        var totalWords = 0;
+        parts.forEach(function(p) { totalWords += p.split(" ").length; });
+        if (totalWords / parts.length > 3) {
+            return ["general"];
+        }
+    }
+    // Parse comma-separated skills, skip sentence-like fragments
+    var parsed = parts.map(function(s) {
+        return s.toLowerCase().replace(/\s+/g, "-");
     }).filter(function(s) {
-        return s.length > 0;
+        return s.length > 0 && s.length < 35 && s.split("-").length < 5;
     });
     return parsed.length > 0 ? parsed : ["general"];
 }
