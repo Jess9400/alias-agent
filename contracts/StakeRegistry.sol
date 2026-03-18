@@ -9,6 +9,10 @@ pragma solidity ^0.8.19;
 
 interface IALIASSoulStake {
     function totalSouls() external view returns (uint256);
+    function souls(uint256 tokenId) external view returns (
+        string memory name, string memory model, address creator,
+        uint256 birthBlock, string memory description, bool exists
+    );
 }
 
 contract StakeRegistry {
@@ -110,13 +114,17 @@ contract StakeRegistry {
     function stake(uint256 tokenId) external payable nonReentrant validToken(tokenId) {
         require(msg.value > 0, "Must stake > 0");
 
+        // Verify caller is the token's creator (owner)
+        (, , address creator, , , ) = soulContract.souls(tokenId);
+        require(msg.sender == creator, "Not token owner");
+
         StakeInfo storage s = stakes[tokenId];
         StakeTier oldTier = s.tier;
 
         s.amount += msg.value;
+        s.stakedBy = msg.sender; // Always update to current caller (verified owner)
         if (s.stakedAt == 0) {
             s.stakedAt = block.timestamp;
-            s.stakedBy = msg.sender;
         }
         s.tier = _calculateTier(s.amount);
 
@@ -167,6 +175,12 @@ contract StakeRegistry {
         s.amount -= withdrawAmount;
         s.tier = _calculateTier(s.amount);
         totalStaked -= withdrawAmount;
+
+        // Reset stakedBy when fully withdrawn to prevent sticky permission
+        if (s.amount == 0) {
+            s.stakedBy = address(0);
+            s.stakedAt = 0;
+        }
 
         req.pending = false;
 

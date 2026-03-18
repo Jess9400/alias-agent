@@ -10,6 +10,10 @@ pragma solidity ^0.8.19;
 interface IALIASSoul {
     function totalSouls() external view returns (uint256);
     function hasSoul(address agent) external view returns (bool);
+    function souls(uint256 tokenId) external view returns (
+        string memory name, string memory model, address creator,
+        uint256 birthBlock, string memory description, bool exists
+    );
 }
 
 contract EscrowRegistry {
@@ -174,6 +178,10 @@ contract EscrowRegistry {
         Escrow storage e = escrows[escrowId];
         require(e.state == EscrowState.Funded, "Not in Funded state");
         require(block.timestamp < e.deadline, "Deadline passed");
+
+        // Verify caller owns the designated agent token
+        (, , address agentCreator, , , ) = soulContract.souls(e.agentTokenId);
+        require(msg.sender == agentCreator, "Not the designated agent");
 
         e.agent = msg.sender;
         e.state = EscrowState.InProgress;

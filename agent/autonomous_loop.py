@@ -80,7 +80,7 @@ JOB_ABI = [
 ]
 
 # ReputationEngine on-chain (primary reputation source)
-REPUTATION_ENGINE = "0x37eD5C32f40D9404f6c875381fD15CAa040Ab720"
+REPUTATION_ENGINE = "0x154057f3899A39142cD351FecB5619e2F3B78324"
 REPUTATION_ABI = [
     {"inputs": [{"name": "tokenId", "type": "uint256"}],
      "name": "calculateReputation",

@@ -2,6 +2,6 @@
 src = "contracts"
 out = "out"
 libs = ["lib"]
-solc_version = "0.8.19"
+solc_version = "0.8.26"
 optimizer = true
 optimizer_runs = 200
