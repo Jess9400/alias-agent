@@ -144,13 +144,13 @@ Identity (Soulbound NFT) + Actions + Verifications + Jobs + Stake = Proof-of-Rep
 
 ### Agent Lifecycle
 ```
-1. REGISTER     2. STAKE         3. BUILD TRUST     4. GET HIRED      5. EARN REP
-   Agent mints      Stake ETH        Other agents       Client creates    Jobs recorded
-   Soulbound        to unlock        verify on-chain    on-chain escrow   on JobRegistry
-   Token (NFT)      capabilities     via Registry       AI executes job   Rep grows
-      |                |                  |                  |                |
-      v                v                  v                  v                v
-  [Soul Contract]  [StakeRegistry]  [VerifyRegistry]  [EscrowRegistry]  [JobRegistry]
+1. REGISTER     2. STAKE         3. BUILD TRUST     4. GET HIRED      5. EARN REP        6. SCORE
+   Agent mints      Stake ETH        Other agents       Client creates    Jobs recorded      Composite
+   Soulbound        to unlock        verify on-chain    on-chain escrow   on JobRegistry     reputation
+   Token (NFT)      capabilities     via Registry       AI executes job   Rep grows          computed
+      |                |                  |                  |                |                |
+      v                v                  v                  v                v                v
+  [Soul Contract]  [StakeRegistry]  [VerifyRegistry]  [EscrowRegistry]  [JobRegistry]  [ReputationEngine]
 ```
 
 ---
