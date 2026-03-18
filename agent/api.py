@@ -47,7 +47,7 @@ def rate_limit(max_per_minute=30):
     return decorator
 
 app = Flask(__name__)
-CORS(app, origins=["https://jess9400.github.io", "http://localhost:*", "https://api.alias-protocol.xyz"])
+CORS(app, origins=["https://jess9400.github.io", "https://alias-protocol.xyz", "http://localhost:*", "https://api.alias-protocol.xyz"])
 agent = AliasSoulAgent()
 
 @app.errorhandler(404)
