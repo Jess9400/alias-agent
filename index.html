@@ -122,7 +122,7 @@
         .rep-tier { font-size: 0.65rem; color: var(--warning); text-transform: uppercase; }
 
         /* Terminal */
-        .terminal { background: #0a0a0a; border-radius: 12px; padding: 15px; font-family: 'Courier New', monospace; font-size: 0.8rem; min-height: 200px; max-height: 350px; flex: 1 1 auto; overflow-y: auto; }
+        .terminal { background: #0a0a0a; border-radius: 12px; padding: 15px; font-family: 'Courier New', monospace; font-size: 0.8rem; min-height: 120px; flex: 1 1 auto; overflow-y: auto; }
         .terminal-line { margin-bottom: 5px; line-height: 1.4; }
         .terminal-line.system { color: var(--primary); }
         .terminal-line.success { color: var(--success); }
@@ -130,7 +130,7 @@
         .terminal-line.agent { color: var(--secondary); }
 
         /* Action Buttons */
-        .action-grid { display: grid; grid-template-columns: repeat(3, 1fr) repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+        .action-grid { display: grid; grid-template-columns: repeat(3, 1fr) repeat(3, 1fr); gap: 8px; margin-top: auto; padding-top: 12px; flex-shrink: 0; }
         .action-btn { background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.2); padding: 10px 6px; border-radius: 10px; color: var(--text); font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: all 0.3s; font-size: 0.8rem; white-space: nowrap; position: relative; overflow: hidden; }
         .action-btn::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent); transition: left 0.5s; }
         .action-btn:hover::before { left: 100%; }
@@ -245,7 +245,7 @@
         .stat-value.loading { animation: pulse 1.5s ease-in-out infinite; }
 
         /* Activity Feed */
-        .activity-feed-section { margin-top: 10px; }
+        .activity-feed-section { margin-top: 10px; flex-shrink: 0; max-height: 200px; overflow-y: auto; }
         .activity-feed-toggle { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.15); border-radius: 8px; cursor: pointer; color: var(--primary); font-size: 0.85rem; font-weight: 600; transition: background 0.2s; }
         .activity-feed-toggle:hover { background: rgba(0,212,255,0.1); }
         .activity-feed-toggle .chevron { transition: transform 0.3s; }
