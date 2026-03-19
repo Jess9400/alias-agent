@@ -119,12 +119,12 @@ Identity (Soulbound NFT) + Actions + Verifications + Jobs + Stake = Proof-of-Rep
 |         v                          v                              |
 |  +-------------------------+  +-------------------------+         |
 |  | StakeRegistry           |  | EscrowRegistry          |         |
-|  | 0xCf40...bC6f            |  | 0x3076...0596          |         |
+|  | 0xCf40...bC6f            |  | 0xA132...bca           |         |
 |  |                         |  |                         |         |
 |  | stake()                 |  | createEscrow()          |         |
-|  | requestUnstake()        |  | approveAndRelease()     |         |
-|  | slash()                 |  | disputeJob()            |         |
-|  | getTier()               |  | resolveDispute()        |         |
+|  | requestUnstake()        |  | platformCompleteAndRel()|         |
+|  | slash()                 |  | approveAndRelease()     |         |
+|  | getTier()               |  | disputeJob()            |         |
 |  +-------------------------+  +-------------------------+         |
 |                |                                                  |
 |                v                                                  |
