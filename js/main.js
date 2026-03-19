@@ -2397,6 +2397,8 @@ async function processHire(agent, jobDesc, budget, useEscrow) {
             } else {
                 typeInTerminal("[ESCROW] Creating on-chain escrow via EscrowRegistry...", "warning");
                 var escrowContract = new ethers.Contract(CONFIG.ESCROW_REGISTRY, ESCROW_REGISTRY_ABI, signer);
+                var escrowReadOnly = new ethers.Contract(CONFIG.ESCROW_REGISTRY, ESCROW_REGISTRY_ABI, getStaticProvider());
+                var nextId = Number(await escrowReadOnly.nextEscrowId());
                 var deadline = Math.floor(Date.now() / 1000) + 86400 * 3; // 3 days
                 var escrowTx = await escrowContract.createEscrow(
                     myAgent.tokenId,
@@ -2406,21 +2408,8 @@ async function processHire(agent, jobDesc, budget, useEscrow) {
                     { value: ethers.parseEther(totalBudget.toFixed(18)) }
                 );
                 typeInTerminal("[ESCROW] TX submitted: " + escrowTx.hash.slice(0, 18) + "...", "warning");
-                var escrowReceipt = await escrowTx.wait();
-
-                // Parse escrow ID from event
-                try {
-                    var escrowIface = new ethers.Interface(ESCROW_REGISTRY_ABI);
-                    for (var log of escrowReceipt.logs) {
-                        try {
-                            var parsed = escrowIface.parseLog({ topics: log.topics, data: log.data });
-                            if (parsed && parsed.name === "EscrowCreated") {
-                                onChainEscrowId = Number(parsed.args[0]);
-                                break;
-                            }
-                        } catch (e) {}
-                    }
-                } catch (e) {}
+                await escrowTx.wait();
+                onChainEscrowId = nextId;
 
                 typeInTerminal("[ESCROW] ✓ On-chain escrow created! ID: " + (onChainEscrowId || "pending"), "success");
                 typeInTerminal("[TX] https://basescan.org/tx/" + escrowTx.hash, "system");
