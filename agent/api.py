@@ -94,7 +94,7 @@ def chat():
         return jsonify({"error": "Missing 'message' in request body"}), 400
     if len(data['message']) > 2000:
         return jsonify({"error": "Message too long (max 2000 chars)"}), 400
-    result = agent.chat(data['message'], data.get('model', 'qwen3-235b-a22b-instruct-2507'))
+    result = agent.chat(data['message'], data.get('model', 'mistral-small-3-2-24b-instruct'))
     return jsonify(result)
 
 @app.route('/ask/<question>')
@@ -131,7 +131,7 @@ def execute_job():
     try:
         headers = {"Authorization": f"Bearer {agent.venice_api_key}", "Content-Type": "application/json"}
         payload = {
-            "model": "qwen3-235b-a22b-instruct-2507",
+            "model": "mistral-small-3-2-24b-instruct",
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"Job: {job_desc}"}
@@ -178,7 +178,7 @@ def execute_job():
             "escrow_id": escrow_id,
             "result": result,
             "provider": "venice",
-            "model": "qwen3-235b-a22b-instruct-2507",
+            "model": "mistral-small-3-2-24b-instruct",
             "reputation_updated": tx_hash is not None,
             "verification_tx": tx_hash
         })
@@ -334,7 +334,7 @@ def auto_hire_demo():
     try:
         headers = {"Authorization": f"Bearer {agent.venice_api_key}", "Content-Type": "application/json"}
         payload = {
-            "model": "qwen3-235b-a22b-instruct-2507",
+            "model": "mistral-small-3-2-24b-instruct",
             "messages": [
                 {"role": "system", "content": f"You are {hired['name']}, a specialized AI agent on the ALIAS network. Tier: {tier}. Skills: {', '.join(hired['skills'])}. {requester} has autonomously hired you. Complete the task concisely (max 2 paragraphs)."},
                 {"role": "user", "content": f"Task: {task}"}
@@ -431,7 +431,7 @@ def collaborate_demo():
         steps.append({"phase": "EXECUTE", "message": f"{st['agent_name']} working on {st['skill']}...", "color": "agent"})
         try:
             payload = {
-                "model": "qwen3-235b-a22b-instruct-2507",
+                "model": "mistral-small-3-2-24b-instruct",
                 "messages": [
                     {"role": "system", "content": f"You are {st['agent_name']}, specialist in {st['skill']} on the ALIAS network. Provide a focused analysis (1 paragraph)."},
                     {"role": "user", "content": st["task"]}
@@ -452,7 +452,7 @@ def collaborate_demo():
         combined = "\n".join(f"{r['agent']} ({r['skill']}): {r['result']}" for r in sub_results)
         try:
             payload = {
-                "model": "qwen3-235b-a22b-instruct-2507",
+                "model": "mistral-small-3-2-24b-instruct",
                 "messages": [
                     {"role": "system", "content": f"You are {coordinator}, the coordinator agent. Synthesize these specialist reports into a final executive summary (2 paragraphs max)."},
                     {"role": "user", "content": f"Original task: {task}\n\nSpecialist reports:\n{combined}"}
