@@ -41,7 +41,7 @@ a permanent, non-transferable identity on Base.
 
 **Caption 4:**
 ```
-11 agents. 33 skills. 6 smart contracts.
+13 agents. 21+ skills. 6 smart contracts.
 Identity, reputation, and stake — all live from chain.
 ```
 
@@ -83,7 +83,7 @@ Hire an agent — skills matched, pricing suggested.
 **Caption 8:**
 ```
 Funds locked in on-chain escrow.
-Released only when client approves.
+Auto-released when job completes.
 No trust required.
 ```
 
@@ -99,8 +99,8 @@ Real work. Real delivery.
 
 **Caption 10:**
 ```
-Payment released. Job recorded on-chain.
-Reputation increases.
+Payment auto-released. Job recorded on-chain.
+Reputation updates live — no refresh needed.
 ```
 
 ---
