@@ -1808,6 +1808,18 @@ function showJobHistory() {
             details.appendChild(resultDiv);
         }
 
+        // Release Escrow button for completed on-chain escrows not yet released
+        if (isCompleted && j.onChainEscrow && j.onChainEscrowId && j.status !== "RELEASED") {
+            var releaseBtn = document.createElement('button');
+            releaseBtn.style.cssText = 'background:var(--success);color:#000;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-weight:bold;font-size:0.85em;margin-top:8px;margin-right:8px';
+            releaseBtn.textContent = 'Release Escrow Payment';
+            releaseBtn.onclick = function(e) {
+                e.stopPropagation();
+                releaseEscrowFromJobs(id, j);
+            };
+            details.appendChild(releaseBtn);
+        }
+
         // Retry button for pending jobs
         if (!isCompleted) {
             var retryBtn = document.createElement('button');
@@ -1829,6 +1841,31 @@ function showJobHistory() {
 
         box.appendChild(jobRow);
     });
+}
+
+async function releaseEscrowFromJobs(jobId, jobData) {
+    if (!connectedWallet) {
+        showToast("Connect the wallet that created this escrow", "warning");
+        return;
+    }
+    try {
+        var provider = new ethers.BrowserProvider(getWalletProvider());
+        var signer = await provider.getSigner();
+        var escrowWrite = new ethers.Contract(CONFIG.ESCROW_REGISTRY, ESCROW_REGISTRY_ABI, signer);
+        typeInTerminal("[ESCROW] Approving and releasing payment...", "warning");
+        var tx = await escrowWrite.approveAndRelease(jobData.onChainEscrowId);
+        await tx.wait();
+        typeInTerminal("[ESCROW] ✓ Payment released to " + escapeHtml(jobData.agent) + "!", "success");
+        typeInTerminal("[TX] https://basescan.org/tx/" + tx.hash, "system");
+        jobData.status = "RELEASED";
+        saveJob(jobId, jobData);
+        showToast("Escrow released to " + jobData.agent + "!", "success");
+        if (jobData.tokenId) await refreshAgentReputation(jobData.tokenId);
+        showJobHistory();
+    } catch (err) {
+        typeInTerminal("[ESCROW] Release failed: " + (err.reason || err.message), "warning");
+        showToast("Release failed: " + (err.reason || err.message), "error");
+    }
 }
 
 // Toggle My Agents filter
