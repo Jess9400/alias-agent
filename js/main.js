@@ -826,6 +826,63 @@ function selectAgent(name) {
 }
 
 // =============================================================================
+// SINGLE-AGENT REPUTATION REFRESH (avoids full reload)
+// =============================================================================
+
+async function refreshAgentReputation(tokenId) {
+    try {
+        var provider = getStaticProvider();
+        var soulContract = new ethers.Contract(CONFIG.CONTRACT_ADDRESS, SOUL_ABI, provider);
+        var verifyContract = new ethers.Contract(CONFIG.VERIFICATION_REGISTRY, VERIFICATION_ABI, provider);
+        var jobContract = new ethers.Contract(CONFIG.JOB_REGISTRY, JOB_REGISTRY_ABI, provider);
+        var repContract = new ethers.Contract(CONFIG.REPUTATION_ENGINE, REPUTATION_ENGINE_ABI, provider);
+
+        var actions = 0, verifications = 0, jobCount = 0;
+        try { actions = Number(await soulContract.actionCount(tokenId)); } catch (e) {}
+        try { verifications = Number(await verifyContract.getVerificationCount(tokenId)); } catch (e) {}
+        try { jobCount = Number(await jobContract.getJobCount(tokenId)); } catch (e) {}
+
+        var rep = 0;
+        try {
+            rep = Number(await repContract.calculateReputation(tokenId));
+        } catch (e) {
+            var soul = await soulContract.souls(tokenId);
+            var age = Math.floor(Date.now() / 1000) - Number(soul.createdAt);
+            rep = Math.max(0, Math.min(Math.floor(age / 600), 100) + actions * 20 + verifications * 15 + jobCount * 25);
+        }
+
+        var tier = "NEWCOMER";
+        if (rep >= 500) tier = "LEGENDARY";
+        else if (rep >= 200) tier = "ELITE";
+        else if (rep >= 100) tier = "TRUSTED";
+        else if (rep >= 50) tier = "VERIFIED";
+
+        // Update in-memory agent data
+        var agent = agents.find(function(a) { return a.tokenId === tokenId; });
+        if (agent) {
+            var oldRep = agent.rep;
+            agent.rep = rep;
+            agent.tier = tier;
+            agent.actions = actions;
+            agent.verifications = verifications;
+            agent.jobCount = jobCount;
+
+            // Re-render agent list and refresh selected agent display
+            populateAgents();
+            if (selectedAgent && selectedAgent.tokenId === tokenId) {
+                showSearchResult({ title: "\u2713 AGENT SELECTED", name: agent.name, address: agent.address, rep: agent.rep, tier: agent.tier, skills: agent.skills, tokenId: agent.tokenId, metadataURI: agent.metadataURI, message: "" }, true);
+            }
+
+            if (rep !== oldRep) {
+                typeInTerminal("[REP] " + agent.name + " reputation updated: " + oldRep + " → " + rep + " (" + tier + ")", "success");
+            }
+        }
+    } catch (e) {
+        console.log("Reputation refresh failed for token #" + tokenId, e);
+    }
+}
+
+// =============================================================================
 // UI POPULATION (XSS-safe)
 // =============================================================================
 
@@ -2041,6 +2098,9 @@ async function submitVerify() {
 
         showToast("Verification recorded on-chain for " + agent.name + "!", "success", 7000);
 
+        // Auto-refresh reputation score
+        await refreshAgentReputation(agent.tokenId);
+
     } catch (error) {
         console.error("Verification error:", error);
         if (error.message && error.message.includes("Already verified")) {
@@ -2412,6 +2472,9 @@ async function processHire(agent, jobDesc, budget, useEscrow) {
                 typeInTerminal("[INFO] View full job history → click the Jobs button in the header", "system");
                 showToast("Job completed by " + agent.name + "! Click Jobs to see full history.", "success", 8000);
 
+                // Auto-refresh reputation score after job completion
+                await refreshAgentReputation(agent.tokenId);
+
                 // If escrow: prompt to approve and release
                 if (useEscrow && onChainEscrowId) {
                     var doApprove = confirm("Job completed! Approve and release escrow payment to " + agent.name + "?");
@@ -2425,6 +2488,8 @@ async function processHire(agent, jobDesc, budget, useEscrow) {
                             typeInTerminal("[TX] https://basescan.org/tx/" + approveTx.hash, "system");
                             jobData.status = "RELEASED";
                             saveJob(escrowId, jobData);
+                            // Auto-refresh reputation score
+                            await refreshAgentReputation(agent.tokenId);
                         } catch (approveErr) {
                             typeInTerminal("[ESCROW] Release failed: " + (approveErr.reason || approveErr.message), "warning");
                             typeInTerminal("[INFO] You can approve later from the Jobs panel.", "system");
@@ -2543,6 +2608,8 @@ async function submitStake() {
         showToast("Staked " + amount + " ETH! Tier: " + newTier, "success");
 
         loadStakeTiers();
+        // Auto-refresh reputation score
+        await refreshAgentReputation(agent.tokenId);
     } catch (error) {
         console.error("Stake error:", error);
         typeInTerminal("[ERROR] Staking failed: " + (error.reason || error.message), "warning");
