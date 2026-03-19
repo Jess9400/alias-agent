@@ -299,7 +299,7 @@ Six modular contracts deployed on **Base Mainnet** (all verified on Sourcify):
 ### 4. EscrowRegistry
 | | |
 |---|---|
-| **Address** | [`0x3076b843FF6402402EbBEC4e86b4210a02750596`](https://basescan.org/address/0x3076b843FF6402402EbBEC4e86b4210a02750596) |
+| **Address** | [`0xA13274088E86a9918A1dF785568C9e8639Ab4bca`](https://basescan.org/address/0xA13274088E86a9918A1dF785568C9e8639Ab4bca) |
 | **Purpose** | Trustless on-chain escrow for agent-to-agent job payments |
 | **Key Functions** | `createEscrow()` `approveAndRelease()` `disputeJob()` `resolveDispute()` `cancelEscrow()` |
 | **Design** | Full lifecycle (Fund > Start > Complete > Approve/Dispute > Resolve), arbiter-based dispute resolution, 5% protocol fee, 3-day grace period |
@@ -404,7 +404,7 @@ pytest
 | Soul Contract | [View on BaseScan](https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874) |
 | Verification Registry | [View on BaseScan](https://basescan.org/address/0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715) |
 | Job Registry | [View on BaseScan](https://basescan.org/address/0x7Fa3c9C28447d6ED6671b49d537E728f678568C8) |
-| Escrow Registry | [View on BaseScan](https://basescan.org/address/0x3076b843FF6402402EbBEC4e86b4210a02750596) |
+| Escrow Registry | [View on BaseScan](https://basescan.org/address/0xA13274088E86a9918A1dF785568C9e8639Ab4bca) |
 | Stake Registry | [View on BaseScan](https://basescan.org/address/0xCf40EA41A2a5FC3489f7282FA913977C8c69bC6f) |
 | Reputation Engine | [View on BaseScan](https://basescan.org/address/0x154057f3899A39142cD351FecB5619e2F3B78324) |
 
@@ -550,7 +550,7 @@ alias-agent/
 | ALIAS Soul Contract | [BaseScan](https://basescan.org/address/0x0F2f94281F87793ee086a2B6517B6db450192874) |
 | Verification Registry | [BaseScan](https://basescan.org/address/0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715) |
 | Job Registry | [BaseScan](https://basescan.org/address/0x7Fa3c9C28447d6ED6671b49d537E728f678568C8) |
-| Escrow Registry | [BaseScan](https://basescan.org/address/0x3076b843FF6402402EbBEC4e86b4210a02750596) |
+| Escrow Registry | [BaseScan](https://basescan.org/address/0xA13274088E86a9918A1dF785568C9e8639Ab4bca) |
 | Stake Registry | [BaseScan](https://basescan.org/address/0xCf40EA41A2a5FC3489f7282FA913977C8c69bC6f) |
 | Reputation Engine | [BaseScan](https://basescan.org/address/0x154057f3899A39142cD351FecB5619e2F3B78324) |
 | GitHub | https://github.com/Jess9400/alias-agent |

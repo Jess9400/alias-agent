@@ -171,6 +171,32 @@ def execute_job():
             except Exception as e:
                 logging.error(f"On-chain job recording failed: {e}")
 
+        # If this is an on-chain escrow job, complete and release via platform function
+        escrow_release_tx = None
+        on_chain_escrow_id = data.get('on_chain_escrow_id')
+        if on_chain_escrow_id is not None:
+            try:
+                escrow_registry = "0xA13274088E86a9918A1dF785568C9e8639Ab4bca"
+                pk = os.getenv("PRIVATE_KEY")
+                w3 = Web3(Web3.HTTPProvider("https://mainnet.base.org"))
+                account = Account.from_key(pk)
+                escrow_abi = [{"inputs":[{"name":"escrowId","type":"uint256"},{"name":"resultHash","type":"string"}],"name":"platformCompleteAndRelease","outputs":[],"stateMutability":"nonpayable","type":"function"}]
+                escrow_contract = w3.eth.contract(address=Web3.to_checksum_address(escrow_registry), abi=escrow_abi)
+                result_hash = f"Job completed: {job_desc[:80]}"
+                tx = escrow_contract.functions.platformCompleteAndRelease(int(on_chain_escrow_id), result_hash).build_transaction({
+                    "from": account.address,
+                    "nonce": w3.eth.get_transaction_count(account.address),
+                    "gas": 300000,
+                    "gasPrice": w3.eth.gas_price,
+                    "chainId": 8453
+                })
+                signed = account.sign_transaction(tx)
+                tx_receipt = w3.eth.send_raw_transaction(signed.raw_transaction)
+                escrow_release_tx = tx_receipt.hex()
+                logging.info(f"Escrow #{on_chain_escrow_id} released on-chain TX: {escrow_release_tx}")
+            except Exception as e:
+                logging.error(f"Escrow release failed: {e}")
+
         return jsonify({
             "status": "completed",
             "agent": agent_name,
@@ -180,7 +206,8 @@ def execute_job():
             "provider": "venice",
             "model": "mistral-small-3-2-24b-instruct",
             "reputation_updated": tx_hash is not None,
-            "verification_tx": tx_hash
+            "verification_tx": tx_hash,
+            "escrow_release_tx": escrow_release_tx
         })
     except Exception as e:
         logging.error(f"Job execution failed: {e}")
