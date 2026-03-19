@@ -94,7 +94,7 @@ def chat():
         return jsonify({"error": "Missing 'message' in request body"}), 400
     if len(data['message']) > 2000:
         return jsonify({"error": "Message too long (max 2000 chars)"}), 400
-    result = agent.chat(data['message'], data.get('model', 'qwen3-235b-a22b-instruct-2507'))
+    result = agent.chat(data['message'], data.get('model', 'mistral-small-3-2-24b-instruct'))
     return jsonify(result)
 
 @app.route('/ask/<question>')
@@ -131,7 +131,7 @@ def execute_job():
     try:
         headers = {"Authorization": f"Bearer {agent.venice_api_key}", "Content-Type": "application/json"}
         payload = {
-            "model": "qwen3-235b-a22b-instruct-2507",
+            "model": "mistral-small-3-2-24b-instruct",
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"Job: {job_desc}"}
@@ -171,6 +171,32 @@ def execute_job():
             except Exception as e:
                 logging.error(f"On-chain job recording failed: {e}")
 
+        # If this is an on-chain escrow job, complete and release via platform function
+        escrow_release_tx = None
+        on_chain_escrow_id = data.get('on_chain_escrow_id')
+        if on_chain_escrow_id is not None:
+            try:
+                escrow_registry = "0xA13274088E86a9918A1dF785568C9e8639Ab4bca"
+                pk = os.getenv("PRIVATE_KEY")
+                w3 = Web3(Web3.HTTPProvider("https://mainnet.base.org"))
+                account = Account.from_key(pk)
+                escrow_abi = [{"inputs":[{"name":"escrowId","type":"uint256"},{"name":"resultHash","type":"string"}],"name":"platformCompleteAndRelease","outputs":[],"stateMutability":"nonpayable","type":"function"}]
+                escrow_contract = w3.eth.contract(address=Web3.to_checksum_address(escrow_registry), abi=escrow_abi)
+                result_hash = f"Job completed: {job_desc[:80]}"
+                tx = escrow_contract.functions.platformCompleteAndRelease(int(on_chain_escrow_id), result_hash).build_transaction({
+                    "from": account.address,
+                    "nonce": w3.eth.get_transaction_count(account.address),
+                    "gas": 300000,
+                    "gasPrice": w3.eth.gas_price,
+                    "chainId": 8453
+                })
+                signed = account.sign_transaction(tx)
+                tx_receipt = w3.eth.send_raw_transaction(signed.raw_transaction)
+                escrow_release_tx = tx_receipt.hex()
+                logging.info(f"Escrow #{on_chain_escrow_id} released on-chain TX: {escrow_release_tx}")
+            except Exception as e:
+                logging.error(f"Escrow release failed: {e}")
+
         return jsonify({
             "status": "completed",
             "agent": agent_name,
@@ -178,9 +204,10 @@ def execute_job():
             "escrow_id": escrow_id,
             "result": result,
             "provider": "venice",
-            "model": "qwen3-235b-a22b-instruct-2507",
+            "model": "mistral-small-3-2-24b-instruct",
             "reputation_updated": tx_hash is not None,
-            "verification_tx": tx_hash
+            "verification_tx": tx_hash,
+            "escrow_release_tx": escrow_release_tx
         })
     except Exception as e:
         logging.error(f"Job execution failed: {e}")
@@ -334,7 +361,7 @@ def auto_hire_demo():
     try:
         headers = {"Authorization": f"Bearer {agent.venice_api_key}", "Content-Type": "application/json"}
         payload = {
-            "model": "qwen3-235b-a22b-instruct-2507",
+            "model": "mistral-small-3-2-24b-instruct",
             "messages": [
                 {"role": "system", "content": f"You are {hired['name']}, a specialized AI agent on the ALIAS network. Tier: {tier}. Skills: {', '.join(hired['skills'])}. {requester} has autonomously hired you. Complete the task concisely (max 2 paragraphs)."},
                 {"role": "user", "content": f"Task: {task}"}
@@ -431,7 +458,7 @@ def collaborate_demo():
         steps.append({"phase": "EXECUTE", "message": f"{st['agent_name']} working on {st['skill']}...", "color": "agent"})
         try:
             payload = {
-                "model": "qwen3-235b-a22b-instruct-2507",
+                "model": "mistral-small-3-2-24b-instruct",
                 "messages": [
                     {"role": "system", "content": f"You are {st['agent_name']}, specialist in {st['skill']} on the ALIAS network. Provide a focused analysis (1 paragraph)."},
                     {"role": "user", "content": st["task"]}
@@ -452,7 +479,7 @@ def collaborate_demo():
         combined = "\n".join(f"{r['agent']} ({r['skill']}): {r['result']}" for r in sub_results)
         try:
             payload = {
-                "model": "qwen3-235b-a22b-instruct-2507",
+                "model": "mistral-small-3-2-24b-instruct",
                 "messages": [
                     {"role": "system", "content": f"You are {coordinator}, the coordinator agent. Synthesize these specialist reports into a final executive summary (2 paragraphs max)."},
                     {"role": "user", "content": f"Original task: {task}\n\nSpecialist reports:\n{combined}"}

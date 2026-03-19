@@ -28,7 +28,7 @@ const CONFIG = {
     API_URL: "https://api.alias-protocol.xyz",
     PLATFORM_WALLET: "0x7F66dFcD8e9e4e7Ec435D0631C5d723fFaDdb211",
     JOB_REGISTRY: "0x7Fa3c9C28447d6ED6671b49d537E728f678568C8",
-    ESCROW_REGISTRY: "0x3076b843FF6402402EbBEC4e86b4210a02750596",
+    ESCROW_REGISTRY: "0xA13274088E86a9918A1dF785568C9e8639Ab4bca",
     STAKE_REGISTRY: "0xCf40EA41A2a5FC3489f7282FA913977C8c69bC6f",
     REPUTATION_ENGINE: "0x154057f3899A39142cD351FecB5619e2F3B78324"
 };
@@ -1640,7 +1640,8 @@ function retryJob(escrowId) {
             tier: job.tier || "VERIFIED",
             token_id: job.tokenId,
             job: job.job,
-            escrow_id: escrowId
+            escrow_id: escrowId,
+            on_chain_escrow_id: job.onChainEscrowId || null
         })
     }).then(function(r) { return r.json(); })
     .then(function(result) {
@@ -2397,6 +2398,8 @@ async function processHire(agent, jobDesc, budget, useEscrow) {
             } else {
                 typeInTerminal("[ESCROW] Creating on-chain escrow via EscrowRegistry...", "warning");
                 var escrowContract = new ethers.Contract(CONFIG.ESCROW_REGISTRY, ESCROW_REGISTRY_ABI, signer);
+                var escrowReadOnly = new ethers.Contract(CONFIG.ESCROW_REGISTRY, ESCROW_REGISTRY_ABI, getStaticProvider());
+                var nextId = Number(await escrowReadOnly.nextEscrowId());
                 var deadline = Math.floor(Date.now() / 1000) + 86400 * 3; // 3 days
                 var escrowTx = await escrowContract.createEscrow(
                     myAgent.tokenId,
@@ -2406,21 +2409,8 @@ async function processHire(agent, jobDesc, budget, useEscrow) {
                     { value: ethers.parseEther(totalBudget.toFixed(18)) }
                 );
                 typeInTerminal("[ESCROW] TX submitted: " + escrowTx.hash.slice(0, 18) + "...", "warning");
-                var escrowReceipt = await escrowTx.wait();
-
-                // Parse escrow ID from event
-                try {
-                    var escrowIface = new ethers.Interface(ESCROW_REGISTRY_ABI);
-                    for (var log of escrowReceipt.logs) {
-                        try {
-                            var parsed = escrowIface.parseLog({ topics: log.topics, data: log.data });
-                            if (parsed && parsed.name === "EscrowCreated") {
-                                onChainEscrowId = Number(parsed.args[0]);
-                                break;
-                            }
-                        } catch (e) {}
-                    }
-                } catch (e) {}
+                await escrowTx.wait();
+                onChainEscrowId = nextId;
 
                 typeInTerminal("[ESCROW] ✓ On-chain escrow created! ID: " + (onChainEscrowId || "pending"), "success");
                 typeInTerminal("[TX] https://basescan.org/tx/" + escrowTx.hash, "system");
@@ -2490,7 +2480,8 @@ async function processHire(agent, jobDesc, budget, useEscrow) {
                     tier: agent.tier,
                     token_id: agent.tokenId,
                     job: jobDesc,
-                    escrow_id: escrowId
+                    escrow_id: escrowId,
+                    on_chain_escrow_id: onChainEscrowId || null
                 })
             });
             var jobResult = await jobResponse.json();
@@ -2509,27 +2500,15 @@ async function processHire(agent, jobDesc, budget, useEscrow) {
                 typeInTerminal("[INFO] View full job history → click the Jobs button in the header", "system");
                 showToast("Job completed by " + agent.name + "! Click Jobs to see full history.", "success", 8000);
 
-                // If escrow: prompt to approve and release
+                // If escrow: backend auto-releases via platformCompleteAndRelease
                 if (useEscrow && onChainEscrowId) {
-                    var doApprove = confirm("Job completed! Approve and release escrow payment to " + agent.name + "?");
-                    if (doApprove) {
-                        try {
-                            var escrowWrite = new ethers.Contract(CONFIG.ESCROW_REGISTRY, ESCROW_REGISTRY_ABI, signer);
-                            typeInTerminal("[ESCROW] Approving and releasing payment...", "warning");
-                            var approveTx = await escrowWrite.approveAndRelease(onChainEscrowId);
-                            await approveTx.wait();
-                            typeInTerminal("[ESCROW] ✓ Payment released to " + escapeHtml(agent.name) + "!", "success");
-                            typeInTerminal("[TX] https://basescan.org/tx/" + approveTx.hash, "system");
-                            jobData.status = "RELEASED";
-                            saveJob(escrowId, jobData);
-                            // Auto-refresh reputation score
-                            await refreshAgentReputation(agent.tokenId);
-                        } catch (approveErr) {
-                            typeInTerminal("[ESCROW] Release failed: " + (approveErr.reason || approveErr.message), "warning");
-                            typeInTerminal("[INFO] You can approve later from the Jobs panel.", "system");
-                        }
+                    if (jobResult.escrow_release_tx) {
+                        typeInTerminal("[ESCROW] ✓ Payment released to " + escapeHtml(agent.name) + "!", "success");
+                        typeInTerminal("[TX] https://basescan.org/tx/" + jobResult.escrow_release_tx, "system");
+                        jobData.status = "RELEASED";
+                        saveJob(escrowId, jobData);
                     } else {
-                        typeInTerminal("[INFO] Escrow held. You can approve or dispute later from the Jobs panel.", "system");
+                        typeInTerminal("[ESCROW] Job completed but escrow release pending. Check Jobs panel.", "warning");
                     }
                 }
 

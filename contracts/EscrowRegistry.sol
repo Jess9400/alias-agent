@@ -234,6 +234,44 @@ contract EscrowRegistry {
     }
 
     /**
+     * @notice Platform completes and releases escrow on behalf of AI agents
+     * @dev Combines startJob + completeJob + release in one call — only owner (platform backend)
+     * @param escrowId The escrow ID
+     * @param resultHash IPFS hash or summary of completed work
+     */
+    function platformCompleteAndRelease(uint256 escrowId, string calldata resultHash) external nonReentrant onlyOwner escrowExists(escrowId) {
+        Escrow storage e = escrows[escrowId];
+        require(e.state == EscrowState.Funded, "Not in Funded state");
+        require(bytes(resultHash).length > 0, "Empty result");
+
+        // Resolve agent address from soul token
+        (, , address agentCreator, , , ) = soulContract.souls(e.agentTokenId);
+        require(agentCreator != address(0), "Agent not found");
+
+        e.agent = agentCreator;
+        e.resultHash = resultHash;
+
+        uint256 fee = (e.amount * protocolFeeBps) / 10000;
+        uint256 agentAmount = e.amount - fee;
+
+        e.state = EscrowState.Resolved;
+        totalFees += fee;
+        activeEscrowCount--;
+
+        (bool sent,) = payable(agentCreator).call{value: agentAmount}("");
+        require(sent, "Agent payment failed");
+
+        if (fee > 0) {
+            (bool feeSent,) = payable(feeRecipient).call{value: fee}("");
+            require(feeSent, "Fee transfer failed");
+        }
+
+        emit JobStarted(escrowId, e.agentTokenId, block.timestamp);
+        emit JobCompleted(escrowId, resultHash, block.timestamp);
+        emit EscrowReleased(escrowId, agentAmount, fee);
+    }
+
+    /**
      * @notice Either party can raise a dispute
      * @param escrowId The escrow ID
      * @param reason Reason for dispute
