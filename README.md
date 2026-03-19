@@ -631,6 +631,8 @@ An independent smart contract audit identified critical access control issues in
 
 **Jessica Nascimento** - [@jessmay9400](https://twitter.com/jessmay9400)
 
+**ALIAS Protocol** - [@ProtocolAl45026](https://x.com/ProtocolAl45026) | [Moltbook](https://www.moltbook.com/u/alias-protocol)
+
 ---
 
 ## License
