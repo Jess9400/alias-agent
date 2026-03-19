@@ -33,6 +33,32 @@ const CONFIG = {
     REPUTATION_ENGINE: "0x154057f3899A39142cD351FecB5619e2F3B78324"
 };
 
+// Fallback payment wallets for agents minted from AA wallet (0x07a0...)
+// These agents can't receive ETH at their creator address (account abstraction entry point eats gas)
+// New agents minted from regular wallets (EOA) use soul.creator directly
+var AA_WALLET = "0x07a0afcb49a764007439671Ec5148947EfC62E39".toLowerCase();
+var AA_AGENT_WALLETS = {
+    1: "0x6FFa1e00509d8B625c2F061D7dB07893B37199BC",
+    2: "0x07a0afcb49a764007439671Ec5148947EfC62E39",
+    3: "0x9a60871B684e23D1C05ba9127AA7E72eA0a38DFb",
+    4: "0xB44618a6E386FE847B5dfcbA111A6C8aD2B97f23",
+    5: "0x9C8d1e413e71a02C2Ad0970AAcAe0Ae786e0F883",
+    6: "0x5870d20af5d0d8F3010A3804819e9036a6032301",
+    7: "0x9a60871B684e23D1C05ba9127AA7E72eA0a38DFb",
+    8: "0x5870d20af5d0d8F3010A3804819e9036a6032301",
+    9: "0x9C8d1e413e71a02C2Ad0970AAcAe0Ae786e0F883",
+    10: "0x5870d20af5d0d8F3010A3804819e9036a6032301",
+    11: "0x07a0afcb49a764007439671Ec5148947EfC62E39"
+};
+
+// Get payment address for an agent — AA wallet agents use fallback, others use soul.creator
+function getPaymentAddress(agent) {
+    if (agent.fullAddress && agent.fullAddress.toLowerCase() === AA_WALLET && AA_AGENT_WALLETS[agent.tokenId]) {
+        return AA_AGENT_WALLETS[agent.tokenId];
+    }
+    return agent.fullAddress;
+}
+
 // Dynamic rate calculation based on on-chain reputation/actions
 function getAgentRate(agent) {
     var actions = agent.actions || 0;
@@ -348,11 +374,26 @@ function extractSkills(skillsField) {
     if (!skillsField || typeof skillsField !== 'string' || skillsField.trim() === '') {
         return ["general"];
     }
-    // Parse the on-chain comma-separated skills field directly
-    var parsed = skillsField.split(",").map(function(s) {
-        return s.trim().toLowerCase();
+    var text = skillsField;
+    // Extract from "Skills: x, y, z" pattern if present
+    var skillsIdx = text.toLowerCase().indexOf("skills:");
+    if (skillsIdx !== -1) {
+        text = text.substring(skillsIdx + 7);
+    }
+    // If most parts have many words, it's a natural language description — not skill tags
+    var parts = text.split(",").map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; });
+    if (parts.length > 0) {
+        var totalWords = 0;
+        parts.forEach(function(p) { totalWords += p.split(" ").length; });
+        if (totalWords / parts.length > 3) {
+            return ["general"];
+        }
+    }
+    // Parse comma-separated skills, skip sentence-like fragments
+    var parsed = parts.map(function(s) {
+        return s.toLowerCase().replace(/\s+/g, "-");
     }).filter(function(s) {
-        return s.length > 0;
+        return s.length > 0 && s.length < 35 && s.split("-").length < 5;
     });
     return parsed.length > 0 ? parsed : ["general"];
 }
@@ -785,6 +826,63 @@ function selectAgent(name) {
 }
 
 // =============================================================================
+// SINGLE-AGENT REPUTATION REFRESH (avoids full reload)
+// =============================================================================
+
+async function refreshAgentReputation(tokenId) {
+    try {
+        var provider = getStaticProvider();
+        var soulContract = new ethers.Contract(CONFIG.CONTRACT_ADDRESS, SOUL_ABI, provider);
+        var verifyContract = new ethers.Contract(CONFIG.VERIFICATION_REGISTRY, VERIFICATION_ABI, provider);
+        var jobContract = new ethers.Contract(CONFIG.JOB_REGISTRY, JOB_REGISTRY_ABI, provider);
+        var repContract = new ethers.Contract(CONFIG.REPUTATION_ENGINE, REPUTATION_ENGINE_ABI, provider);
+
+        var actions = 0, verifications = 0, jobCount = 0;
+        try { actions = Number(await soulContract.actionCount(tokenId)); } catch (e) {}
+        try { verifications = Number(await verifyContract.getVerificationCount(tokenId)); } catch (e) {}
+        try { jobCount = Number(await jobContract.getJobCount(tokenId)); } catch (e) {}
+
+        var rep = 0;
+        try {
+            rep = Number(await repContract.calculateReputation(tokenId));
+        } catch (e) {
+            var soul = await soulContract.souls(tokenId);
+            var age = Math.floor(Date.now() / 1000) - Number(soul.createdAt);
+            rep = Math.max(0, Math.min(Math.floor(age / 600), 100) + actions * 20 + verifications * 15 + jobCount * 25);
+        }
+
+        var tier = "NEWCOMER";
+        if (rep >= 500) tier = "LEGENDARY";
+        else if (rep >= 200) tier = "ELITE";
+        else if (rep >= 100) tier = "TRUSTED";
+        else if (rep >= 50) tier = "VERIFIED";
+
+        // Update in-memory agent data
+        var agent = agents.find(function(a) { return a.tokenId === tokenId; });
+        if (agent) {
+            var oldRep = agent.rep;
+            agent.rep = rep;
+            agent.tier = tier;
+            agent.actions = actions;
+            agent.verifications = verifications;
+            agent.jobCount = jobCount;
+
+            // Re-render agent list and refresh selected agent display
+            populateAgents();
+            if (selectedAgent && selectedAgent.tokenId === tokenId) {
+                showSearchResult({ title: "\u2713 AGENT SELECTED", name: agent.name, address: agent.address, rep: agent.rep, tier: agent.tier, skills: agent.skills, tokenId: agent.tokenId, metadataURI: agent.metadataURI, message: "" }, true);
+            }
+
+            if (rep !== oldRep) {
+                typeInTerminal("[REP] " + agent.name + " reputation updated: " + oldRep + " → " + rep + " (" + tier + ")", "success");
+            }
+        }
+    } catch (e) {
+        console.log("Reputation refresh failed for token #" + tokenId, e);
+    }
+}
+
+// =============================================================================
 // UI POPULATION (XSS-safe)
 // =============================================================================
 
@@ -1193,7 +1291,7 @@ function populateSkillsWithSearch() {
         grid.innerHTML = '';
         var filterLower = (filter || '').toLowerCase();
         var displayed = 0;
-        var maxDisplay = filter ? sortedSkills.length : 10; // Show all when searching, top 10 otherwise
+        var maxDisplay = sortedSkills.length; // Show all skills
         
         sortedSkills.forEach(function(skill) {
             if (displayed >= maxDisplay) return;
@@ -1292,7 +1390,7 @@ function connectWalletEnhanced() {
     }
 
     if (wallets.length === 0) {
-        showToast("No wallet found! Please install MetaMask or Coinbase Wallet.", "error");
+        showToast("No wallet found! Please install MetaMask, Coinbase Wallet, or Phantom.", "error");
         return;
     }
 
@@ -1558,7 +1656,8 @@ function retryJob(escrowId) {
             job.result = result.result;
             saveJob(escrowId, job);
             showJobHistory();
-            showToast("Job completed by " + job.agent + "!", "success");
+            typeInTerminal("[INFO] View full job history → click the Jobs button in the header", "system");
+            showToast("Job completed by " + job.agent + "! Click Jobs to see full history.", "success");
         } else {
             typeInTerminal("[ERROR] " + escapeHtml(result.error || "Unknown error"), "warning");
             showToast("Job retry failed: " + (result.error || "Unknown error"), "error");
@@ -1895,7 +1994,7 @@ async function mintSoul() {
         var signer = await provider.getSigner();
         var contract = new ethers.Contract(CONFIG.CONTRACT_ADDRESS, SOUL_ABI, signer);
 
-        status.textContent = "Please confirm in MetaMask...";
+        status.textContent = "Please confirm in your wallet...";
 
         var tx = await contract.mintSoul(agentAddr, name, metadata, skills);
         
@@ -1908,10 +2007,11 @@ async function mintSoul() {
         status.style.color = "var(--success)";
         typeInTerminal("[MINT] Success! New soul: " + name, "success");
         
-        // Refresh agents list
+        // Refresh agents list and stats
         setTimeout(function() {
             closeMintModal();
             loadAgentsFromChain();
+            loadStats();
         }, 2000);
         
     } catch (error) {
@@ -1998,6 +2098,9 @@ async function submitVerify() {
 
         showToast("Verification recorded on-chain for " + agent.name + "!", "success", 7000);
 
+        // Auto-refresh reputation score
+        await refreshAgentReputation(agent.tokenId);
+
     } catch (error) {
         console.error("Verification error:", error);
         if (error.message && error.message.includes("Already verified")) {
@@ -2037,6 +2140,9 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("stakeModal").addEventListener("click", function(e) {
         if (e.target.id === "stakeModal") closeStakeModal();
     });
+    document.getElementById("autoHireModal").addEventListener("click", function(e) {
+        if (e.target.id === "autoHireModal") closeAutoHireModal();
+    });
 });
 
 // =============================================================================
@@ -2072,8 +2178,9 @@ function setTipAmount(val) {
 function submitTip() {
     var amount = document.getElementById("tipAmount").value.trim();
     if (!amount || isNaN(parseFloat(amount))) { showToast("Enter a valid amount", "warning"); return; }
+    var agent = tipModalAgent;
     closeTipModal();
-    processTip(tipModalAgent, amount);
+    processTip(agent, amount);
 }
 
 async function tipAgent(agent, amount) {
@@ -2087,8 +2194,8 @@ async function tipAgent(agent, amount) {
         return;
     }
 
-    // Route tip to agent's on-chain address
-    var recipient = agent.fullAddress;
+    // Route tip to agent's payment address (AA wallet fallback for existing agents)
+    var recipient = getPaymentAddress(agent);
     if (!recipient) {
         showToast("No payment address for this agent!", "warning");
         return;
@@ -2104,7 +2211,7 @@ async function tipAgent(agent, amount) {
 async function processTip(agent, tipAmount) {
     if (!tipAmount || isNaN(parseFloat(tipAmount))) return;
 
-    var recipient = agent.fullAddress;
+    var recipient = getPaymentAddress(agent);
 
     try {
         var provider = new ethers.BrowserProvider(getWalletProvider());
@@ -2288,7 +2395,7 @@ async function processHire(agent, jobDesc, budget, useEscrow) {
 
         if (!useEscrow) {
             // Direct payment flow (original)
-            var hireRecipient = agent.fullAddress;
+            var hireRecipient = getPaymentAddress(agent);
             var tx = await signer.sendTransaction({
                 to: hireRecipient,
                 value: ethers.parseEther(agentPayment.toFixed(18))
@@ -2362,7 +2469,11 @@ async function processHire(agent, jobDesc, budget, useEscrow) {
                 jobData.status = "COMPLETED";
                 jobData.result = jobResult.result;
                 saveJob(escrowId, jobData);
-                showToast("Job completed by " + agent.name + "! Check terminal for results.", "success", 8000);
+                typeInTerminal("[INFO] View full job history → click the Jobs button in the header", "system");
+                showToast("Job completed by " + agent.name + "! Click Jobs to see full history.", "success", 8000);
+
+                // Auto-refresh reputation score after job completion
+                await refreshAgentReputation(agent.tokenId);
 
                 // If escrow: prompt to approve and release
                 if (useEscrow && onChainEscrowId) {
@@ -2377,6 +2488,8 @@ async function processHire(agent, jobDesc, budget, useEscrow) {
                             typeInTerminal("[TX] https://basescan.org/tx/" + approveTx.hash, "system");
                             jobData.status = "RELEASED";
                             saveJob(escrowId, jobData);
+                            // Auto-refresh reputation score
+                            await refreshAgentReputation(agent.tokenId);
                         } catch (approveErr) {
                             typeInTerminal("[ESCROW] Release failed: " + (approveErr.reason || approveErr.message), "warning");
                             typeInTerminal("[INFO] You can approve later from the Jobs panel.", "system");
@@ -2495,6 +2608,8 @@ async function submitStake() {
         showToast("Staked " + amount + " ETH! Tier: " + newTier, "success");
 
         loadStakeTiers();
+        // Auto-refresh reputation score
+        await refreshAgentReputation(agent.tokenId);
     } catch (error) {
         console.error("Stake error:", error);
         typeInTerminal("[ERROR] Staking failed: " + (error.reason || error.message), "warning");
@@ -2806,20 +2921,46 @@ function renderActivityFeed(container, events) {
 // =============================================================================
 
 function runAutoHireDemo() {
+    openAutoHireModal();
+}
+
+function openAutoHireModal() {
+    document.getElementById("autoHireSkill").value = "";
+    document.getElementById("autoHireTask").value = "";
+    document.getElementById("autoHireModal").style.display = "flex";
+}
+
+function closeAutoHireModal() {
+    document.getElementById("autoHireModal").style.display = "none";
+}
+
+function setAutoHireSkill(skill) {
+    document.getElementById("autoHireSkill").value = skill;
+}
+
+function submitAutoHire() {
+    var skill = document.getElementById("autoHireSkill").value.trim();
+    var task = document.getElementById("autoHireTask").value.trim();
+    if (!skill) { showToast("Please select or enter a skill", "warning"); return; }
+    if (!task) { showToast("Please describe the task", "warning"); return; }
+
+    closeAutoHireModal();
     clearTerminal();
     hideSearchResult();
-    typeInTerminal("[SYSTEM] === AUTONOMOUS AGENT-TO-AGENT DEMO ===", "system");
-    typeInTerminal("[INFO] Initiating agent discovery and hiring...", "warning");
+    typeInTerminal("[SYSTEM] === AUTONOMOUS AGENT-TO-AGENT HIRING ===", "system");
+    typeInTerminal("[INFO] Skill needed: " + escapeHtml(skill), "system");
+    typeInTerminal("[INFO] Task: " + escapeHtml(task.substring(0, 100)) + (task.length > 100 ? "..." : ""), "system");
+    typeInTerminal("[INFO] Searching network for the best agent...", "warning");
 
-    showJobLoading("Running autonomous agent-to-agent demo...");
-    updateJobLoadingText("ALIAS-Prime is discovering specialists...");
+    showJobLoading("Finding and hiring the best agent...");
+    updateJobLoadingText("Discovering " + skill + " specialists...");
 
     fetchWithTimeout(CONFIG.API_URL + "/demo/auto-hire", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            skill: "data-analysis",
-            task: "Analyze the top 5 DeFi protocols on Base by TVL, assess risk, and recommend allocation strategy",
+            skill: skill,
+            task: task,
             requester: "ALIAS-Prime"
         })
     })
