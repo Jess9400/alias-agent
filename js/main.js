@@ -2979,7 +2979,7 @@ function submitAutoHire() {
             task: task,
             requester: "ALIAS-Prime"
         })
-    })
+    }, 90000)
     .then(function(r) { return r.json(); })
     .then(function(data) {
         hideJobLoading();
@@ -3026,7 +3026,7 @@ function runCollabDemo() {
         body: JSON.stringify({
             task: "Perform a comprehensive security and economic audit of a DeFi lending protocol on Base"
         })
-    })
+    }, 120000)
     .then(function(r) { return r.json(); })
     .then(function(data) {
         hideJobLoading();
