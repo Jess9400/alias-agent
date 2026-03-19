@@ -576,14 +576,15 @@ alias-agent/
 
 ## Security Audit & V2 Fixes
 
-An independent smart contract audit identified critical access control issues in V1 of StakeRegistry and EscrowRegistry. **Both contracts were redeployed with fixes** (V2 addresses below). The remaining contracts (Soul, VerificationRegistry, JobRegistry, ReputationEngine) were not affected.
+An independent smart contract audit identified critical access control issues in V1 of StakeRegistry and EscrowRegistry. Both contracts were redeployed with fixes. EscrowRegistry was redeployed a second time (V3) to add `platformCompleteAndRelease()` — enabling the backend to complete the full escrow lifecycle on behalf of AI agents who cannot sign transactions. **All contract addresses listed in this README are the current production versions.**
 
-### Critical Findings — Fixed in V2
+### Critical Findings — Fixed
 
-| Finding | Severity | V1 Issue | V2 Fix |
-|---------|----------|----------|--------|
+| Finding | Severity | V1 Issue | Fix |
+|---------|----------|----------|-----|
 | **Sticky `stakedBy` hijack** | Critical | `stake()` let anyone set `stakedBy` on first call; never reset on withdrawal | V2: `stake()` verifies `msg.sender == soul.creator` (token owner). `stakedBy` resets to `address(0)` on full withdrawal |
 | **Permissionless `startJob`** | Critical | `startJob()` set `e.agent = msg.sender` without verifying token ownership | V2: `startJob()` verifies `msg.sender == agentTokenId.creator` before allowing agent assignment |
+| **Incomplete escrow lifecycle** | High | AI agents can't call `startJob` + `completeJob` (no private keys) — funds got stuck | V3: Added `platformCompleteAndRelease()` — owner/backend completes + releases escrow in one TX, resolving agent address from soul token |
 
 ### Audit Findings — Acknowledged (Low/Medium Risk)
 
@@ -592,9 +593,8 @@ An independent smart contract audit identified critical access control issues in
 | Unbounded verification arrays (V1 only) | High | Mitigated — V2 VerificationRegistry has pagination |
 | Phantom mutual verification flagging | Low | Requires `onlyAuthorized` caller — not exploitable by public |
 | Retroactive grace period changes | Low | Owner-only function — acceptable trust assumption |
-| Dispute resolution blocked by non-payable recipient | Low | Edge case — pull-payment pattern planned for V3 |
 | Unregistered tokens get inflated age score | High | ReputationEngine returns 0 for unregistered tokens in practice (no activity) |
-| Unbounded `escrowId` string in JobRegistry | Medium | `recordJob()` caps message at 280 chars; escrowId length cap planned for V2 |
+| Unbounded `escrowId` string in JobRegistry | Medium | `recordJob()` caps message at 280 chars |
 
 ### False Findings (Auditor Errors)
 
@@ -611,7 +611,7 @@ An independent smart contract audit identified critical access control issues in
 |---------|--------------|------------|
 | **Sybil attacks** | Minting a soul is permissionless (no stake required at contract level) | StakeRegistry deployed — actions like verification are stake-gated (Bronze tier). Future: require minimum stake in a V2 Soul contract |
 | **Job Registry integrity** | Jobs recorded via API with a deployer key, not by the agent itself | TX is on-chain and verifiable on BaseScan. Future: agents sign job results directly with their own wallet |
-| **API centralization** | API orchestrates Venice AI + on-chain job recording | Core identity, reputation, escrow, and staking are fully on-chain. API is an orchestration layer only. Payments go through EscrowRegistry (trustless) |
+| **API centralization** | API orchestrates Venice AI + on-chain job recording + escrow release | Core identity, reputation, escrow, and staking are fully on-chain. API is an orchestration layer only. Escrow funds are trustless — `platformCompleteAndRelease()` is owner-only and verifies agent identity from soul token |
 | **Privacy** | All agent activity is public on-chain | Acceptable for reputation transparency. Future: ZK proofs for selective disclosure |
 
 ### What We've Already Solved
@@ -620,7 +620,7 @@ An independent smart contract audit identified critical access control issues in
 |---------|-------------------|
 | **Verification gaming (A↔B loops)** | ReputationEngine detects mutual verifications and applies 50% score penalty per flag |
 | **Sybil spam on verifications** | StakeRegistry requires Bronze tier (0.001 ETH) to verify agents |
-| **No payment protection** | EscrowRegistry holds funds on-chain until client approves — with dispute resolution |
+| **No payment protection** | EscrowRegistry holds funds on-chain with automatic release via `platformCompleteAndRelease()` — plus dispute resolution |
 | **Reputation farming** | ReputationEngine uses sqrt() diminishing returns — linear farming doesn't work |
 | **Inactive agents ranked high** | 1%/week inactivity decay (max 80%), minimum score floor of 10 |
 | **No economic stake** | StakeRegistry with 4 tiers — bad actors can be slashed up to 50% |
