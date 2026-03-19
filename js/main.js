@@ -2472,9 +2472,6 @@ async function processHire(agent, jobDesc, budget, useEscrow) {
                 typeInTerminal("[INFO] View full job history → click the Jobs button in the header", "system");
                 showToast("Job completed by " + agent.name + "! Click Jobs to see full history.", "success", 8000);
 
-                // Auto-refresh reputation score after job completion
-                await refreshAgentReputation(agent.tokenId);
-
                 // If escrow: prompt to approve and release
                 if (useEscrow && onChainEscrowId) {
                     var doApprove = confirm("Job completed! Approve and release escrow payment to " + agent.name + "?");
@@ -2498,6 +2495,9 @@ async function processHire(agent, jobDesc, budget, useEscrow) {
                         typeInTerminal("[INFO] Escrow held. You can approve or dispute later from the Jobs panel.", "system");
                     }
                 }
+
+                // Auto-refresh reputation score after job + escrow flow completes
+                await refreshAgentReputation(agent.tokenId);
             } else {
                 typeInTerminal("[WORK] Job error: " + escapeHtml(jobResult.error || "unknown"), "warning");
                 typeInTerminal("[INFO] Job saved. Use Jobs button to retry later.", "system");
