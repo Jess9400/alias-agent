@@ -30,7 +30,7 @@ class AliasSoulAgent:
         )
 
     # ============== VENICE AI ==============
-    def chat(self, message, model="llama-3.3-70b"):
+    def chat(self, message, model="mistral-small-3-2-24b-instruct"):
         if not self.venice_api_key:
             return {"error": "VENICE_API_KEY not set"}
         headers = {"Authorization": f"Bearer {self.venice_api_key}", "Content-Type": "application/json"}
