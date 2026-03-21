@@ -1,0 +1,124 @@
+{
+  "name": "ALIAS",
+  "version": "1.0.0",
+  "description": "Proof-of-Reputation Protocol for AI Agents — on-chain identity, reputation scoring, staking, escrow, and autonomous agent-to-agent hiring on Base Mainnet",
+  "operator": {
+    "wallet": "0x7F66dFcD8e9e4e7Ec435D0631C5d723fFaDdb211",
+    "chain": "base",
+    "chainId": 8453
+  },
+  "identity": {
+    "protocol": "custom-erc721-soulbound",
+    "contract": "0x0F2f94281F87793ee086a2B6517B6db450192874",
+    "registrationTx": "https://basescan.org/tx/0xca8b3588b01a3b453fb4be1222b3cb060c23cb253b36a86e1327465a56c33e11",
+    "tokenId": 1,
+    "agentName": "ALIAS-Prime"
+  },
+  "contracts": {
+    "soul": "0x0F2f94281F87793ee086a2B6517B6db450192874",
+    "verificationRegistry": "0x4f59c273dA1D1f4c9a9C1D0b82D7d5df006b2715",
+    "jobRegistry": "0x7Fa3c9C28447d6ED6671b49d537E728f678568C8",
+    "stakeRegistry": "0xCf40EA41A2a5FC3489f7282FA913977C8c69bC6f",
+    "escrowRegistry": "0xA13274088E86a9918A1dF785568C9e8639Ab4bca",
+    "reputationEngine": "0x154057f3899A39142cD351FecB5619e2F3B78324"
+  },
+  "tools": [
+    {
+      "name": "Venice AI",
+      "type": "llm",
+      "model": "llama-3.3-70b",
+      "fallback": "mistral-small-3-2-24b-instruct",
+      "purpose": "Task execution, agent reasoning, collaboration synthesis"
+    },
+    {
+      "name": "Base Mainnet RPC",
+      "type": "blockchain",
+      "purpose": "On-chain reads/writes — soul minting, job recording, escrow management, reputation queries"
+    },
+    {
+      "name": "web3.py",
+      "type": "library",
+      "purpose": "Smart contract interaction from Python agent"
+    },
+    {
+      "name": "Pinata IPFS",
+      "type": "storage",
+      "purpose": "Pin agent metadata and evidence to IPFS"
+    },
+    {
+      "name": "Bankr Wallet API",
+      "type": "payment",
+      "purpose": "Abstract account payment routing for agent compensation"
+    },
+    {
+      "name": "ENS",
+      "type": "identity",
+      "purpose": "Human-readable agent addressing via ENS name resolution"
+    },
+    {
+      "name": "Flask REST API",
+      "type": "api",
+      "purpose": "15 endpoints serving agent network — chat, job execution, reputation, hiring"
+    },
+    {
+      "name": "Foundry",
+      "type": "testing",
+      "purpose": "40 Solidity tests for all 6 contracts"
+    }
+  ],
+  "techStack": [
+    "Solidity 0.8.19",
+    "Python 3 / Flask",
+    "web3.py",
+    "ethers.js 6.9.0",
+    "Venice AI API",
+    "Foundry",
+    "pytest",
+    "IPFS / Pinata",
+    "nginx / Let's Encrypt"
+  ],
+  "computeConstraints": {
+    "maxConcurrentJobs": 3,
+    "chatRateLimit": "20 req/min",
+    "jobRateLimit": "10 req/min",
+    "maxTokensPerResponse": 800,
+    "autonomousLoopInterval": "30s",
+    "riskProfile": "moderate"
+  },
+  "taskCategories": [
+    "agent-identity-registration",
+    "on-chain-reputation-scoring",
+    "agent-to-agent-hiring",
+    "multi-agent-collaboration",
+    "escrow-payment-management",
+    "stake-based-sybil-resistance",
+    "trust-verification",
+    "autonomous-job-execution",
+    "skill-based-agent-discovery",
+    "reputation-anti-gaming"
+  ],
+  "capabilities": {
+    "autonomousExecution": true,
+    "agentToAgentHiring": true,
+    "multiAgentCollaboration": true,
+    "onChainReputation": true,
+    "escrowPayments": true,
+    "stakingTiers": true,
+    "sybilDetection": true,
+    "ensResolution": true
+  },
+  "network": {
+    "totalAgents": 16,
+    "uniqueWallets": 3,
+    "totalJobs": 25,
+    "totalVerifications": 6,
+    "totalEscrows": 4,
+    "stakedEth": "0.002"
+  },
+  "endpoints": {
+    "frontend": "https://alias-protocol.xyz",
+    "api": "https://api.alias-protocol.xyz",
+    "health": "https://api.alias-protocol.xyz/health",
+    "github": "https://github.com/Jess9400/alias-agent"
+  }
+}
